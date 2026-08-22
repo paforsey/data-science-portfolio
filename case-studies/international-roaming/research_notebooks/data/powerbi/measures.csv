@@ -1,0 +1,8 @@
+measure,dax,note
+Net Revenue,SUM(fact_simulation[median]),"always show with the band, never alone"
+Revenue vs Base,"SUM(fact_simulation[median]) - CALCULATE(SUM(fact_simulation[median]), dim_price[price_multiplier] = 1)",the number leadership asked for
+Downside (p5),SUM(fact_simulation[p5]),the number that should drive the decision
+Upside (p95),SUM(fact_simulation[p95]),
+Risk Band,SUM(fact_simulation[p95]) - SUM(fact_simulation[p5]),width of the band = how much is unknown
+Accounts at Risk,SUM(fact_simulation[accounts_lost]),"relationship value, not pass revenue"
+Segment Revenue Share,"DIVIDE(SUM(fact_segment_revenue[revenue]), CALCULATE(SUM(fact_segment_revenue[revenue]), ALL(dim_segment)))",
