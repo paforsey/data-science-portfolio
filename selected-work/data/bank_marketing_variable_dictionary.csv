@@ -1,0 +1,18 @@
+variable,role,type,description,categories_notes
+age,Feature,Integer,Age of the client,Numeric
+job,Feature,Categorical,Type of job,"admin., blue-collar, entrepreneur, housemaid, management, retired, self-employed, services, student, technician, unemployed, unknown"
+marital,Feature,Categorical,Marital status,"married, divorced, single, unknown (divorced includes widowed)"
+education,Feature,Categorical,Education level,"basic.4y, basic.6y, basic.9y, high.school, illiterate, professional.course, university.degree, unknown"
+default,Feature,Binary,Has credit in default?,"yes, no"
+balance,Feature,Integer,Average yearly account balance,Measured in euros
+housing,Feature,Binary,Has housing loan?,"yes, no"
+loan,Feature,Binary,Has personal loan?,"yes, no"
+contact,Feature,Categorical,Contact communication type,"cellular, telephone, unknown"
+day,Feature,Integer,Last contact day of the month,Numeric
+month,Feature,Categorical,Last contact month,"jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec"
+duration,Feature,Integer,Duration of last contact,Measured in seconds; leaks outcome information and should usually be excluded
+campaign,Feature,Integer,Number of contacts during this campaign,Includes the last contact
+pdays,Feature,Integer,Days since last contact from previous campaign,-1 means client was not previously contacted
+previous,Feature,Integer,Number of contacts before this campaign,Numeric
+poutcome,Feature,Categorical,Outcome of the previous marketing campaign,"failure, nonexistent/unknown, success"
+y,Target,Binary,Did the client subscribe to a term deposit?,"yes, no"
