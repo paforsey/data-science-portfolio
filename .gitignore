@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 .env
 chroma_db/
+selected-work/data/accepted_2007_to_2018Q4.csv
