@@ -9,16 +9,19 @@ explorer with no BI login required.
 
 | File | What it is |
 |---|---|
-| `dist/index.html` | The page. All markup, styles, and behavior; fetches `data.json` at load. This and `dist/data.json` are the only two files that exist — nothing is duplicated elsewhere. |
-| `dist/data.json` | The only data the page reads. Small aggregates only (~7KB) — no account-level data. |
-| `scenario-explorer.zip` | `dist/`'s two files, zipped, for easy drag-and-drop or handoff. |
-| `build_data.py` | Regenerates `dist/data.json` from the notebook outputs. Run after re-running notebooks 01-04. |
+| `index.html` | The page. All markup, styles, and behavior; fetches `data.json` at load. |
+| `data.json` | The only data the page reads. Small aggregates only (~7KB) — no account-level data. |
+| `scenario-explorer.zip` | `index.html` + `data.json`, zipped, for easy drag-and-drop or handoff. |
+| `build_data.py` | Regenerates `data.json` from the notebook outputs. Run after re-running notebooks 01-04. |
+
+Only `index.html` and `data.json` are actually needed to run the page — the
+other files here are for maintaining/deploying it, not part of the page itself.
 
 ## Deploying
 
-`dist/` is the single, portable source of truth — it's fully self-contained
-(no dependency on the rest of this repo). Copy `dist/`'s two files, or unzip
-`scenario-explorer.zip`, to wherever you're hosting.
+`index.html` and `data.json` are fully portable on their own (no dependency
+on the rest of this repo). Copy both, or unzip `scenario-explorer.zip`, to
+wherever you're hosting.
 
 **See `DEPLOY.md` for step-by-step instructions** covering Firebase Hosting,
 Netlify, Vercel, a plain web host via FTP, and S3.
@@ -27,7 +30,7 @@ Netlify, Vercel, a plain web host via FTP, and S3.
 block `fetch()` of a local file under the `file://` protocol. To preview locally:
 
 ```bash
-cd web/dist
+cd web
 python3 -m http.server 8000
 # open http://localhost:8000/index.html
 ```
@@ -35,7 +38,7 @@ python3 -m http.server 8000
 ## Regenerating the data
 
 After re-running notebooks 01-04 (which refreshes `data/synthetic/` and
-`data/powerbi/`), regenerate `dist/data.json` from the project root:
+`data/powerbi/`), regenerate `data.json` from the project root:
 
 ```bash
 cd case-studies/international-roaming
@@ -46,8 +49,8 @@ Then re-zip if you're using `scenario-explorer.zip`:
 
 ```bash
 cd web
-zip -j scenario-explorer.zip dist/index.html dist/data.json
+zip -j scenario-explorer.zip index.html data.json
 ```
 
-`dist/index.html` itself never needs to change for a data refresh — only
-`dist/data.json` does.
+`index.html` itself never needs to change for a data refresh — only
+`data.json` does.

@@ -7,9 +7,9 @@ Exactly two files, and they must stay together in the same folder:
 - `index.html`
 - `data.json`
 
-That's it — no build step, no server code, no dependencies to install. `dist/`
-(or `scenario-explorer.zip`) in this folder holds just those two files, ready
-to copy or unzip wherever you're hosting.
+That's it — no build step, no server code, no dependencies to install. Both
+sit directly in this `web/` folder — or grab `scenario-explorer.zip`, which
+holds just the two of them, ready to copy or unzip wherever you're hosting.
 
 **One hard requirement: it must be served over HTTP(S), not opened as a local
 file.** `index.html` fetches `data.json` at load time, and browsers block that
@@ -29,7 +29,7 @@ first. Steps below assume you already have (or will create) a Firebase project.
 2. **Log in**: `firebase login` — opens a browser to authenticate with your
    Google account.
 3. **Set up the project folder.** From inside this `web/` folder (or wherever
-   you copied `dist/`'s contents):
+   you copied `index.html`/`data.json`):
    ```bash
    firebase init hosting
    ```
@@ -37,7 +37,7 @@ first. Steps below assume you already have (or will create) a Firebase project.
      your Firebase project (or *Create a new project* if you don't have one yet).
    - **"What do you want to use as your public directory?"** → point this at
      the folder that holds `index.html` and `data.json`. If you're running
-     `init` from inside `dist/` itself, answer `.`; if you copied those two
+     `init` from inside `web/` itself, answer `.`; if you copied those two
      files into a `public/` folder instead, answer `public`.
    - **"Configure as a single-page app (rewrite all urls to /index.html)?"** →
      `No` (there's only one page; no routing to rewrite).
@@ -58,7 +58,8 @@ first. Steps below assume you already have (or will create) a Firebase project.
 ## Option B — Netlify (drag-and-drop, no account setup beyond signup)
 
 1. Go to [app.netlify.com/drop](https://app.netlify.com/drop).
-2. Drag the `dist/` folder (or unzip `scenario-explorer.zip` first) onto the page.
+2. Unzip `scenario-explorer.zip` into an empty folder and drag that folder
+   onto the page (keeps the upload to just the two files it needs).
 3. Netlify uploads both files and gives you a live URL immediately
    (`https://random-name.netlify.app`).
 4. Optional: claim the site in a free Netlify account to get a custom
