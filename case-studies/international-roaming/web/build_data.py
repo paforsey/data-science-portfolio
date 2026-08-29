@@ -10,7 +10,8 @@ after 01-04 have been executed in order:
 Reads the same aggregate tables notebook 04's Power BI export uses
 (data/synthetic/simulation_price_sweep.parquet, simulation_scenarios.parquet,
 data/powerbi/fact_segment_revenue.parquet, dim_segment.parquet) and writes
-web/data.json — the only file index.html fetches at runtime.
+web/dist/data.json — the only file dist/index.html fetches at runtime, and
+the only file that ever needs to change after a notebook re-run.
 """
 
 import json
@@ -19,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent  # international-roaming/
-OUT = Path(__file__).resolve().parent / "data.json"  # web/data.json
+OUT = Path(__file__).resolve().parent / "dist" / "data.json"  # web/dist/data.json
 
 
 def main():
