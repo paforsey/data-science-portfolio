@@ -19,19 +19,41 @@ need to configure — just don't try to open `index.html` directly from Finder/E
 
 ---
 
-## Option A — GitHub Pages (free, and this is already a GitHub repo)
+## Option A — Firebase Hosting
 
-1. In the repo's GitHub settings, open **Settings → Pages**.
-2. Under **Build and deployment → Source**, choose **Deploy from a branch**.
-3. Pick the branch (e.g. `main`) and set the folder to
-   `/case-studies/international-roaming/web` — or, if GitHub Pages requires
-   `/root` or `/docs` in your plan, instead push a copy of `dist/`'s two files
-   to whatever path you point Pages at.
-4. Save. GitHub gives you a URL like
-   `https://<your-username>.github.io/<repo-name>/case-studies/international-roaming/web/`
-   — that's it, live in a minute or two.
-5. To update later: replace `data.json` (see "Regenerating the data" in
-   `README.md`) and push — no rebuild step, GitHub Pages just serves the new file.
+Firebase Hosting doesn't have a drag-and-drop upload in its console — deploys
+go through the Firebase CLI, which needs [Node.js](https://nodejs.org) installed
+first. Steps below assume you already have (or will create) a Firebase project.
+
+1. **Install the CLI** (one-time): `npm install -g firebase-tools`
+2. **Log in**: `firebase login` — opens a browser to authenticate with your
+   Google account.
+3. **Set up the project folder.** From inside this `web/` folder (or wherever
+   you copied `dist/`'s contents):
+   ```bash
+   firebase init hosting
+   ```
+   - **"Please select an option"** → choose *Use an existing project* and pick
+     your Firebase project (or *Create a new project* if you don't have one yet).
+   - **"What do you want to use as your public directory?"** → point this at
+     the folder that holds `index.html` and `data.json`. If you're running
+     `init` from inside `dist/` itself, answer `.`; if you copied those two
+     files into a `public/` folder instead, answer `public`.
+   - **"Configure as a single-page app (rewrite all urls to /index.html)?"** →
+     `No` (there's only one page; no routing to rewrite).
+   - **"Set up automatic builds and deploys with GitHub?"** → `No` (you're not
+     using GitHub for this).
+   - If it asks to overwrite an existing `index.html` in that folder, say
+     `No` — you want to keep the one that's already there, not Firebase's
+     placeholder page.
+4. **Deploy**:
+   ```bash
+   firebase deploy --only hosting
+   ```
+5. The CLI prints your live URL, e.g. `https://<your-project-id>.web.app`.
+6. **To update later** (e.g. after a data refresh): replace `data.json` in
+   that same public directory and run `firebase deploy --only hosting` again
+   — `index.html` never needs to change.
 
 ## Option B — Netlify (drag-and-drop, no account setup beyond signup)
 

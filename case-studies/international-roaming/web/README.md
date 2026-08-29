@@ -19,7 +19,7 @@ Only `index.html` and `data.json` are needed to run the page — they're fully
 portable on their own (no dependency on the rest of this repo). A ready-to-ship
 copy of just those two files lives in `dist/` and as `scenario-explorer.zip`.
 
-**See `DEPLOY.md` for step-by-step instructions** covering GitHub Pages,
+**See `DEPLOY.md` for step-by-step instructions** covering Firebase Hosting,
 Netlify, Vercel, a plain web host via FTP, and S3.
 
 `index.html` must be served over HTTP(S), not opened directly from disk — browsers
