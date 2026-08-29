@@ -15,9 +15,12 @@ explorer with no BI login required.
 
 ## Deploying
 
-Both `index.html` and `data.json` must be served together from the same folder —
-copy this whole `web/` directory to wherever it's hosted (static hosting only,
-no server-side code needed: GitHub Pages, Netlify, S3, or any static file host).
+Only `index.html` and `data.json` are needed to run the page — they're fully
+portable on their own (no dependency on the rest of this repo). A ready-to-ship
+copy of just those two files lives in `dist/` and as `scenario-explorer.zip`.
+
+**See `DEPLOY.md` for step-by-step instructions** covering GitHub Pages,
+Netlify, Vercel, a plain web host via FTP, and S3.
 
 `index.html` must be served over HTTP(S), not opened directly from disk — browsers
 block `fetch()` of a local file under the `file://` protocol. To preview locally:
