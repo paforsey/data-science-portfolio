@@ -1,7 +1,9 @@
-measure,dax,note
-Net Revenue,SUM(fact_portfolio_simulation[median]),"always show with the band, never alone"
-Revenue vs Base,"SUM(fact_portfolio_simulation[median]) - CALCULATE(SUM(fact_portfolio_simulation[median]), dim_price[price_multiplier] = 1)",the number leadership asked for
-Downside (p5),SUM(fact_portfolio_simulation[p5]),5th-percentile revenue level at the selected price; not the incremental downside vs 1.00
-Upside (p95),SUM(fact_portfolio_simulation[p95]),
-Risk Band,SUM(fact_portfolio_simulation[p95]) - SUM(fact_portfolio_simulation[p5]),width of the band = how much is unknown
-Segment Revenue Share,"DIVIDE(SUM(fact_segment_revenue[revenue]), CALCULATE(SUM(fact_segment_revenue[revenue]), ALL(dim_segment)))",
+measure,dax,format_string,display_folder,note
+Net Revenue,SUM(fact_portfolio_simulation[median]),"$#,0;($#,0);$0",Revenue,Median simulated revenue; show with the uncertainty band.
+Revenue vs Base,"[Net Revenue] - CALCULATE([Net Revenue], REMOVEFILTERS(dim_price), dim_price[price_multiplier] = 1.0)","$#,0;($#,0);$0",Revenue,Change from x1.00 within the current model-case context.
+Revenue vs Base %,"VAR BaseRevenue = CALCULATE([Net Revenue], REMOVEFILTERS(dim_price), dim_price[price_multiplier] = 1.0) RETURN DIVIDE([Net Revenue] - BaseRevenue, BaseRevenue)",0.0%;(0.0%);0.0%,Revenue,Percentage change from x1.00.
+Downside (p5),SUM(fact_portfolio_simulation[p5]),"$#,0;($#,0);$0",Uncertainty,"5th-percentile revenue level, not incremental downside."
+Upside (p95),SUM(fact_portfolio_simulation[p95]),"$#,0;($#,0);$0",Uncertainty,95th-percentile revenue level.
+Risk Band,[Upside (p95)] - [Downside (p5)],"$#,0;($#,0);$0",Uncertainty,Width of the p5–p95 simulation interval.
+Segment Revenue,SUM(fact_segment_revenue[revenue]),"$#,0;($#,0);$0",Segments,Deterministic segment revenue in the current price context.
+Segment Revenue Share,"DIVIDE([Segment Revenue], CALCULATE([Segment Revenue], REMOVEFILTERS(dim_segment)))",0.0%,Segments,Share of portfolio revenue at the selected price.
