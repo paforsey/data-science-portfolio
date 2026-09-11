@@ -6,10 +6,13 @@ expected annual revenue benefit alongside the expected purchaser cost, under
 three economic conditions, with the simulation's uncertainty shown alongside
 each estimate — no BI login required.
 
-Revenue is fully wired up. Purchaser figures are **not currently available**
-(see "Adding purchaser data" below) — the tool discloses this explicitly
-rather than approximating them, and stays fully usable for revenue
-exploration in the meantime.
+Revenue is fully wired up. Purchaser figures are available at the **segment**
+grain (a deterministic expected-value decomposition — see the notebook's
+"Build Segment Purchaser Curves" section) but **not yet** at the portfolio or
+economic-scenario grain, where a properly simulated figure with a p5–p95
+interval is needed (see "Adding portfolio-level purchaser data" below). The
+tool discloses this asymmetry explicitly rather than approximating the
+missing piece, and stays fully usable for revenue exploration in the meantime.
 
 ## Files
 
@@ -71,36 +74,49 @@ zip -j scenario-explorer.zip index.html data.json
 `data.json` currently carries:
 
 - `meta` — run id, current/recommended price, behavioral-case scale factors,
-  the segment/portfolio reconciliation gap, and `purchasers_available: false`.
+  the segment/portfolio reconciliation gap, `purchasers_available: false`
+  (portfolio/scenario grain), and `segment_purchasers_available: true`.
 - `grid` — the full 13-point evaluated price grid (0.90x–1.20x).
 - `portfolio` — revenue p5/median/p95 across the full grid, for the "as
   fitted" and "joint sensitivity" cases, unconditioned on macro scenario
-  (what the tool calls the Base economy).
+  (what the tool calls the Base economy). No purchaser fields yet.
 - `scenarios.expansion` / `scenarios.contraction` — revenue p5/median/p95 at
   exactly the three prices the macro simulation was run at (1.00x,
-  recommended, 1.20x), always under the joint-sensitivity case.
+  recommended, 1.20x), always under the joint-sensitivity case. No purchaser
+  fields yet.
 - `segOrder` / `segMeta` / `segCurve` — the four pricing-eligible segments'
-  revenue across the full grid (a deterministic expected-value decomposition,
-  not simulated — no interval).
+  revenue **and expected purchasers** across the full grid, both deterministic
+  expected-value decompositions (not simulated — no interval). Purchasers is
+  the per-account `1 − ∏(p_null over that account's forward trips)`, summed
+  within segment; see the notebook's "Build Segment Purchaser Curves" cell
+  and the tool's own Methodology section for the independence assumption.
 - `dormant` — the excluded Dormant segment's size, for disclosure only.
 
-### Adding purchaser data
+### Adding portfolio-level purchaser data
 
-No parquet export currently carries a purchaser figure at any grain, so the
-tool shows an explicit "not available" state for the whole cost side of the
-revenue/purchaser trade-off rather than deriving or approximating one.
+The segment-grain purchaser figures above (Track A) reuse data and code that
+already existed for segment revenue — no new simulation. Portfolio and
+economic-scenario purchasers (Track B) are a different, larger piece of work:
+they need a genuinely *simulated* figure with a p5–p95 interval, paired
+against revenue from the same Monte Carlo draws — not a second, independent
+simulation, which would break the pairing needed for a valid interval or a
+`revenue_per_purchaser_lost` figure.
 
-To light that up, `data.json` would need, mirroring the revenue fields above:
+Concretely: the notebook's `simulate()` function currently only accumulates
+`simulated_revenue[iteration]`. It would need a second per-iteration
+accumulator — e.g. track which accounts had at least one non-null-coverage
+trip that iteration, count them — output alongside revenue from every call.
+`simulate()` is invoked for the full 13-point sweep (both cases) and the
+3-scenario × 3-price macro runs; both call sites, and the tables they feed
+(`fact_portfolio_simulation`, `fact_macro_scenario`), would need the new
+`purchasers_median`/`_p5`/`_p95` columns.
+
+Once those exist, `data.json` needs, mirroring the revenue fields:
 
 - `portfolio.<case>.purchasers_median` / `_p5` / `_p95`, full grid, both cases.
 - `scenarios.<scenario>.purchasers_median` / `_p5` / `_p95`, at the three
   macro-simulation prices.
-- `segCurve.<id>.purchasers` (and, if ever simulated per segment, `_p5`/`_p95`).
 
-The natural source is `data/synthetic/account_price_response.parquet`
-(per-account `p_null` at four prices) rolled up via
-`1 - product(p_null over an account's forward trips)`, per account, then
-summed — see the case study notebook's purchaser-definition note — but that
-table only covers four prices and no macro scenario, and rolling it up is
-notebook-level work, not a `build_data.py` change. Until the notebook exports
-it at the full grid/scenario/case grain, don't fabricate it here.
+— at which point `meta.purchasers_available` flips to `true` and the page's
+purchaser chart, decision-summary cost column, and `revenue_per_purchaser_lost`
+figure can be lit up. Until then, don't fabricate or approximate them here.

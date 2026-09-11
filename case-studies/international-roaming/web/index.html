@@ -497,6 +497,16 @@
     border-bottom: 1px solid var(--hairline-strong);
   }
 
+  table.segments th.group-head {
+    text-align: center;
+    font-size: 0.64rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+  table.segments th.group-head.revenue { color: var(--accent); }
+  table.segments th.group-head.cost { color: var(--cost); }
+  table.segments th[rowspan="2"] { vertical-align: bottom; }
+
   table.segments th:first-child, table.segments td:first-child {
     text-align: left;
     white-space: normal;
@@ -662,18 +672,25 @@
 
   <section class="segment-card">
     <h2>Segment contribution at the selected price</h2>
-    <p class="segment-note">Pricing-eligible segments only. This breakdown is a deterministic expected-value decomposition computed once, under the joint-sensitivity behavioral case and Base economic conditions — it does not change with the toggles above. Purchaser figures are not available for the same reason as the chart above.</p>
+    <p class="segment-note">Pricing-eligible segments only. Both blocks below are deterministic expected-value decompositions computed once, under the joint-sensitivity behavioral case and Base economic conditions — they do not change with the toggles above, and (unlike the chart and summary above) carry no simulation interval. Purchasers = per-account probability of at least one paid trip in the forward year, summed within segment, assuming independence across an account's trips — see Methodology. This is different from the portfolio-level purchaser figures above, which remain unavailable pending a simulated (not deterministic) export.</p>
     <div class="segment-table-wrap">
       <table class="segments" id="segTable">
         <thead>
           <tr>
-            <th>Segment</th>
-            <th>Accounts</th>
-            <th>Revenue at 1.00&times;</th>
-            <th>Revenue at selected</th>
-            <th>Revenue change</th>
-            <th>Share of revenue change</th>
-            <th>Purchasers</th>
+            <th rowspan="2">Segment</th>
+            <th rowspan="2">Accounts</th>
+            <th colspan="4" class="group-head revenue">Revenue — benefit</th>
+            <th colspan="4" class="group-head cost">Purchasers — cost</th>
+          </tr>
+          <tr>
+            <th>At 1.00&times;</th>
+            <th>At selected</th>
+            <th>Change</th>
+            <th>Share of&nbsp;change</th>
+            <th>At 1.00&times;</th>
+            <th>At selected</th>
+            <th>Change</th>
+            <th>Share of&nbsp;loss</th>
           </tr>
         </thead>
         <tbody id="segTableBody"></tbody>
@@ -695,8 +712,11 @@
       <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices — 1.00&times;, the recommended price, and 1.20&times; — always under the joint-sensitivity case, because that is the resolution the macro simulation was run at. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
 
       <h3>Roaming-pass purchasers vs. wireless subscribers</h3>
-      <p>This tool's purchaser measure, where available, would count <b>roaming-pass purchasers</b> — accounts with at least one roaming trip receiving partial or full paid coverage in the forward year — not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
-      <p>No such figure is currently exported. Enabling it needs, at minimum, an account-level or segment-level table of expected annual purchaser counts (with simulation intervals) at every evaluated price, economic scenario, and behavioral case — see <code>web/README.md</code> for the full field list this tool expects once that export exists.</p>
+      <p>This tool's purchaser measure counts <b>roaming-pass purchasers</b> — accounts with at least one roaming trip receiving partial or full paid coverage in the forward year — not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
+
+      <h3>Why the segment table has purchaser figures and the chart above doesn't</h3>
+      <p>Segment-level purchasers are computed as a deterministic expected value: per account, <code>P(at least one purchase) = 1 − ∏ P(null coverage)</code> across that account's forward trips, summed within segment. This <b>assumes conditional independence of an account's trip-purchase events</b> — no account-level dependence is modeled. It uses the same trip-probability data and grain as the segment revenue curve (joint-sensitivity case, unconditioned macro), so it carries no simulation interval, same as segment revenue.</p>
+      <p>The chart and decision summary above need something stronger: a properly <em>simulated</em> purchaser count — with a p5–p95 interval, paired against revenue from the same simulation draws — at every price, economic scenario, and behavioral case. That requires accumulating purchaser counts inside the notebook's Monte Carlo simulation loop alongside revenue, not a second independent simulation (which would break the pairing needed for a valid interval or a revenue-per-purchaser-lost figure). That work is not done yet — see <code>web/README.md</code> for the field-level data contract this page expects once it is.</p>
 
       <h3>Segment figures</h3>
       <p>Segment revenue does not reconcile exactly with the portfolio total shown above: it is a probability-weighted expected value, while the portfolio figure is the <b>median</b> of a simulated, right-skewed distribution — the two differ by construction, currently by about <span id="mReconGap"></span> at the current price. Segment figures also exclude the <b>Dormant</b> segment, disclosed separately below, and are not simulated, so no interval is shown for them.</p>
@@ -1076,44 +1096,77 @@ function showTooltip(chart, idx, series, grid) {
 
 // ---------------- segments ----------------
 
+function fmtCount(n) { return Math.round(n).toLocaleString(); }
+
 function renderSegments(price) {
   const grid = DATA.grid; // segment curve is always the full unconditioned grid
   let idx = grid.findIndex((p) => Math.abs(p - price) < 1e-6);
   if (idx === -1) idx = grid.reduce((best, p, i) => Math.abs(p - price) < Math.abs(grid[best] - price) ? i : best, 0);
   const b = baseIdx(grid);
+  const purchasersAvailable = !!DATA.meta.segment_purchasers_available;
 
   const rows = DATA.segOrder.map((sid) => {
     const meta = DATA.segMeta[sid];
-    const curve = DATA.segCurve[sid].revenue;
-    const revBase = curve[b], revSel = curve[idx];
-    const change = revSel - revBase;
-    return { sid, meta, revBase, revSel, change };
+    const curve = DATA.segCurve[sid];
+    const revBase = curve.revenue[b], revSel = curve.revenue[idx];
+    const revChange = revSel - revBase;
+    let purchBase = null, purchSel = null, purchChange = null;
+    if (purchasersAvailable && curve.purchasers) {
+      purchBase = curve.purchasers[b];
+      purchSel = curve.purchasers[idx];
+      purchChange = purchSel - purchBase;
+    }
+    return { sid, meta, revBase, revSel, revChange, purchBase, purchSel, purchChange };
   });
 
-  const totalChange = rows.reduce((s, r) => s + Math.abs(r.change), 0) || 1;
-  const maxAbsChange = Math.max(...rows.map((r) => Math.abs(r.change)), 1);
+  const totalRevChange = rows.reduce((s, r) => s + Math.abs(r.revChange), 0) || 1;
+  const maxAbsRevChange = Math.max(...rows.map((r) => Math.abs(r.revChange)), 1);
+
+  const totalPurchLoss = rows.reduce((s, r) => s + (r.purchChange !== null && r.purchChange < 0 ? -r.purchChange : 0), 0);
+  const maxAbsPurchChange = Math.max(...rows.map((r) => Math.abs(r.purchChange || 0)), 1);
 
   el('segTableBody').innerHTML = rows.map((r) => {
-    const pctShare = (Math.abs(r.change) / totalChange) * 100;
-    const barWidth = (Math.abs(r.change) / maxAbsChange) * 45;
-    const cls = r.change >= 0 ? 'pos' : 'neg';
+    const revPctShare = (Math.abs(r.revChange) / totalRevChange) * 100;
+    const revBarWidth = (Math.abs(r.revChange) / maxAbsRevChange) * 45;
+    const revCls = r.revChange >= 0 ? 'pos' : 'neg';
+
+    let purchCells;
+    if (!purchasersAvailable) {
+      purchCells = `<td colspan="4" style="text-align:center; color:var(--muted);">N/A</td>`;
+    } else {
+      const purchCls = r.purchChange >= 0 ? 'pos' : 'neg';
+      const isLoss = r.purchChange < 0;
+      const purchShareCell = isLoss && totalPurchLoss > 0
+        ? (() => {
+            const pct = (-r.purchChange / totalPurchLoss) * 100;
+            const width = (Math.abs(r.purchChange) / maxAbsPurchChange) * 45;
+            return `<div class="seg-bar-cell"><span>${pct.toFixed(0)}%</span><div class="seg-bar-track"><div class="seg-bar-mid"></div><div class="seg-bar-fill neg" style="width:${width}%"></div></div></div>`;
+          })()
+        : '—';
+      purchCells = `
+        <td>${fmtCount(r.purchBase)}</td>
+        <td>${fmtCount(r.purchSel)}</td>
+        <td class="${purchCls}">${r.purchChange >= 0 ? '+' : ''}${fmtCount(r.purchChange)}</td>
+        <td>${purchShareCell}</td>`;
+    }
+
     return `
       <tr>
         <td class="seg-name">${r.meta.headline}<span class="desc">${r.meta.description} · ${r.meta.accounts.toLocaleString()} accts · ${(r.meta.rev_share * 100).toFixed(1)}% of revenue</span></td>
         <td>${r.meta.accounts.toLocaleString()}</td>
         <td>${fmtMoneyFull(r.revBase)}</td>
         <td>${fmtMoneyFull(r.revSel)}</td>
-        <td class="${cls}">${r.change >= 0 ? '+' : ''}${fmtMoneyFull(r.change)}</td>
+        <td class="${revCls}">${r.revChange >= 0 ? '+' : ''}${fmtMoneyFull(r.revChange)}</td>
         <td>
           <div class="seg-bar-cell">
-            <span>${pctShare.toFixed(0)}%</span>
+            <span>${revPctShare.toFixed(0)}%</span>
             <div class="seg-bar-track">
               <div class="seg-bar-mid"></div>
-              <div class="seg-bar-fill ${cls}" style="width:${barWidth}%"></div>
+              <div class="seg-bar-fill ${revCls}" style="width:${revBarWidth}%"></div>
             </div>
           </div>
         </td>
-        <td>N/A</td>
+        ${purchCells}
       </tr>`;
   }).join('');
 

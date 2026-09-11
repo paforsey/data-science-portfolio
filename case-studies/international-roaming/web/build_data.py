@@ -26,18 +26,25 @@ Data contract, in brief (see web/README.md for the full version):
               it is deliberately NOT surfaced in the UI as a second "Base"
               source — see README — but is checked below for consistency
               with `portfolio` so a large divergence fails the build.
-  segments    non-dormant segments, full 13-point grid, revenue only. This
-              curve is a deterministic expected-value decomposition (not
-              simulated), always under "joint sensitivity" + unconditioned
-              macro — i.e. it corresponds to the same condition as
-              portfolio["joint sensitivity"], not to whichever
-              scenario/case is selected in the UI. The tool discloses this.
-  purchasers  NOT exported by the notebook today. No parquet table carries
-              an expected roaming-pass-purchaser count at any grain. The
-              page must show an explicit "unavailable" state for the cost
-              side of the trade-off rather than deriving or approximating
-              one — see README's "Adding purchaser data" section for the
-              fields that would need to exist.
+  segments    non-dormant segments, full 13-point grid, revenue AND expected
+              purchasers. Both are deterministic expected-value decomposi-
+              tions (not simulated), always under "joint sensitivity" +
+              unconditioned macro — i.e. they correspond to the same
+              condition as portfolio["joint sensitivity"], not to whichever
+              scenario/case is selected in the UI. Purchasers = per-account
+              P(at least one purchase) = 1 - prod(p_null over that account's
+              forward trips), summed within segment; assumes conditional
+              independence of an account's trip-purchase events. The tool
+              discloses both the fixed-condition caveat and the independence
+              assumption.
+  purchasers  Segment-level only (see above) — NOT exported at the
+              portfolio or economic-scenario grain. Getting a properly
+              simulated purchasers_median/_p5/_p95 there needs the same
+              per-iteration accounting added to the notebook's simulate()
+              loop, paired with revenue from the same draws (not a second,
+              independent simulation) — see README's "Adding purchaser
+              data" section. Until then those views show an explicit
+              "unavailable" state rather than deriving or approximating one.
 """
 
 import json
@@ -135,7 +142,14 @@ def main():
         d = fact_seg_rev[fact_seg_rev["segment"] == seg_row["segment"]].sort_values("price_multiplier")
         assert d["price_multiplier"].round(4).tolist() == grid, f"segment {sid}: price grid mismatch"
         assert (d["revenue"] >= 0).all(), f"segment {sid}: negative revenue"
-        seg_curve[sid] = {"revenue": d["revenue"].round(0).astype(int).tolist()}
+        assert (d["purchasers"] >= 0).all(), f"segment {sid}: negative purchasers"
+        assert (d["purchasers"] <= seg_row["accounts"] + 1e-6).all(), (
+            f"segment {sid}: expected purchasers exceed account count"
+        )
+        seg_curve[sid] = {
+            "revenue": d["revenue"].round(0).astype(int).tolist(),
+            "purchasers": d["purchasers"].round(1).tolist(),
+        }
 
     seg_meta = {}
     for _, r in dim_seg_active.iterrows():
@@ -190,6 +204,7 @@ def main():
             "current_price": current_price,
             "recommended_price": recommended_price,
             "purchasers_available": False,
+            "segment_purchasers_available": True,
             "response_scale_joint_sensitivity": round(
                 float(assumption_values.get("response scale (joint sensitivity)")), 4
             ),
