@@ -94,9 +94,13 @@ zip -j scenario-explorer.zip index.html data.json
   but nothing in the UI consumes them any more.
 - `scenarios.expansion` / `scenarios.contraction` — revenue and purchasers
   p5/median/p95 at exactly the three prices the macro simulation was run at
-  (1.00x, recommended, 1.20x), always at both sliders' ceiling — that
-  combination is the only point the macro simulation covers. Each also
-  carries `paired_at_recommended`: a genuinely paired revenue/purchaser
+  (1.00x, 1.15x, 1.20x), always at both sliders' ceiling — that combination
+  is the only point the macro simulation covers. The 1.15x point is a fixed
+  stress-test price (the joint-sensitivity case's peak, `STRESS_TEST_PRICE`
+  in `build_data.py`) — it is **not** tied to `meta.recommended_price`, which
+  is read from the as-fitted case and currently sits at the 1.20x cap; the
+  two happen to coincide only when the recommendation is 1.15x. Each scenario
+  also carries `paired_at_stress_price`: a genuinely paired revenue/purchaser
   difference (1.15x vs. 1.00x, same iterations) — the tool prefers this over
   subtracting two marginal medians whenever the scenario and selected price
   make it valid, per the spec's preference for paired simulation differences.
@@ -121,6 +125,19 @@ zip -j scenario-explorer.zip index.html data.json
   Not currently rendered — the page's "Simulation inputs and their
   distributions" visual that read this was removed; the field stays in
   the export (like `portfolio`/`dim_model_case`) in case it's wanted again.
+- `marketSizing` — scales the as-fitted model's revenue to a real-world
+  figure, since the ~50,000-account synthetic book is a small illustrative
+  sample of whatever a real carrier's book would be. `meta` carries the I-92
+  program year/trip count and the assumed carrier market share (30%,
+  `MARKET_SHARE` in both the notebook's §5.1 and `build_data.py` — kept in
+  sync manually, not derived); `byPrice["<price>"]` (all 13 grid points) has
+  `revenue_per_trip`, `scaled_annual_revenue`, `scaled_lift`, and
+  `share_of_target` (fraction of the $100M company-wide target). Reads the
+  notebook's own `market_sizing.parquet` output rather than recomputing it,
+  so the tool and the notebook/deck always agree by construction. Always the
+  as-fitted figure — independent of the scenario tab and sensitivity sliders,
+  which explore different modeled assumptions, not different real-world
+  scale assumptions.
 
 ### From bundled case to two sliders
 

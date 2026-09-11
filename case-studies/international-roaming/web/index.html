@@ -367,6 +367,7 @@
 
   .summary-col.revenue .col-head { color: var(--accent); }
   .summary-col.cost .col-head { color: var(--cost); }
+  .summary-col.market .col-head { color: var(--ink); }
 
   .col-head .sw { width: 11px; height: 2px; border-radius: 1px; background: currentColor; flex: none; }
 
@@ -521,6 +522,17 @@
     max-width: 72ch;
   }
 
+  .market-sizing-card { margin-top: 1rem; }
+
+  .market-sizing-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0.75rem 0 0;
+    max-width: 72ch;
+  }
+
+  .market-sizing-note a { color: inherit; }
+
   .segment-table-wrap { overflow-x: auto; }
 
   table.segments {
@@ -665,7 +677,7 @@
     <div class="control-row">
       <span class="control-label">Price</span>
       <div class="slider-track-wrap">
-        <span class="slider-value" id="priceReadout">1.150&times;<span class="delta" id="priceDelta">+15%</span></span>
+        <span class="slider-value" id="priceReadout">1.200&times;<span class="delta" id="priceDelta">+20%</span></span>
         <input type="range" id="priceSlider" min="0" max="12" step="1" value="10" aria-label="Candidate price multiplier">
         <div class="slider-endlabels"><span id="priceMinLabel"></span><span id="priceMaxLabel"></span></div>
       </div>
@@ -704,6 +716,18 @@
       </div>
     </div>
     <p class="rpl-line" id="rplLine"></p>
+  </section>
+
+  <section class="summary-card market-sizing-card" aria-live="polite">
+    <h2>Scaled to a real carrier's book</h2>
+    <p class="summary-sentence" id="marketSizingSentence"></p>
+    <div class="summary-grid" style="grid-template-columns: 1fr;">
+      <div class="summary-col market">
+        <span class="col-head"><span class="sw"></span>Scaled national annual revenue</span>
+        <div id="marketSizingStats"></div>
+      </div>
+    </div>
+    <p class="market-sizing-note">This synthetic study's ~50,000-account book is a small illustrative sample. To show what a price change of this size could mean at real scale, its as-fitted per-trip revenue is multiplied by <span id="mMarketShare"></span> of <span id="mI92Year"></span> U.S. Department of Commerce international air-travel volume (<a href="https://www.trade.gov/us-international-air-travel-statistics-i-92-data" target="_blank" rel="noopener">I-92 program</a>, <span id="mI92Trips"></span> U.S. citizen originating trips) — a disclosed, illustrative assumption, not a real carrier's actual figures. Always uses the as-fitted model, independent of the scenario tab and sensitivity sliders above.</p>
   </section>
 
   <div class="chart-tabs" role="tablist" aria-label="Economic scenario">
@@ -768,17 +792,17 @@
       <p>The shaded band on the revenue chart is a <b>simulation interval</b>: the 5th–95th percentile range of a Monte Carlo simulation of the next 12 months, not a statistical confidence interval. It reflects modeled dispersion in the simulation, not sampling error in an estimator.</p>
 
       <h3>Response and depth sensitivity</h3>
-      <p>Two independent sliders, each 1.00&times; (as fitted) to its diagnostic-derived ceiling (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth), 3 pre-simulated points apiece. They move separately because they come from separate models and separate diagnostics: <b>response sensitivity</b> controls how strongly price shifts an account out of full coverage (the State Model); <b>depth sensitivity</b> controls how much revenue is retained when an account lands in partial coverage (the Magnitude Model), and never affects whether an account counts as a purchaser, only how much they're worth once they do. Neither slider is a confidence bound or a second estimate of the truth; both are sensitivity scenarios, and the recommended price was selected at both ceilings simultaneously. Only available under the Base economy: Expansion and Contraction were only simulated at both ceilings, so selecting either forces both sliders there.</p>
+      <p>Two independent sliders, each 1.00&times; (as fitted) to its diagnostic-derived ceiling (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth), 3 pre-simulated points apiece. They move separately because they come from separate models and separate diagnostics: <b>response sensitivity</b> controls how strongly price shifts an account out of full coverage (the State Model); <b>depth sensitivity</b> controls how much revenue is retained when an account lands in partial coverage (the Magnitude Model), and never affects whether an account counts as a purchaser, only how much they're worth once they do. Neither slider is a confidence bound or a second estimate of the truth; both are sensitivity scenarios exploring how the conclusion would change if either assumption is understated. The recommendation itself is read from the as-fitted model, both sliders at 1.00&times; (their base position), not from either ceiling; the 1.15&times; price evaluated at both ceilings simultaneously is reported separately as a disclosed robustness check. Only available under the Base economy: Expansion and Contraction were only simulated at both ceilings, so selecting either forces both sliders there.</p>
 
       <h3>Economic scenarios and price coverage</h3>
-      <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices (1.00&times;, the recommended price, and 1.20&times;), always at both sensitivity sliders' ceiling, because that is the resolution the macro simulation was run at. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
+      <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices (1.00&times;, 1.15&times;, and 1.20&times;), always at both sensitivity sliders' ceiling, because that is the resolution the macro simulation was run at. The 1.15&times; point is a fixed stress-test price (the joint-sensitivity case's peak) — it is not tied to whichever price is currently recommended. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
 
       <h3>Roaming-pass purchasers vs. wireless subscribers</h3>
       <p>This tool's purchaser measure counts <b>roaming-pass purchasers</b>: accounts with at least one roaming trip receiving partial or full paid coverage in the forward year, not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
 
       <h3>How the purchaser chart and summary are simulated</h3>
       <p>Purchasers are counted inside the same Monte Carlo loop that produces revenue: each iteration, an account counts as a purchaser if at least one of its forward trips lands in a non-null coverage state that draw. Because it comes from the same draws, purchasers stay properly paired with revenue: the p5–p95 band on the purchaser chart is a genuine simulation interval, not a derived or approximated range.</p>
-      <p>Where a <b>paired</b> difference is available (Expansion and Contraction, at the recommended price only, where both revenue and purchasers were differenced iteration-by-iteration against the 1.00&times; run), the summary above uses it and marks it <i>(paired)</i>. Everywhere else, "change vs. 1.00&times;" is the difference of two marginal medians; common random numbers are used across every price at a given response/depth sensitivity setting, which limits (but doesn't eliminate) the Monte Carlo noise this introduces.</p>
+      <p>Where a <b>paired</b> difference is available (Expansion and Contraction, at the fixed 1.15&times; stress-test price only, where both revenue and purchasers were differenced iteration-by-iteration against the 1.00&times; run), the summary above uses it and marks it <i>(paired)</i>. Everywhere else, "change vs. 1.00&times;" is the difference of two marginal medians; common random numbers are used across every price at a given response/depth sensitivity setting, which limits (but doesn't eliminate) the Monte Carlo noise this introduces.</p>
       <p>The purchaser rate denominator (<span id="mEligibleAccounts"></span> accounts) is the forward-panel population the simulation actually draws purchases from: the account base with a modeled forward trip, not the full customer book.</p>
 
       <h3>Why the segment table's purchaser figures are different</h3>
@@ -837,14 +861,16 @@ function activeSeries() {
 }
 
 // A genuinely paired revenue/purchaser difference (same simulation draws) exists
-// only for Expansion/Contraction, only at the recommended price; see build_data.py.
-// Returns null when the current scenario/price doesn't match, so callers fall back
-// to marginal-median subtraction (which is what Base always uses: mixing the macro
-// table's paired diff with the full-grid portfolio sweep would pair across two
-// different simulation runs, which isn't a valid pairing).
-function pairedAtRecommended(grid, price) {
+// only for Expansion/Contraction, only at the fixed 1.15x stress-test price (the
+// joint-sensitivity case's peak, decoupled from whichever price is currently
+// recommended); see build_data.py. Returns null when the current scenario/price
+// doesn't match, so callers fall back to marginal-median subtraction (which is
+// what Base always uses: mixing the macro table's paired diff with the full-grid
+// portfolio sweep would pair across two different simulation runs, which isn't a
+// valid pairing).
+function pairedAtStressPrice(grid, price) {
   if (state.scenario === 'base') return null;
-  const paired = DATA.scenarios[state.scenario].paired_at_recommended;
+  const paired = DATA.scenarios[state.scenario].paired_at_stress_price;
   if (!paired || Math.abs(price - paired.price) > 1e-6) return null;
   return paired;
 }
@@ -953,10 +979,33 @@ function render() {
 
   CHARTS = [];
   renderSummary(grid, price);
+  renderMarketSizing(price);
   renderRevChart(grid, price);
   renderCostChart(grid, price);
   renderSegments(price);
   renderMethodologyFacts();
+}
+
+// Always the as-fitted figure at the selected price, independent of the
+// scenario tab and sensitivity sliders (see build_data.py / notebook §5.1) —
+// those controls explore different modeled assumptions, not different
+// real-world scale assumptions, so this card intentionally doesn't move
+// with them the way the summary card above does.
+function renderMarketSizing(price) {
+  const key = String(Math.round(price * 10000) / 10000);
+  const row = DATA.marketSizing.byPrice[key];
+  if (!row) { el('marketSizingSentence').textContent = ''; el('marketSizingStats').innerHTML = ''; return; }
+
+  const atCurrent = Math.abs(price - DATA.meta.current_price) < 1e-6;
+  const sentence = atCurrent
+    ? `At the current price (1.00&times;), scaled national annual revenue is <span class="rev-figure">${fmtMoney(row.scaled_annual_revenue)}</span>.`
+    : `At a ${fmtPctChange(price)} price change, scaled national annual revenue ${row.scaled_lift >= 0 ? 'increases' : 'decreases'} by <span class="rev-figure">${fmtMoney(Math.abs(row.scaled_lift))}</span> — ${Math.abs(row.share_of_target * 100).toFixed(1)}% ${row.scaled_lift >= 0 ? 'of' : 'against'} the company's $100M target.`;
+  el('marketSizingSentence').innerHTML = sentence;
+
+  el('marketSizingStats').innerHTML = `
+    <div class="stat-line"><span class="k">Scaled annual revenue</span><span class="v">${fmtMoneyFull(row.scaled_annual_revenue)}</span></div>
+    <div class="stat-line"><span class="k">Scaled change vs. 1.00&times;</span><span class="v">${fmtMoneyFull(row.scaled_lift)}</span></div>
+    <div class="stat-line"><span class="k">Share of $100M target</span><span class="v">${(row.share_of_target * 100).toFixed(1)}%</span></div>`;
 }
 
 function seriesAt(series, key, idx) { return series[key][idx]; }
@@ -977,10 +1026,10 @@ function renderSummary(grid, price) {
   const pP5 = series.purchasers_p5[i], pP95 = series.purchasers_p95[i];
 
   // Prefer a genuinely paired difference when one exists for this exact
-  // scenario/price (see pairedAtRecommended) over subtracting two marginal
+  // scenario/price (see pairedAtStressPrice) over subtracting two marginal
   // medians; per the tool's spec, paired simulation differences are the
   // more defensible source for a "change" figure when available.
-  const paired = pairedAtRecommended(grid, price);
+  const paired = pairedAtStressPrice(grid, price);
   const revChange = paired ? paired.revenue_paired_median : (med - baseMed);
   const purchChange = paired ? paired.purchasers_paired_median : (pMed - pBaseMed);
   const changeIsPaired = !!paired;
@@ -1373,6 +1422,9 @@ function renderMethodologyFacts() {
   el('mEligibleAccounts').textContent = DATA.meta.eligible_accounts.toLocaleString();
   el('mRunId').textContent = DATA.meta.run_id;
   el('footerRunId').textContent = DATA.meta.run_id;
+  el('mMarketShare').textContent = `${(DATA.marketSizing.meta.market_share * 100).toFixed(0)}%`;
+  el('mI92Year').textContent = DATA.marketSizing.meta.i92_year;
+  el('mI92Trips').textContent = Math.round(DATA.marketSizing.meta.i92_trips).toLocaleString();
 }
 
 function init() {

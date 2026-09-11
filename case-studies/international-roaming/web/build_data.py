@@ -20,8 +20,17 @@ Data contract, in brief (see web/README.md for the full version):
               the macro simulation was run at (1.00x / 1.15x / 1.20x), always
               under the "joint sensitivity" case — that's the only case the
               macro simulation covers, so there is no "as fitted" curve to
-              show once a non-Base scenario is selected. fact_macro_scenario
-              also contains a "Base" row at those same three prices, from a
+              show once a non-Base scenario is selected. The 1.15x point is
+              a fixed stress-test price (the joint-sensitivity case's
+              revenue-maximizing price, STRESS_TEST_PRICE below) — it is NOT
+              tied to meta.recommended_price, which is read from the
+              as-fitted case and currently sits at the 1.20x cap. The two
+              happen to coincide when the recommendation is 1.15x, but must
+              not be assumed equal: fact_macro_scenario only has rows at
+              1.00/1.15/1.20, so if recommended_price is ever something else
+              (as it is now, at 1.20x), scenario_prices would otherwise
+              collide or miss a grid point. fact_macro_scenario also
+              contains a "Base" row at those same three prices, from a
               separate (300-iteration) run of the same unconditioned case;
               it is deliberately NOT surfaced in the UI as a second "Base"
               source — see README — but is checked below for consistency
@@ -47,9 +56,11 @@ Data contract, in brief (see web/README.md for the full version):
               (N_ACCOUNTS_PANEL), constant across every row.
               Expansion/Contraction additionally carry a genuinely paired
               revenue/purchaser difference (1.15x vs 1.00x, same iterations)
-              under `paired_at_recommended` — preferred over subtracting
+              under `paired_at_stress_price` — preferred over subtracting
               marginal medians per the tool's spec (§12), and used by the
               page whenever the scenario and selected price make it valid.
+              Named for the fixed 1.15x stress-test price, not for whichever
+              price is currently recommended (see `scenarios` above).
               Segment-level purchasers remain the Track-A deterministic
               figure above; no plan to simulate intervals at that grain
               (see the scoping note in README's git history).
@@ -81,7 +92,13 @@ import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent  # international-roaming/
 PBI = BASE / "data" / "powerbi"
+SYN = BASE / "data" / "synthetic"
 OUT = Path(__file__).resolve().parent / "data.json"  # web/data.json
+
+# Must match the notebook's Section 5.1 assumption exactly (same constant,
+# duplicated here only for display metadata — the actual scaled figures are
+# read from market_sizing.parquet, not recomputed).
+MARKET_SHARE = 0.30
 
 MACRO_CONSISTENCY_TOLERANCE = 0.05  # 5% — "Base" cross-check, see module docstring
 
@@ -152,7 +169,17 @@ def main():
         }
 
     # ---- scenarios: Expansion / Contraction, 3 prices, joint sensitivity only ----
-    scenario_prices = [1.0, recommended_price, 1.2]
+    # STRESS_TEST_PRICE is the joint-sensitivity case's revenue-maximizing price —
+    # the fixed price the notebook's macro-scenario cell was run at (1.00/1.15/1.20
+    # literally, independent of Model 04's RECOMMENDED_PRICE). Deliberately NOT
+    # `recommended_price`: that's read from the as-fitted case and can land
+    # anywhere on the grid (currently 1.20x, the cap) without a matching row in
+    # fact_macro_scenario. See the `scenarios` entry in the module docstring.
+    STRESS_TEST_PRICE = 1.15
+    assert any(abs(g - STRESS_TEST_PRICE) < 1e-9 for g in grid), (
+        "stress-test price missing from price grid"
+    )
+    scenario_prices = [1.0, STRESS_TEST_PRICE, 1.2]
     scenarios = {}
     for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
         d = fact_macro[fact_macro["scenario"] == parquet_scenario].sort_values("price")
@@ -169,21 +196,22 @@ def main():
             f"{key}: purchasers p95 exceeds eligible_accounts"
         )
 
-        # Genuinely paired revenue/purchaser difference at the recommended price
-        # (1.15x vs 1.00x, same simulation draws) — only defined there, since
-        # that's the only pair the notebook's paired-difference cell computes.
-        rec_row = d.loc[d["price"].round(4) == round(recommended_price, 4)].iloc[0]
-        assert pd.notna(rec_row["purchasers_paired_median"]), (
-            f"{key}: missing paired purchaser difference at the recommended price"
+        # Genuinely paired revenue/purchaser difference at the fixed stress-test
+        # price (1.15x vs 1.00x, same simulation draws) — only defined there,
+        # since that's the only pair the notebook's paired-difference cell
+        # computes. Not the recommended price (see STRESS_TEST_PRICE above).
+        stress_row = d.loc[d["price"].round(4) == round(STRESS_TEST_PRICE, 4)].iloc[0]
+        assert pd.notna(stress_row["purchasers_paired_median"]), (
+            f"{key}: missing paired purchaser difference at the stress-test price"
         )
-        paired_at_recommended = {
-            "price": recommended_price,
-            "revenue_paired_p5": round(float(rec_row["paired_p5"]), 0),
-            "revenue_paired_median": round(float(rec_row["paired_median"]), 0),
-            "revenue_paired_p95": round(float(rec_row["paired_p95"]), 0),
-            "purchasers_paired_p5": round(float(rec_row["purchasers_paired_p5"]), 1),
-            "purchasers_paired_median": round(float(rec_row["purchasers_paired_median"]), 1),
-            "purchasers_paired_p95": round(float(rec_row["purchasers_paired_p95"]), 1),
+        paired_at_stress_price = {
+            "price": STRESS_TEST_PRICE,
+            "revenue_paired_p5": round(float(stress_row["paired_p5"]), 0),
+            "revenue_paired_median": round(float(stress_row["paired_median"]), 0),
+            "revenue_paired_p95": round(float(stress_row["paired_p95"]), 0),
+            "purchasers_paired_p5": round(float(stress_row["purchasers_paired_p5"]), 1),
+            "purchasers_paired_median": round(float(stress_row["purchasers_paired_median"]), 1),
+            "purchasers_paired_p95": round(float(stress_row["purchasers_paired_p95"]), 1),
         }
 
         scenarios[key] = {
@@ -194,7 +222,7 @@ def main():
             "purchasers_p5": d["purchasers_p5"].round(0).astype(int).tolist(),
             "purchasers_median": d["purchasers_median"].round(0).astype(int).tolist(),
             "purchasers_p95": d["purchasers_p95"].round(0).astype(int).tolist(),
-            "paired_at_recommended": paired_at_recommended,
+            "paired_at_stress_price": paired_at_stress_price,
         }
 
     # Base-row consistency check: fact_macro_scenario's own "Base" row (separate,
@@ -346,6 +374,28 @@ def main():
 
     assumption_values = dim_assumption.set_index("assumption")["value"]
 
+    # ---- market sizing: I-92 real-world travel anchor x assumed carrier share ----
+    # Reads the notebook's Section 5.1 output (market_sizing.parquet) rather than
+    # recomputing it, so the tool and the notebook/deck always agree by construction.
+    market_sizing_df = pd.read_parquet(SYN / "market_sizing.parquet")
+    market_sizing_payload = {
+        str(round(float(row["Price Multiplier"]), 4)): {
+            "revenue_per_trip": round(float(row["Revenue per Trip (As Fitted)"]), 2),
+            "scaled_annual_revenue": round(float(row["Scaled Annual Revenue"]), 0),
+            "scaled_lift": round(float(row["Scaled Lift vs. Standard"]), 0),
+            "share_of_target": round(float(row["Share of $100M Target"]), 4),
+        }
+        for _, row in market_sizing_df.iterrows()
+    }
+    i92 = pd.read_csv(BASE / "data" / "reference" / "us_i92_air_travel.csv")
+    i92_annual = (
+        i92.loc[~i92["Year"].isin([2020, 2021, 2026])]
+        .groupby("Year")["U.S. Citizen Originating"]
+        .sum()
+    )
+    i92_year = int(i92_annual.index.max())
+    i92_trips = float(i92_annual.loc[i92_year])
+
     payload = {
         "meta": {
             "run_id": run_id,
@@ -371,6 +421,16 @@ def main():
         "dormant": dormant,
         "probCurve": prob_curve,
         "sensitivityGrid": sensitivity_grid_payload,
+        "marketSizing": {
+            "meta": {
+                "i92_year": i92_year,
+                "i92_trips": round(i92_trips, 0),
+                "market_share": MARKET_SHARE,
+                "national_trips": round(i92_trips * MARKET_SHARE, 0),
+                "target": 100_000_000,
+            },
+            "byPrice": market_sizing_payload,
+        },
     }
 
     OUT.write_text(json.dumps(payload, indent=2) + "\n")
