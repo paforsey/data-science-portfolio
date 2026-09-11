@@ -1,82 +1,149 @@
-"""Regenerates data.json for The Scenario Explorer from the case study's
-notebook outputs.
+"""Regenerates data.json for the International Roaming Scenario Tool from the
+case study's notebook exports.
 
-Run from the international-roaming/ directory (one level up from web/),
-after 01-04 have been executed in order:
+Run from the international-roaming/ directory, after the notebook has been
+re-executed (which refreshes data/synthetic/ and data/powerbi/):
 
     cd case-studies/international-roaming
-    python web/build_data.py
+    python3 web/build_data.py
 
-Reads the same aggregate tables notebook 04's Power BI export uses
-(data/synthetic/simulation_price_sweep.parquet, simulation_scenarios.parquet,
-data/powerbi/fact_segment_revenue.parquet, dim_segment.parquet) and writes
-web/data.json — the only file index.html fetches at runtime, and the only
-file that ever needs to change after a notebook re-run.
+Reads the Power BI export tables and writes web/data.json — the only file
+index.html fetches at runtime, and the only file that ever needs to change
+after a notebook re-run.
+
+Data contract, in brief (see web/README.md for the full version):
+
+  portfolio   full 13-point price grid, "as fitted" and "joint sensitivity"
+              cases, unconditioned on macro scenario (macro_shift = 0). This
+              is what the tool calls the "Base" economic condition.
+  scenarios   Expansion / Contraction only, each at exactly the three prices
+              the macro simulation was run at (1.00x / 1.15x / 1.20x), always
+              under the "joint sensitivity" case — that's the only case the
+              macro simulation covers, so there is no "as fitted" curve to
+              show once a non-Base scenario is selected. fact_macro_scenario
+              also contains a "Base" row at those same three prices, from a
+              separate (300-iteration) run of the same unconditioned case;
+              it is deliberately NOT surfaced in the UI as a second "Base"
+              source — see README — but is checked below for consistency
+              with `portfolio` so a large divergence fails the build.
+  segments    non-dormant segments, full 13-point grid, revenue only. This
+              curve is a deterministic expected-value decomposition (not
+              simulated), always under "joint sensitivity" + unconditioned
+              macro — i.e. it corresponds to the same condition as
+              portfolio["joint sensitivity"], not to whichever
+              scenario/case is selected in the UI. The tool discloses this.
+  purchasers  NOT exported by the notebook today. No parquet table carries
+              an expected roaming-pass-purchaser count at any grain. The
+              page must show an explicit "unavailable" state for the cost
+              side of the trade-off rather than deriving or approximating
+              one — see README's "Adding purchaser data" section for the
+              fields that would need to exist.
 """
 
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent  # international-roaming/
+PBI = BASE / "data" / "powerbi"
 OUT = Path(__file__).resolve().parent / "data.json"  # web/data.json
+
+MACRO_CONSISTENCY_TOLERANCE = 0.05  # 5% — "Base" cross-check, see module docstring
 
 
 def main():
-    sweep = pd.read_parquet(BASE / "data/synthetic/simulation_price_sweep.parquet")
-    scen = pd.read_parquet(BASE / "data/synthetic/simulation_scenarios.parquet")
-    seg_rev = pd.read_parquet(BASE / "data/powerbi/fact_segment_revenue.parquet")
-    dim_seg = pd.read_parquet(BASE / "data/powerbi/dim_segment.parquet")
+    dim_price = pd.read_parquet(PBI / "dim_price.parquet")
+    dim_segment = pd.read_parquet(PBI / "dim_segment.parquet")
+    dim_model_case = pd.read_parquet(PBI / "dim_model_case.parquet")
+    dim_assumption = pd.read_parquet(PBI / "dim_assumption.parquet")
+    fact_portfolio = pd.read_parquet(PBI / "fact_portfolio_simulation.parquet")
+    fact_macro = pd.read_parquet(PBI / "fact_macro_scenario.parquet")
+    fact_seg_rev = pd.read_parquet(PBI / "fact_segment_revenue.parquet")
 
-    grid = sorted(sweep["price_multiplier"].unique().tolist())
+    run_ids = set(
+        pd.concat([
+            dim_price["run_id"], dim_segment["run_id"], dim_model_case["run_id"],
+            fact_portfolio["run_id"], fact_macro["run_id"], fact_seg_rev["run_id"],
+        ]).unique()
+    )
+    assert len(run_ids) == 1, f"export tables span multiple run_ids: {run_ids}"
+    run_id = run_ids.pop()
 
-    # population sweep: as fitted / conservative, p5/median/p95 per price
-    # Output keys ("conservative") are fixed by index.html's JS; the source
-    # label in simulation_price_sweep.parquet has since been renamed to
-    # "joint sensitivity" — map old output key -> current parquet value.
-    pop = {}
-    for case, parquet_case in [("as fitted", "as fitted"), ("conservative", "joint sensitivity")]:
-        d = sweep[sweep["case"] == parquet_case].sort_values("price_multiplier")
-        pop[case] = {
-            "price": d["price_multiplier"].round(3).tolist(),
-            "p5": d["p5"].round(0).astype(int).tolist(),
-            "median": d["median"].round(0).astype(int).tolist(),
-            "p95": d["p95"].round(0).astype(int).tolist(),
+    grid = sorted(dim_price["price_multiplier"].round(4).unique().tolist())
+    recommended_price = float(
+        dim_price.loc[dim_price["is_recommended"], "price_multiplier"].iloc[0]
+    )
+    current_price = 1.0
+    assert any(abs(g - current_price) < 1e-9 for g in grid), "1.00x missing from price grid"
+    assert any(abs(g - recommended_price) < 1e-9 for g in grid), "recommended price missing from grid"
+
+    # ---- portfolio: full grid, both cases, unconditioned (= "Base") ----
+    portfolio = {}
+    for case in ["as fitted", "joint sensitivity"]:
+        d = fact_portfolio[fact_portfolio["case"] == case].sort_values("price_multiplier")
+        assert d["price_multiplier"].round(4).tolist() == grid, f"{case}: price grid mismatch"
+        assert (d["p5"] <= d["median"]).all() and (d["median"] <= d["p95"]).all(), f"{case}: p5<=median<=p95 violated"
+        assert (d["p5"] >= 0).all(), f"{case}: negative revenue bound"
+        portfolio[case] = {
+            "revenue_p5": d["p5"].round(0).astype(int).tolist(),
+            "revenue_median": d["median"].round(0).astype(int).tolist(),
+            "revenue_p95": d["p95"].round(0).astype(int).tolist(),
         }
 
-    # macro scenarios: contraction/base/expansion at 1.0/1.1/1.2
-    # Output keys are lowercase (fixed by index.html's JS); the source
-    # labels in simulation_scenarios.parquet are Title Case.
-    macro = {}
-    for s, parquet_scenario in [("contraction", "Contraction"), ("base", "Base"), ("expansion", "Expansion")]:
-        d = scen[scen["scenario"] == parquet_scenario].sort_values("price")
-        macro[s] = {
-            "price": d["price"].round(2).tolist(),
-            "p5": d["p5"].round(0).astype(int).tolist(),
-            "median": d["median"].round(0).astype(int).tolist(),
-            "p95": d["p95"].round(0).astype(int).tolist(),
+    # ---- scenarios: Expansion / Contraction, 3 prices, joint sensitivity only ----
+    scenario_prices = [1.0, recommended_price, 1.2]
+    scenarios = {}
+    for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
+        d = fact_macro[fact_macro["scenario"] == parquet_scenario].sort_values("price")
+        prices = d["price"].round(4).tolist()
+        assert prices == [round(p, 4) for p in scenario_prices], (
+            f"{key}: expected prices {scenario_prices}, got {prices}"
+        )
+        assert (d["p5"] <= d["median"]).all() and (d["median"] <= d["p95"]).all(), f"{key}: p5<=median<=p95 violated"
+        scenarios[key] = {
+            "price": prices,
+            "revenue_p5": d["p5"].round(0).astype(int).tolist(),
+            "revenue_median": d["median"].round(0).astype(int).tolist(),
+            "revenue_p95": d["p95"].round(0).astype(int).tolist(),
         }
 
-    # segments: non-dormant, % change vs the price=1.0 baseline, ranked by revenue share
-    dim_seg_nd = dim_seg[~dim_seg["is_dormant"]].sort_values("rev_share", ascending=False)
-    seg_order = dim_seg_nd["segment"].tolist()
+    # Base-row consistency check: fact_macro_scenario's own "Base" row (separate,
+    # 300-iteration run) should roughly agree with `portfolio["joint sensitivity"]`
+    # at the same three prices. This isn't surfaced in the UI (see docstring) but a
+    # large drift here means the two simulations have come apart and needs a look.
+    macro_base = fact_macro[fact_macro["scenario"] == "Base"].sort_values("price")
+    ref_df = fact_portfolio[fact_portfolio["case"] == "joint sensitivity"].copy()
+    ref = ref_df.set_index(ref_df["price_multiplier"].round(4))["median"]
+    for _, row in macro_base.iterrows():
+        p = round(float(row["price"]), 4)
+        if p in ref.index:
+            drift = abs(row["median"] - ref[p]) / ref[p]
+            assert drift < MACRO_CONSISTENCY_TOLERANCE, (
+                f"Base macro-scenario row at {p}x drifted {drift:.1%} from the "
+                f"unconditioned joint-sensitivity median — check the notebook rerun"
+            )
 
-    segments = {}
-    for seg_name in seg_order:
-        d = seg_rev[seg_rev["segment"] == seg_name].sort_values("price_multiplier")
-        base_rev = float(d.loc[d["price_multiplier"] == 1.0, "revenue"].iloc[0])
-        segments[seg_name] = {
-            "price": d["price_multiplier"].round(3).tolist(),
-            "revenue": d["revenue"].round(0).astype(int).tolist(),
-            "pct": ((d["revenue"] / base_rev - 1) * 100).round(2).tolist(),
-        }
+    # ---- segments: non-dormant, full grid, revenue only (deterministic) ----
+    dim_seg_active = dim_segment[~dim_segment["is_dormant"]].sort_values("sort_order")
+    seg_order = dim_seg_active["segment_id"].astype(str).tolist()
+
+    seg_curve = {}
+    for _, seg_row in dim_seg_active.iterrows():
+        sid = str(seg_row["segment_id"])
+        d = fact_seg_rev[fact_seg_rev["segment"] == seg_row["segment"]].sort_values("price_multiplier")
+        assert d["price_multiplier"].round(4).tolist() == grid, f"segment {sid}: price grid mismatch"
+        assert (d["revenue"] >= 0).all(), f"segment {sid}: negative revenue"
+        seg_curve[sid] = {"revenue": d["revenue"].round(0).astype(int).tolist()}
 
     seg_meta = {}
-    for _, r in dim_seg_nd.iterrows():
-        seg_meta[r["segment"]] = {
+    for _, r in dim_seg_active.iterrows():
+        sid = str(r["segment_id"])
+        seg_meta[sid] = {
+            "name": r["segment"],
             "headline": r["headline"],
-            "description": r["description"],
+            "description": r["description"] if pd.notna(r["description"]) else "",
             "accounts": int(r["accounts"]),
             "acct_share": round(float(r["acct_share"]), 4),
             "rev_share": round(float(r["rev_share"]), 4),
@@ -84,19 +151,60 @@ def main():
             "rev_per_acct": round(float(r["rev_per_acct"]), 2),
         }
 
-    assump = pd.read_parquet(BASE / "data/powerbi/dim_assumption.parquet").set_index("assumption")["value"]
+    # ---- dormant segment: disclosed, excluded from pricing comparisons ----
+    dormant_rows = dim_segment[dim_segment["is_dormant"]]
+    dormant = None
+    if len(dormant_rows):
+        r = dormant_rows.iloc[0]
+        dormant = {
+            "name": r["segment"],
+            "accounts": int(r["accounts"]),
+            "acct_share": round(float(r["acct_share"]), 4),
+            "rev_share": round(float(r["rev_share"]), 4),
+            "rev_per_acct": round(float(r["rev_per_acct"]), 2),
+        }
+
+    # ---- segment/portfolio reconciliation note ----
+    # Segment revenue is a deterministic expected-value decomposition; the portfolio
+    # figure above is the median of a simulated (right-skewed) distribution. The two
+    # are different estimands and will not sum to the same number — report the gap
+    # rather than imply they reconcile.
+    seg_sum_at_base = sum(
+        fact_seg_rev.loc[
+            (fact_seg_rev["segment"] == seg_row["segment"])
+            & (fact_seg_rev["price_multiplier"].round(4) == current_price),
+            "revenue",
+        ].iloc[0]
+        for _, seg_row in dim_seg_active.iterrows()
+    )
+    portfolio_median_at_base = portfolio["joint sensitivity"]["revenue_median"][grid.index(current_price)]
+    reconciliation_gap_pct = round(
+        (seg_sum_at_base / portfolio_median_at_base - 1) * 100, 1
+    )
+
+    assumption_values = dim_assumption.set_index("assumption")["value"]
 
     payload = {
-        "grid": [round(g, 3) for g in grid],
-        "pop": pop,
-        "macro": macro,
-        "segments": segments,
-        "segMeta": seg_meta,
-        "segOrder": seg_order,
-        "assumptions": {
-            "response_ratio": round(float(assump.get("response scale (joint sensitivity)")), 3),
-            "depth_bias": round(float(assump.get("depth scale (joint sensitivity)")), 3),
+        "meta": {
+            "run_id": run_id,
+            "current_price": current_price,
+            "recommended_price": recommended_price,
+            "purchasers_available": False,
+            "response_scale_joint_sensitivity": round(
+                float(assumption_values.get("response scale (joint sensitivity)")), 4
+            ),
+            "depth_scale_joint_sensitivity": round(
+                float(assumption_values.get("depth scale (joint sensitivity)")), 4
+            ),
+            "reconciliation_gap_pct": reconciliation_gap_pct,
         },
+        "grid": [round(g, 4) for g in grid],
+        "portfolio": portfolio,
+        "scenarios": scenarios,
+        "segOrder": seg_order,
+        "segMeta": seg_meta,
+        "segCurve": seg_curve,
+        "dormant": dormant,
     }
 
     OUT.write_text(json.dumps(payload, indent=2) + "\n")

@@ -1,0 +1,1159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>International Roaming Price Scenario Tool</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --surface: #ffffff;
+    --surface-raised: #faf9f5;
+    --surface-sunken: #f3f1ea;
+    --ink: #100f0d;
+    --muted: #7d786e;
+    --hairline: #e6e3d8;
+    --hairline-strong: #cfccc0;
+    --accent: #2a78d6;      /* revenue */
+    --accent-soft: #2a78d6;
+    --cost: #c85a12;        /* purchaser / cost side */
+    --neutral-ref: #9a958a; /* reference lines, inactive */
+    --good: #1b7a4a;
+    --bad: #b3401f;
+    --focus-ring: #2a78d6;
+    --unavailable-bg: #f3f1ea;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: #14130f;
+      --surface-raised: #1b1a15;
+      --surface-sunken: #1f1e18;
+      --ink: #f1efe7;
+      --muted: #a7a196;
+      --hairline: #322f27;
+      --hairline-strong: #433f34;
+      --accent: #5b9ee8;
+      --cost: #e08a4b;
+      --neutral-ref: #7c7869;
+      --good: #3fae7c;
+      --bad: #e0724a;
+      --focus-ring: #5b9ee8;
+      --unavailable-bg: #1f1e18;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --surface: #14130f;
+    --surface-raised: #1b1a15;
+    --surface-sunken: #1f1e18;
+    --ink: #f1efe7;
+    --muted: #a7a196;
+    --hairline: #322f27;
+    --hairline-strong: #433f34;
+    --accent: #5b9ee8;
+    --cost: #e08a4b;
+    --neutral-ref: #7c7869;
+    --good: #3fae7c;
+    --bad: #e0724a;
+    --focus-ring: #5b9ee8;
+    --unavailable-bg: #1f1e18;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--surface);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 2.75rem 1.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.9rem;
+  }
+
+  a { color: var(--accent); }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  h1 {
+    font-family: 'IBM Plex Serif', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(1.7rem, 3.4vw, 2.25rem);
+    margin: 0;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 68ch;
+    font-size: 0.98rem;
+    color: var(--ink);
+    opacity: 0.82;
+  }
+
+  h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.9rem;
+    font-weight: 500;
+  }
+
+  /* ---------- controls ---------- */
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+    background: var(--surface-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    padding: 1.25rem 1.4rem;
+  }
+
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .control-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    flex: none;
+    width: 7.2rem;
+  }
+
+  .price-readout {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    flex: none;
+    width: 9.5rem;
+    text-align: right;
+  }
+
+  .price-readout .delta { color: var(--muted); font-size: 0.82rem; margin-left: 0.35rem; }
+
+  input[type="range"] {
+    flex: 1 1 200px;
+    min-width: 140px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 3px;
+    background: var(--hairline-strong);
+    border-radius: 2px;
+    outline: none;
+    min-height: 44px; /* touch target, transparent padding via track trick below */
+    background-clip: content-box;
+    padding: 20.5px 0;
+    box-sizing: content-box;
+  }
+
+  input[type="range"]:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
+    border-radius: 4px;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--accent);
+    cursor: pointer;
+    margin-top: 0;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--accent);
+    cursor: pointer;
+  }
+
+  input[type="range"]:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .price-note {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .segmented {
+    display: inline-flex;
+    border: 1px solid var(--hairline);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .segmented button {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--surface);
+    border: none;
+    padding: 0.55rem 0.9rem;
+    min-height: 44px;
+    cursor: pointer;
+    border-right: 1px solid var(--hairline);
+  }
+
+  .segmented button:last-child { border-right: none; }
+
+  .segmented button[aria-pressed="true"] {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .segmented button:disabled {
+    color: var(--muted);
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .segmented button:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .case-note {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin: -0.3rem 0 0;
+  }
+
+  /* ---------- decision summary ---------- */
+
+  .summary-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    padding: 1.3rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .summary-sentence {
+    font-size: 1.05rem;
+    line-height: 1.55;
+    max-width: 70ch;
+  }
+
+  .summary-sentence b { font-weight: 600; }
+  .summary-sentence .rev-figure { color: var(--accent); font-weight: 600; }
+  .summary-sentence .cost-figure { color: var(--cost); font-weight: 600; }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--hairline);
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  @media (max-width: 640px) {
+    .summary-grid { grid-template-columns: 1fr; }
+  }
+
+  .summary-col {
+    background: var(--surface);
+    padding: 0.95rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .summary-col .col-head {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .summary-col.revenue .col-head { color: var(--accent); }
+  .summary-col.cost .col-head { color: var(--cost); }
+
+  .col-head .sw { width: 11px; height: 2px; border-radius: 1px; background: currentColor; flex: none; }
+
+  .stat-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.8rem;
+    font-size: 0.86rem;
+  }
+
+  .stat-line .k { color: var(--muted); }
+  .stat-line .v {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .unavailable-note {
+    font-size: 0.82rem;
+    color: var(--muted);
+    background: var(--unavailable-bg);
+    border: 1px dashed var(--hairline-strong);
+    border-radius: 3px;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .rpl-line {
+    font-size: 0.82rem;
+    color: var(--muted);
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--hairline);
+  }
+  .rpl-line b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- chart ---------- */
+
+  .chart-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    padding: 1.2rem 1.3rem 0.9rem;
+  }
+
+  .chart-card + .chart-card { margin-top: -0.9rem; }
+
+  .chart-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .chart-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .chart-title .sw { width: 11px; height: 2px; border-radius: 1px; background: currentColor; flex: none; }
+  .chart-title.revenue { color: var(--accent); }
+  .chart-title.cost { color: var(--cost); }
+
+  .legend {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+  }
+
+  .legend .key {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--ink);
+    opacity: 0.85;
+  }
+
+  .legend .swatch-line { width: 14px; height: 2px; border-radius: 1px; background: var(--swatch-color); flex: none; }
+  .legend .swatch-line.ref { background-image: linear-gradient(to right, var(--neutral-ref) 60%, transparent 0%); background-size: 5px 2px; background-color: transparent; }
+
+  .chart-wrap { position: relative; overflow-x: auto; }
+
+  svg.chart { width: 100%; height: auto; display: block; touch-action: pan-y; }
+
+  .gridline { stroke: var(--hairline); stroke-width: 1; }
+  .axis-text { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; fill: var(--muted); }
+  .ref-line { stroke: var(--neutral-ref); stroke-width: 1.25; stroke-dasharray: 3 3; }
+  .ref-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; fill: var(--neutral-ref); }
+  .crosshair { stroke: var(--ink); stroke-width: 1; opacity: 0.3; pointer-events: none; }
+
+  .unavailable-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.86rem;
+    padding: 1rem 1.5rem;
+    border: 1px dashed var(--hairline-strong);
+    border-radius: 3px;
+    background: var(--unavailable-bg);
+  }
+
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    border-radius: 3px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.78rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-width: 150px;
+    transform: translate(-50%, calc(-100% - 12px));
+    z-index: 5;
+  }
+
+  .tooltip .tt-price {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: var(--muted);
+  }
+
+  .tooltip .tt-row { display: flex; align-items: center; gap: 0.8rem; justify-content: space-between; }
+  .tooltip .tt-key { display: flex; align-items: center; gap: 0.35rem; color: var(--ink); opacity: 0.82; }
+  .tooltip .tt-swatch { width: 10px; height: 2px; background: var(--sw); flex: none; }
+  .tooltip .tt-val { font-family: 'IBM Plex Mono', monospace; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  /* ---------- segment section ---------- */
+
+  .segment-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    padding: 1.2rem 1.3rem 1.3rem;
+  }
+
+  .segment-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: -0.5rem 0 1rem;
+    max-width: 72ch;
+  }
+
+  .segment-table-wrap { overflow-x: auto; }
+
+  table.segments {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+    min-width: 640px;
+  }
+
+  table.segments th, table.segments td {
+    padding: 0.55rem 0.7rem;
+    text-align: right;
+    border-bottom: 1px solid var(--hairline);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  table.segments th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    text-align: right;
+    border-bottom: 1px solid var(--hairline-strong);
+  }
+
+  table.segments th:first-child, table.segments td:first-child {
+    text-align: left;
+    white-space: normal;
+  }
+
+  table.segments td.seg-name { font-weight: 500; }
+  table.segments td.seg-name .desc { display: block; font-weight: 400; color: var(--muted); font-size: 0.78rem; }
+
+  table.segments td.pos { color: var(--good); }
+  table.segments td.neg { color: var(--bad); }
+
+  .seg-bar-cell { display: flex; align-items: center; gap: 0.4rem; justify-content: flex-end; }
+  .seg-bar-track { position: relative; width: 90px; height: 8px; background: var(--surface-sunken); border-radius: 1px; flex: none; }
+  .seg-bar-fill { position: absolute; top: 0; bottom: 0; border-radius: 1px; }
+  .seg-bar-fill.pos { background: var(--accent); left: 50%; }
+  .seg-bar-fill.neg { background: var(--bad); right: 50%; }
+  .seg-bar-mid { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--hairline-strong); }
+
+  .dormant-note {
+    margin-top: 1rem;
+    padding-top: 0.9rem;
+    border-top: 1px solid var(--hairline);
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .dormant-note b { color: var(--ink); font-weight: 500; }
+
+  /* ---------- methodology ---------- */
+
+  .methodology {
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    background: var(--surface-raised);
+  }
+
+  .methodology summary {
+    cursor: pointer;
+    padding: 1rem 1.3rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .methodology summary::-webkit-details-marker { display: none; }
+  .methodology summary::before { content: '▸'; font-family: initial; }
+  .methodology[open] summary::before { content: '▾'; }
+
+  .methodology .body {
+    padding: 0 1.3rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    font-size: 0.86rem;
+    max-width: 74ch;
+  }
+
+  .methodology h3 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin: 0.4rem 0 0;
+  }
+
+  .methodology p { margin: 0; color: var(--ink); opacity: 0.88; }
+  .methodology ul { margin: 0; padding-left: 1.1rem; color: var(--ink); opacity: 0.88; }
+  .methodology li { margin: 0.15rem 0; }
+
+  footer {
+    border-top: 1px solid var(--hairline);
+    padding-top: 1.2rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .stat-line .v, .price-readout { transition: opacity 0.12s ease; }
+  }
+
+  @media (max-width: 640px) {
+    .control-label { width: auto; }
+    .price-readout { width: auto; margin-left: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <header>
+    <div class="eyebrow">International Roaming Pricing Case Study — decision-support tool</div>
+    <h1>International Roaming Price Scenario Tool</h1>
+    <p class="lede">Pick a candidate roaming-pass price and see the annual revenue it's expected to produce, alongside how many roaming-pass purchasers that price is expected to cost — under three economic conditions, with the simulation's uncertainty shown alongside the estimate.</p>
+  </header>
+
+  <div class="controls">
+    <div class="control-row">
+      <span class="control-label">Price</span>
+      <input type="range" id="priceSlider" min="0" max="12" step="1" value="10" aria-label="Candidate price multiplier">
+      <span class="price-readout" id="priceReadout">1.150&times;<span class="delta" id="priceDelta">+15%</span></span>
+    </div>
+    <p class="price-note" id="priceNote"></p>
+    <div class="control-row">
+      <span class="control-label">Economy</span>
+      <div class="segmented" role="group" aria-label="Economic scenario" id="scenarioToggle">
+        <button id="scenBase" aria-pressed="true">Base</button>
+        <button id="scenExpansion" aria-pressed="false">Expansion</button>
+        <button id="scenContraction" aria-pressed="false">Contraction</button>
+      </div>
+    </div>
+    <div class="control-row">
+      <span class="control-label">Behavior case</span>
+      <div class="segmented" role="group" aria-label="Behavioral assumption case" id="caseToggle">
+        <button id="caseFitted" aria-pressed="true">As fitted</button>
+        <button id="caseJoint" aria-pressed="false">Joint stronger-response sensitivity</button>
+      </div>
+    </div>
+    <p class="case-note" id="caseNote"></p>
+  </div>
+
+  <section class="summary-card" aria-live="polite">
+    <h2>At the selected price</h2>
+    <p class="summary-sentence" id="summarySentence"></p>
+    <div class="summary-grid">
+      <div class="summary-col revenue">
+        <span class="col-head"><span class="sw"></span>Benefit — annual roaming-pass revenue</span>
+        <div id="revStats"></div>
+      </div>
+      <div class="summary-col cost">
+        <span class="col-head"><span class="sw"></span>Cost — annual roaming-pass purchasers</span>
+        <div id="costStats"></div>
+      </div>
+    </div>
+    <p class="rpl-line" id="rplLine"></p>
+  </section>
+
+  <div class="chart-card">
+    <div class="chart-head">
+      <span class="chart-title revenue" id="revChartTitle"><span class="sw"></span>Annual roaming-pass revenue by price</span>
+      <div class="legend" id="revLegend"></div>
+    </div>
+    <div class="chart-wrap">
+      <svg class="chart" id="revChart" viewBox="0 0 900 260" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="revChartTitle"></svg>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-head">
+      <span class="chart-title cost" id="costChartTitle"><span class="sw"></span>Annual roaming-pass purchasers by price</span>
+    </div>
+    <div class="unavailable-panel">
+      Purchaser estimates are not included in this simulation export. The notebook's price sweep produces revenue distributions only — no account-level purchase-probability table is exported at the price/scenario grain this tool needs. See Methodology below for the data contract that would enable this chart.
+    </div>
+  </div>
+
+  <section class="segment-card">
+    <h2>Segment contribution at the selected price</h2>
+    <p class="segment-note">Pricing-eligible segments only. This breakdown is a deterministic expected-value decomposition computed once, under the joint-sensitivity behavioral case and Base economic conditions — it does not change with the toggles above. Purchaser figures are not available for the same reason as the chart above.</p>
+    <div class="segment-table-wrap">
+      <table class="segments" id="segTable">
+        <thead>
+          <tr>
+            <th>Segment</th>
+            <th>Accounts</th>
+            <th>Revenue at 1.00&times;</th>
+            <th>Revenue at selected</th>
+            <th>Revenue change</th>
+            <th>Share of revenue change</th>
+            <th>Purchasers</th>
+          </tr>
+        </thead>
+        <tbody id="segTableBody"></tbody>
+      </table>
+    </div>
+    <p class="dormant-note" id="dormantNote"></p>
+  </section>
+
+  <details class="methodology">
+    <summary>Methodology, uncertainty, and exclusions</summary>
+    <div class="body">
+      <h3>What "simulation interval" means</h3>
+      <p>The shaded band on the revenue chart is a <b>simulation interval</b> — the 5th–95th percentile range of a Monte Carlo simulation of the next 12 months, not a statistical confidence interval. It reflects modeled dispersion in the simulation, not sampling error in an estimator.</p>
+
+      <h3>Behavioral case</h3>
+      <p>"As fitted" uses the response and depth models exactly as fitted to historical data. "Joint stronger-response sensitivity" scales both models up (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth) to test what happens if customers are more price-sensitive than fitted — it is <b>a sensitivity scenario, not a confidence bound or a second estimate of the truth</b>, and it is the case the recommended price was selected under.</p>
+
+      <h3>Economic scenarios and price coverage</h3>
+      <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices — 1.00&times;, the recommended price, and 1.20&times; — always under the joint-sensitivity case, because that is the resolution the macro simulation was run at. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
+
+      <h3>Roaming-pass purchasers vs. wireless subscribers</h3>
+      <p>This tool's purchaser measure, where available, would count <b>roaming-pass purchasers</b> — accounts with at least one roaming trip receiving partial or full paid coverage in the forward year — not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
+      <p>No such figure is currently exported. Enabling it needs, at minimum, an account-level or segment-level table of expected annual purchaser counts (with simulation intervals) at every evaluated price, economic scenario, and behavioral case — see <code>web/README.md</code> for the full field list this tool expects once that export exists.</p>
+
+      <h3>Segment figures</h3>
+      <p>Segment revenue does not reconcile exactly with the portfolio total shown above: it is a probability-weighted expected value, while the portfolio figure is the <b>median</b> of a simulated, right-skewed distribution — the two differ by construction, currently by about <span id="mReconGap"></span> at the current price. Segment figures also exclude the <b>Dormant</b> segment, disclosed separately below, and are not simulated, so no interval is shown for them.</p>
+
+      <h3>Run provenance</h3>
+      <p>All figures on this page come from a single simulation run, <code id="mRunId"></code>.</p>
+    </div>
+  </details>
+
+  <footer>
+    <span>international-roaming case study</span>
+    <span id="footerRunId"></span>
+  </footer>
+
+</div>
+
+<script>
+let DATA = null;
+
+const state = {
+  scenario: 'base',       // 'base' | 'expansion' | 'contraction'
+  behaviorCase: 'as fitted', // 'as fitted' | 'joint sensitivity'
+  priceIdx: 10,            // index into the ACTIVE price grid
+};
+
+const el = (id) => document.getElementById(id);
+const fmtMoney = (n) => {
+  const sign = n < 0 ? '-' : '';
+  n = Math.abs(n);
+  if (n >= 1e6) return sign + '$' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return sign + '$' + Math.round(n / 1e3) + 'K';
+  return sign + '$' + Math.round(n);
+};
+const fmtMoneyFull = (n) => (n < 0 ? '-' : '') + '$' + Math.abs(Math.round(n)).toLocaleString();
+const fmtPct = (n) => (n >= 0 ? '+' : '') + n.toFixed(1) + '%';
+const fmtPctChange = (mult) => `${Math.round((mult - 1) * 1000) / 10 >= 0 ? '+' : ''}${Math.round((mult - 1) * 1000) / 10}%`;
+
+// ---------------- active-grid helpers ----------------
+
+function activeGrid() {
+  if (state.scenario === 'base') return DATA.grid;
+  return DATA.scenarios[state.scenario].price;
+}
+
+function activeSeries() {
+  // returns { median, p5, p95 } for the active scenario/case over the active grid
+  if (state.scenario === 'base') {
+    return DATA.portfolio[state.behaviorCase];
+  }
+  const s = DATA.scenarios[state.scenario];
+  return { revenue_median: s.revenue_median, revenue_p5: s.revenue_p5, revenue_p95: s.revenue_p95 };
+}
+
+function baseIdx(grid) {
+  return grid.findIndex((p) => Math.abs(p - DATA.meta.current_price) < 1e-6);
+}
+
+// ---------------- controls wiring ----------------
+
+el('priceSlider').addEventListener('input', (e) => {
+  state.priceIdx = +e.target.value;
+  render();
+});
+
+function setScenario(s) {
+  const wasPrice = activeGrid()[state.priceIdx];
+  state.scenario = s;
+  el('scenBase').setAttribute('aria-pressed', s === 'base');
+  el('scenExpansion').setAttribute('aria-pressed', s === 'expansion');
+  el('scenContraction').setAttribute('aria-pressed', s === 'contraction');
+
+  const forceJoint = s !== 'base';
+  el('caseFitted').disabled = forceJoint;
+  el('caseFitted').setAttribute('aria-disabled', String(forceJoint));
+  if (forceJoint) state.behaviorCase = 'joint sensitivity';
+  el('caseFitted').setAttribute('aria-pressed', state.behaviorCase === 'as fitted');
+  el('caseJoint').setAttribute('aria-pressed', state.behaviorCase === 'joint sensitivity');
+  el('caseNote').textContent = forceJoint
+    ? 'Expansion and Contraction were only simulated under the joint-sensitivity case — "As fitted" is unavailable here.'
+    : '';
+
+  // re-map the selected price onto the new grid at the nearest available point,
+  // explicitly (not silently) — the user's price selection carries over as best it can.
+  const newGrid = activeGrid();
+  let idx = newGrid.findIndex((p) => Math.abs(p - wasPrice) < 1e-6);
+  if (idx === -1) {
+    idx = newGrid.reduce((best, p, i) => Math.abs(p - wasPrice) < Math.abs(newGrid[best] - wasPrice) ? i : best, 0);
+  }
+  state.priceIdx = idx;
+  syncSlider();
+  render();
+}
+
+function setCase(c) {
+  if (el('caseFitted').disabled && c === 'as fitted') return;
+  state.behaviorCase = c;
+  el('caseFitted').setAttribute('aria-pressed', c === 'as fitted');
+  el('caseJoint').setAttribute('aria-pressed', c === 'joint sensitivity');
+  render();
+}
+
+el('scenBase').addEventListener('click', () => setScenario('base'));
+el('scenExpansion').addEventListener('click', () => setScenario('expansion'));
+el('scenContraction').addEventListener('click', () => setScenario('contraction'));
+el('caseFitted').addEventListener('click', () => setCase('as fitted'));
+el('caseJoint').addEventListener('click', () => setCase('joint sensitivity'));
+
+function syncSlider() {
+  const grid = activeGrid();
+  const slider = el('priceSlider');
+  slider.min = 0;
+  slider.max = grid.length - 1;
+  slider.step = 1;
+  slider.value = state.priceIdx;
+  el('priceNote').textContent = state.scenario === 'base'
+    ? ''
+    : `Restricted to the three prices simulated under this economic scenario.`;
+}
+
+// ---------------- rendering ----------------
+
+function render() {
+  const grid = activeGrid();
+  const price = grid[state.priceIdx];
+  el('priceReadout').innerHTML = `${price.toFixed(3)}&times;<span class="delta">${fmtPctChange(price)}</span>`;
+
+  renderSummary(grid, price);
+  renderRevChart(grid, price);
+  renderSegments(price);
+  renderMethodologyFacts();
+}
+
+function seriesAt(series, key, idx) { return series[key][idx]; }
+
+function renderSummary(grid, price) {
+  const series = activeSeries();
+  const i = state.priceIdx;
+  const b = baseIdx(grid);
+  const med = series.revenue_median[i], baseMed = series.revenue_median[b];
+  const p5 = series.revenue_p5[i], p95 = series.revenue_p95[i];
+  const change = med - baseMed;
+  const changePct = (med / baseMed - 1) * 100;
+  const pctLabel = fmtPctChange(price).replace('+', '');
+  const scenLabel = state.scenario === 'base' ? 'Base' : (state.scenario === 'expansion' ? 'Expansion' : 'Contraction');
+
+  const sentence = Math.abs(price - DATA.meta.current_price) < 1e-6
+    ? `At the current price (1.00&times;) under the ${scenLabel} economy, modeled annual revenue is <span class="rev-figure">${fmtMoney(med)}</span>. Purchaser figures are <span class="cost-figure">not available</span> in this export.`
+    : `At a ${fmtPctChange(price)} price change under the ${scenLabel} economy, modeled annual revenue ${change >= 0 ? 'increases' : 'decreases'} by <span class="rev-figure">${fmtMoney(Math.abs(change))}</span> (${fmtPct(changePct)}) versus 1.00&times;. The expected change in annual roaming-pass purchasers is <span class="cost-figure">not available</span> in this export.`;
+  el('summarySentence').innerHTML = sentence;
+
+  el('revStats').innerHTML = `
+    <div class="stat-line"><span class="k">Expected annual revenue</span><span class="v">${fmtMoneyFull(med)}</span></div>
+    <div class="stat-line"><span class="k">Change vs. 1.00&times;</span><span class="v">${fmtMoneyFull(change)} (${fmtPct(changePct)})</span></div>
+    <div class="stat-line"><span class="k">Simulation interval (p5–p95)</span><span class="v">${fmtMoney(p5)} – ${fmtMoney(p95)}</span></div>`;
+
+  el('costStats').innerHTML = `<div class="unavailable-note">Purchaser estimates are not included in this simulation export — no expected annual purchaser count, change vs. 1.00&times;, or purchaser-rate figure can be shown. Revenue exploration above remains fully usable.</div>`;
+
+  el('rplLine').textContent = 'Incremental revenue per purchaser lost: Not applicable — purchaser estimates are unavailable.';
+}
+
+// ---------------- SVG chart engine ----------------
+
+const M = { top: 14, right: 18, bottom: 28, left: 62 };
+const W = 900, H = 260;
+const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+function renderRevChart(grid, price) {
+  const series = activeSeries();
+  const b = baseIdx(grid);
+
+  el('revLegend').innerHTML = `
+    <span class="key"><span class="swatch-line" style="--swatch-color:var(--accent)"></span>Median</span>
+    <span class="key"><span class="swatch-line ref"></span>1.00&times; reference</span>`;
+
+  const allVals = [...series.revenue_p5, ...series.revenue_p95];
+  const yMin = Math.min(...allVals) * 0.97;
+  const yMax = Math.max(...allVals) * 1.03;
+
+  const chart = buildChart({
+    x: grid, yMin, yMax,
+    xTickFmt: (p) => fmtPctChange(p),
+    yTickFmt: fmtMoney,
+  });
+
+  drawVerticalRef(chart, grid[b], 'CURRENT 1.00×');
+  drawBand(chart, series.revenue_p5, series.revenue_p95, 'var(--accent)', 1);
+  drawLine(chart, series.revenue_median, 'var(--accent)', 1, true);
+  drawSelectedPoint(chart, state.priceIdx, series.revenue_median[state.priceIdx], 'var(--accent)');
+  drawCrosshair(chart, state.priceIdx);
+  wireHover(chart, (idx) => showTooltip(chart, idx, series, grid));
+}
+
+function buildChart({ x, yMin, yMax, xTickFmt, yTickFmt }) {
+  const svg = el('revChart');
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const xScale = (v) => M.left + ((v - x[0]) / (x[x.length - 1] - x[0])) * plotW;
+  const yScale = (v) => M.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
+
+  const steps = 4;
+  for (let s = 0; s <= steps; s++) {
+    const v = yMin + (s / steps) * (yMax - yMin);
+    const y = yScale(v);
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('class', 'gridline');
+    line.setAttribute('x1', M.left); line.setAttribute('x2', W - M.right);
+    line.setAttribute('y1', y); line.setAttribute('y2', y);
+    svg.appendChild(line);
+    const text = document.createElementNS(ns, 'text');
+    text.setAttribute('class', 'axis-text');
+    text.setAttribute('x', M.left - 8); text.setAttribute('y', y + 3);
+    text.setAttribute('text-anchor', 'end');
+    text.textContent = yTickFmt(v);
+    svg.appendChild(text);
+  }
+
+  x.forEach((v, i) => {
+    const skip = x.length > 8 ? i % 2 !== 0 : false;
+    if (skip) return;
+    const text = document.createElementNS(ns, 'text');
+    text.setAttribute('class', 'axis-text');
+    text.setAttribute('x', xScale(v)); text.setAttribute('y', H - 8);
+    text.setAttribute('text-anchor', 'middle');
+    text.textContent = xTickFmt(v);
+    svg.appendChild(text);
+  });
+
+  return { svg, ns, x, xScale, yScale, yMin, yMax };
+}
+
+function pathFor(chart, values) {
+  return values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${chart.xScale(chart.x[i])} ${chart.yScale(v)}`).join(' ');
+}
+
+function drawBand(chart, lo, hi, color, opacity) {
+  const { svg, ns } = chart;
+  const top = hi.map((v, i) => `${i === 0 ? 'M' : 'L'} ${chart.xScale(chart.x[i])} ${chart.yScale(v)}`).join(' ');
+  const bottom = lo.map((v, i) => `L ${chart.xScale(chart.x[chart.x.length - 1 - i])} ${chart.yScale(lo[lo.length - 1 - i])}`).join(' ');
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', `${top} ${bottom} Z`);
+  path.setAttribute('fill', color);
+  path.setAttribute('fill-opacity', 0.12 * opacity);
+  path.setAttribute('stroke', 'none');
+  svg.appendChild(path);
+}
+
+function drawLine(chart, values, color, opacity, withDots) {
+  const { svg, ns } = chart;
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', pathFor(chart, values));
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', color);
+  path.setAttribute('stroke-width', 2);
+  path.setAttribute('stroke-opacity', opacity);
+  path.setAttribute('stroke-linejoin', 'round');
+  path.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(path);
+
+  if (withDots && chart.x.length <= 4) {
+    chart.x.forEach((xv, i) => {
+      const dot = document.createElementNS(ns, 'circle');
+      dot.setAttribute('cx', chart.xScale(xv)); dot.setAttribute('cy', chart.yScale(values[i])); dot.setAttribute('r', 3);
+      dot.setAttribute('fill', color);
+      svg.appendChild(dot);
+    });
+  }
+}
+
+function drawVerticalRef(chart, xVal, label) {
+  const { svg, ns } = chart;
+  const x = chart.xScale(xVal);
+  const line = document.createElementNS(ns, 'line');
+  line.setAttribute('class', 'ref-line');
+  line.setAttribute('x1', x); line.setAttribute('x2', x);
+  line.setAttribute('y1', M.top); line.setAttribute('y2', H - M.bottom);
+  svg.appendChild(line);
+  const text = document.createElementNS(ns, 'text');
+  text.setAttribute('class', 'ref-label');
+  text.setAttribute('x', x + 4); text.setAttribute('y', M.top + 10);
+  text.textContent = label;
+  svg.appendChild(text);
+}
+
+function drawSelectedPoint(chart, idx, value, color) {
+  const { svg, ns } = chart;
+  const dot = document.createElementNS(ns, 'circle');
+  dot.setAttribute('cx', chart.xScale(chart.x[idx]));
+  dot.setAttribute('cy', chart.yScale(value));
+  dot.setAttribute('r', 5);
+  dot.setAttribute('fill', color);
+  dot.setAttribute('stroke', 'var(--surface-raised)');
+  dot.setAttribute('stroke-width', 2);
+  svg.appendChild(dot);
+}
+
+function drawCrosshair(chart, idx) {
+  const { svg, ns } = chart;
+  const x = chart.xScale(chart.x[idx]);
+  const line = document.createElementNS(ns, 'line');
+  line.setAttribute('class', 'crosshair');
+  line.setAttribute('id', 'crosshair-line');
+  line.setAttribute('x1', x); line.setAttribute('x2', x);
+  line.setAttribute('y1', M.top); line.setAttribute('y2', H - M.bottom);
+  svg.appendChild(line);
+}
+
+function moveCrosshair(chart, idx) {
+  const line = chart.svg.querySelector('#crosshair-line');
+  if (!line) return;
+  const x = chart.xScale(chart.x[idx]);
+  line.setAttribute('x1', x); line.setAttribute('x2', x);
+}
+
+function wireHover(chart, onIdx) {
+  const svg = chart.svg;
+  const rect = document.createElementNS(chart.ns, 'rect');
+  rect.setAttribute('x', M.left); rect.setAttribute('y', M.top);
+  rect.setAttribute('width', plotW); rect.setAttribute('height', plotH);
+  rect.setAttribute('fill', 'transparent');
+  rect.style.cursor = 'crosshair';
+  svg.appendChild(rect);
+
+  const nearestIdx = (clientX) => {
+    const box = svg.getBoundingClientRect();
+    const scale = box.width / W;
+    const svgX = (clientX - box.left) / scale;
+    let best = 0, bestD = Infinity;
+    chart.x.forEach((v, i) => {
+      const d = Math.abs(chart.xScale(v) - svgX);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  };
+
+  rect.addEventListener('pointermove', (e) => {
+    const idx = nearestIdx(e.clientX);
+    onIdx(idx, e);
+  });
+  rect.addEventListener('pointerleave', () => {
+    const tt = document.querySelector('.tooltip');
+    if (tt) tt.remove();
+  });
+  rect.addEventListener('click', (e) => {
+    const idx = nearestIdx(e.clientX);
+    state.priceIdx = idx;
+    el('priceSlider').value = idx;
+    render();
+  });
+}
+
+function tooltipBase(chart, idx) {
+  let tt = document.querySelector('.tooltip');
+  if (!tt) {
+    tt = document.createElement('div');
+    tt.className = 'tooltip';
+    document.querySelector('.chart-wrap').appendChild(tt);
+  }
+  const box = chart.svg.getBoundingClientRect();
+  const scale = box.width / W;
+  const x = chart.xScale(chart.x[idx]) * scale;
+  tt.style.left = x + 'px';
+  tt.style.top = (chart.yScale(chart.yMin) * scale) + 'px';
+  return tt;
+}
+
+function showTooltip(chart, idx, series, grid) {
+  const tt = tooltipBase(chart, idx);
+  const price = chart.x[idx];
+  const change = series.revenue_median[idx] - series.revenue_median[baseIdx(grid)];
+  tt.innerHTML = `
+    <div class="tt-price">${price.toFixed(3)}× · ${fmtPctChange(price)}</div>
+    <div class="tt-row"><span class="tt-key"><span class="tt-swatch" style="--sw:var(--accent)"></span>median</span><span class="tt-val">${fmtMoney(series.revenue_median[idx])}</span></div>
+    <div class="tt-row"><span class="tt-key">p5–p95</span><span class="tt-val">${fmtMoney(series.revenue_p5[idx])}–${fmtMoney(series.revenue_p95[idx])}</span></div>
+    <div class="tt-row"><span class="tt-key">vs. 1.00×</span><span class="tt-val">${fmtMoney(change)}</span></div>`;
+  moveCrosshair(chart, idx);
+}
+
+// ---------------- segments ----------------
+
+function renderSegments(price) {
+  const grid = DATA.grid; // segment curve is always the full unconditioned grid
+  let idx = grid.findIndex((p) => Math.abs(p - price) < 1e-6);
+  if (idx === -1) idx = grid.reduce((best, p, i) => Math.abs(p - price) < Math.abs(grid[best] - price) ? i : best, 0);
+  const b = baseIdx(grid);
+
+  const rows = DATA.segOrder.map((sid) => {
+    const meta = DATA.segMeta[sid];
+    const curve = DATA.segCurve[sid].revenue;
+    const revBase = curve[b], revSel = curve[idx];
+    const change = revSel - revBase;
+    return { sid, meta, revBase, revSel, change };
+  });
+
+  const totalChange = rows.reduce((s, r) => s + Math.abs(r.change), 0) || 1;
+  const maxAbsChange = Math.max(...rows.map((r) => Math.abs(r.change)), 1);
+
+  el('segTableBody').innerHTML = rows.map((r) => {
+    const pctShare = (Math.abs(r.change) / totalChange) * 100;
+    const barWidth = (Math.abs(r.change) / maxAbsChange) * 45;
+    const cls = r.change >= 0 ? 'pos' : 'neg';
+    return `
+      <tr>
+        <td class="seg-name">${r.meta.headline}<span class="desc">${r.meta.description} · ${r.meta.accounts.toLocaleString()} accts · ${(r.meta.rev_share * 100).toFixed(1)}% of revenue</span></td>
+        <td>${r.meta.accounts.toLocaleString()}</td>
+        <td>${fmtMoneyFull(r.revBase)}</td>
+        <td>${fmtMoneyFull(r.revSel)}</td>
+        <td class="${cls}">${r.change >= 0 ? '+' : ''}${fmtMoneyFull(r.change)}</td>
+        <td>
+          <div class="seg-bar-cell">
+            <span>${pctShare.toFixed(0)}%</span>
+            <div class="seg-bar-track">
+              <div class="seg-bar-mid"></div>
+              <div class="seg-bar-fill ${cls}" style="width:${barWidth}%"></div>
+            </div>
+          </div>
+        </td>
+        <td>N/A</td>
+      </tr>`;
+  }).join('');
+
+  if (DATA.dormant) {
+    const d = DATA.dormant;
+    el('dormantNote').innerHTML = `<b>${d.name}</b> is excluded from the pricing comparisons above, consistent with the study design: ${d.accounts.toLocaleString()} accounts (${(d.acct_share * 100).toFixed(1)}% of the book), ${(d.rev_share * 100).toFixed(2)}% of revenue, ${fmtMoneyFull(d.rev_per_acct)}/account.`;
+  }
+}
+
+// ---------------- methodology facts ----------------
+
+function renderMethodologyFacts() {
+  el('mResponseScale').textContent = DATA.meta.response_scale_joint_sensitivity.toFixed(2);
+  el('mDepthScale').textContent = DATA.meta.depth_scale_joint_sensitivity.toFixed(2);
+  el('mReconGap').textContent = `${DATA.meta.reconciliation_gap_pct.toFixed(1)}%`;
+  el('mRunId').textContent = DATA.meta.run_id;
+  el('footerRunId').textContent = DATA.meta.run_id;
+}
+
+function init() {
+  // default to the study's recommended price
+  const grid = activeGrid();
+  const recIdx = grid.findIndex((p) => Math.abs(p - DATA.meta.recommended_price) < 1e-6);
+  state.priceIdx = recIdx === -1 ? Math.floor(grid.length / 2) : recIdx;
+  syncSlider();
+  render();
+}
+
+fetch('./data.json')
+  .then((r) => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  })
+  .then((d) => { DATA = d; init(); })
+  .catch((err) => {
+    document.querySelector('.page').innerHTML =
+      `<p style="font-family:'IBM Plex Mono',monospace; padding:2rem 0; color:var(--muted);">
+       Could not load data.json (${err.message}). Serve this folder over HTTP rather than
+       opening index.html directly from disk.</p>`;
+  });
+</script>
+</body>
+</html>

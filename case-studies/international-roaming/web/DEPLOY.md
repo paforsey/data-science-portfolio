@@ -1,4 +1,4 @@
-# Deploying The Scenario Explorer
+# Deploying the International Roaming Price Scenario Tool
 
 ## What you need
 

@@ -1,4 +1,13 @@
 {
+  "meta": {
+    "run_id": "sim-crn4242-sweep400-macro300-paired800",
+    "current_price": 1.0,
+    "recommended_price": 1.15,
+    "purchasers_available": false,
+    "response_scale_joint_sensitivity": 1.7385,
+    "depth_scale_joint_sensitivity": 1.0408,
+    "reconciliation_gap_pct": 10.9
+  },
   "grid": [
     0.9,
     0.925,
@@ -14,24 +23,9 @@
     1.175,
     1.2
   ],
-  "pop": {
+  "portfolio": {
     "as fitted": {
-      "price": [
-        0.9,
-        0.925,
-        0.95,
-        0.975,
-        1.0,
-        1.025,
-        1.05,
-        1.075,
-        1.1,
-        1.125,
-        1.15,
-        1.175,
-        1.2
-      ],
-      "p5": [
+      "revenue_p5": [
         1769726,
         1804833,
         1841834,
@@ -46,7 +40,7 @@
         2115567,
         2137581
       ],
-      "median": [
+      "revenue_median": [
         2411613,
         2461904,
         2511308,
@@ -61,7 +55,7 @@
         2891029,
         2925399
       ],
-      "p95": [
+      "revenue_p95": [
         2730154,
         2786686,
         2841768,
@@ -77,23 +71,8 @@
         3310421
       ]
     },
-    "conservative": {
-      "price": [
-        0.9,
-        0.925,
-        0.95,
-        0.975,
-        1.0,
-        1.025,
-        1.05,
-        1.075,
-        1.1,
-        1.125,
-        1.15,
-        1.175,
-        1.2
-      ],
-      "p5": [
+    "joint sensitivity": {
+      "revenue_p5": [
         1788500,
         1822010,
         1853487,
@@ -108,7 +87,7 @@
         1990995,
         1974617
       ],
-      "median": [
+      "revenue_median": [
         2438044,
         2483970,
         2526682,
@@ -123,7 +102,7 @@
         2730051,
         2710770
       ],
-      "p95": [
+      "revenue_p95": [
         2761101,
         2812901,
         2859652,
@@ -140,91 +119,102 @@
       ]
     }
   },
-  "macro": {
-    "contraction": {
-      "price": [
-        1.0,
-        1.15,
-        1.2
-      ],
-      "p5": [
-        1607504,
-        1690919,
-        1674620
-      ],
-      "median": [
-        2226460,
-        2348214,
-        2328333
-      ],
-      "p95": [
-        2796225,
-        2949900,
-        2930313
-      ]
-    },
-    "base": {
-      "price": [
-        1.0,
-        1.15,
-        1.2
-      ],
-      "p5": [
-        1934338,
-        2044697,
-        2033233
-      ],
-      "median": [
-        2589510,
-        2733944,
-        2710611
-      ],
-      "p95": [
-        2912857,
-        3077035,
-        3051249
-      ]
-    },
+  "scenarios": {
     "expansion": {
       "price": [
         1.0,
         1.15,
         1.2
       ],
-      "p5": [
+      "revenue_p5": [
         2321105,
         2452075,
         2429595
       ],
-      "median": [
+      "revenue_median": [
         2815330,
         2972517,
         2950122
       ],
-      "p95": [
+      "revenue_p95": [
         2938403,
         3108499,
         3084879
       ]
-    }
-  },
-  "segments": {
-    "Anchor: High Value, Low Sensitivity": {
+    },
+    "contraction": {
       "price": [
-        0.9,
-        0.925,
-        0.95,
-        0.975,
         1.0,
-        1.025,
-        1.05,
-        1.075,
-        1.1,
-        1.125,
         1.15,
-        1.175,
         1.2
       ],
+      "revenue_p5": [
+        1607504,
+        1690919,
+        1674620
+      ],
+      "revenue_median": [
+        2226460,
+        2348214,
+        2328333
+      ],
+      "revenue_p95": [
+        2796225,
+        2949900,
+        2930313
+      ]
+    }
+  },
+  "segOrder": [
+    "0",
+    "3",
+    "2",
+    "4"
+  ],
+  "segMeta": {
+    "0": {
+      "name": "Anchor: High Value, Low Sensitivity",
+      "headline": "Anchor",
+      "description": "High Value, Low Sensitivity",
+      "accounts": 8106,
+      "acct_share": 0.363,
+      "rev_share": 0.4671,
+      "business": 0.9383,
+      "rev_per_acct": 264.9
+    },
+    "3": {
+      "name": "Swing: Marginal Price Response",
+      "headline": "Swing",
+      "description": "Marginal Price Response",
+      "accounts": 10791,
+      "acct_share": 0.4833,
+      "rev_share": 0.4224,
+      "business": 0.0584,
+      "rev_per_acct": 179.95
+    },
+    "2": {
+      "name": "Flight Risk (Higher Value): Discontinue Coverage",
+      "headline": "Flight Risk (Higher Value)",
+      "description": "Discontinue Coverage",
+      "accounts": 1854,
+      "acct_share": 0.083,
+      "rev_share": 0.0884,
+      "business": 0.0119,
+      "rev_per_acct": 219.18
+    },
+    "4": {
+      "name": "Flight Risk (Mid Value): Discontinue Coverage",
+      "headline": "Flight Risk (Mid Value)",
+      "description": "Discontinue Coverage",
+      "accounts": 577,
+      "acct_share": 0.0258,
+      "rev_share": 0.0218,
+      "business": 0.0017,
+      "rev_per_acct": 173.34
+    }
+  },
+  "segCurve": {
+    "0": {
       "revenue": [
         1150943,
         1178390,
@@ -239,39 +229,9 @@
         1375776,
         1396893,
         1417237
-      ],
-      "pct": [
-        -7.49,
-        -5.28,
-        -3.09,
-        -1.65,
-        0.0,
-        1.81,
-        3.7,
-        5.53,
-        7.3,
-        8.94,
-        10.59,
-        12.28,
-        13.92
       ]
     },
-    "Swing: Marginal Price Response": {
-      "price": [
-        0.9,
-        0.925,
-        0.95,
-        0.975,
-        1.0,
-        1.025,
-        1.05,
-        1.075,
-        1.1,
-        1.125,
-        1.15,
-        1.175,
-        1.2
-      ],
+    "3": {
       "revenue": [
         1241768,
         1261219,
@@ -286,39 +246,9 @@
         1359011,
         1350469,
         1325727
-      ],
-      "pct": [
-        -4.49,
-        -3.0,
-        -1.73,
-        -0.62,
-        0.0,
-        1.19,
-        2.42,
-        3.5,
-        4.39,
-        4.78,
-        4.53,
-        3.87,
-        1.97
       ]
     },
-    "Flight Risk (Higher Value): Discontinue Coverage": {
-      "price": [
-        0.9,
-        0.925,
-        0.95,
-        0.975,
-        1.0,
-        1.025,
-        1.05,
-        1.075,
-        1.1,
-        1.125,
-        1.15,
-        1.175,
-        1.2
-      ],
+    "2": {
       "revenue": [
         254260,
         257552,
@@ -333,39 +263,9 @@
         248192,
         233465,
         220262
-      ],
-      "pct": [
-        -4.18,
-        -2.94,
-        -1.92,
-        -1.05,
-        0.0,
-        1.3,
-        1.98,
-        1.57,
-        -0.92,
-        -3.39,
-        -6.47,
-        -12.02,
-        -16.99
       ]
     },
-    "Flight Risk (Mid Value): Discontinue Coverage": {
-      "price": [
-        0.9,
-        0.925,
-        0.95,
-        0.975,
-        1.0,
-        1.025,
-        1.05,
-        1.075,
-        1.1,
-        1.125,
-        1.15,
-        1.175,
-        1.2
-      ],
+    "4": {
       "revenue": [
         55967,
         56674,
@@ -380,70 +280,14 @@
         47663,
         46632,
         45888
-      ],
-      "pct": [
-        -4.75,
-        -3.54,
-        -2.52,
-        -0.95,
-        0.0,
-        0.49,
-        -0.87,
-        -4.61,
-        -11.4,
-        -16.84,
-        -18.88,
-        -20.63,
-        -21.9
       ]
     }
   },
-  "segMeta": {
-    "Anchor: High Value, Low Sensitivity": {
-      "headline": "Anchor",
-      "description": "High Value, Low Sensitivity",
-      "accounts": 8106,
-      "acct_share": 0.363,
-      "rev_share": 0.4671,
-      "business": 0.9383,
-      "rev_per_acct": 264.9
-    },
-    "Swing: Marginal Price Response": {
-      "headline": "Swing",
-      "description": "Marginal Price Response",
-      "accounts": 10791,
-      "acct_share": 0.4833,
-      "rev_share": 0.4224,
-      "business": 0.0584,
-      "rev_per_acct": 179.95
-    },
-    "Flight Risk (Higher Value): Discontinue Coverage": {
-      "headline": "Flight Risk (Higher Value)",
-      "description": "Discontinue Coverage",
-      "accounts": 1854,
-      "acct_share": 0.083,
-      "rev_share": 0.0884,
-      "business": 0.0119,
-      "rev_per_acct": 219.18
-    },
-    "Flight Risk (Mid Value): Discontinue Coverage": {
-      "headline": "Flight Risk (Mid Value)",
-      "description": "Discontinue Coverage",
-      "accounts": 577,
-      "acct_share": 0.0258,
-      "rev_share": 0.0218,
-      "business": 0.0017,
-      "rev_per_acct": 173.34
-    }
-  },
-  "segOrder": [
-    "Anchor: High Value, Low Sensitivity",
-    "Swing: Marginal Price Response",
-    "Flight Risk (Higher Value): Discontinue Coverage",
-    "Flight Risk (Mid Value): Discontinue Coverage"
-  ],
-  "assumptions": {
-    "response_ratio": 1.738,
-    "depth_bias": 1.041
+  "dormant": {
+    "name": "Dormant: Travels, Does Not Purchase",
+    "accounts": 1000,
+    "acct_share": 0.0448,
+    "rev_share": 0.0004,
+    "rev_per_acct": 1.77
   }
 }
