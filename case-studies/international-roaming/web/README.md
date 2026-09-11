@@ -118,8 +118,9 @@ zip -j scenario-explorer.zip index.html data.json
   occurrence) or on `depthScale` (which only touches revenue magnitude, never
   coverage-state probability — see the depth-invariance check `build_data.py`
   doesn't enforce but the notebook's sensitivity grid empirically satisfies).
-  Powers the "Simulation inputs and their distributions" visual, reactive to
-  the Response Sensitivity slider.
+  Not currently rendered — the page's "Simulation inputs and their
+  distributions" visual that read this was removed; the field stays in
+  the export (like `portfolio`/`dim_model_case`) in case it's wanted again.
 
 ### From bundled case to two sliders
 

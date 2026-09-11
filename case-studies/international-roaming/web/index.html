@@ -152,21 +152,42 @@
     width: 7.2rem;
   }
 
-  .price-readout {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 1.05rem;
-    font-variant-numeric: tabular-nums;
-    font-weight: 500;
-    flex: none;
-    width: 9.5rem;
-    text-align: right;
-  }
-
-  .price-readout .delta { color: var(--muted); font-size: 0.82rem; margin-left: 0.35rem; }
-
-  input[type="range"] {
+  .slider-track-wrap {
+    position: relative;
     flex: 1 1 200px;
     min-width: 140px;
+    padding-top: 1.6rem;
+  }
+
+  .slider-value {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--ink);
+    pointer-events: none;
+  }
+
+  .slider-value .delta { color: var(--muted); font-size: 0.78rem; margin-left: 0.3rem; }
+
+  .slider-endlabels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+    padding: 0 2px;
+  }
+
+  input[type="range"] {
+    display: block;
+    width: 100%;
     -webkit-appearance: none;
     appearance: none;
     height: 3px;
@@ -218,6 +239,37 @@
     border: 1px solid var(--hairline);
     border-radius: 4px;
     overflow: hidden;
+  }
+
+  .chart-tabs {
+    display: flex;
+    gap: 1.6rem;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .chart-tab {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 0.2rem 0.1rem 0.75rem;
+    margin-bottom: -1px;
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .chart-tab[aria-selected="true"] {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+  }
+
+  .chart-tab:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
   .segmented button {
@@ -578,101 +630,6 @@
   .methodology ul { margin: 0; padding-left: 1.1rem; color: var(--ink); opacity: 0.88; }
   .methodology li { margin: 0.15rem 0; }
 
-  /* ---------- simulation-inputs visual ---------- */
-
-  .inputs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 0.9rem;
-    margin: 0.2rem 0;
-  }
-
-  .input-card {
-    border: 1px solid var(--hairline);
-    border-radius: 3px;
-    padding: 0.8rem 0.9rem;
-    background: var(--surface);
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-
-  .input-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.64rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .input-curve { width: 100%; height: auto; display: block; }
-
-  .input-note {
-    font-size: 0.74rem;
-    color: var(--muted) !important;
-    opacity: 1 !important;
-    line-height: 1.4;
-  }
-
-  .state-mix-bar {
-    display: flex;
-    height: 22px;
-    border-radius: 2px;
-    overflow: hidden;
-  }
-
-  .state-mix-bar .seg {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 0.64rem;
-    color: #fff;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-
-  .state-mix-legend {
-    display: flex;
-    gap: 0.8rem;
-    font-size: 0.72rem;
-    color: var(--ink);
-  }
-
-  .state-mix-legend .key { display: inline-flex; align-items: center; gap: 0.3rem; }
-  .state-mix-legend .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
-
-  .sensitivity-intro { margin-top: 0.6rem !important; }
-
-  .sensitivity-badges {
-    display: flex;
-    gap: 0.8rem;
-    flex-wrap: wrap;
-    margin-top: 0.5rem;
-  }
-
-  .sensitivity-badge {
-    flex: 1 1 220px;
-    border: 1px dashed var(--hairline-strong);
-    border-radius: 3px;
-    padding: 0.55rem 0.75rem;
-    background: var(--unavailable-bg);
-  }
-
-  .sensitivity-badge .badge-value {
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: var(--ink);
-  }
-
-  .sensitivity-badge .badge-note {
-    font-size: 0.72rem;
-    color: var(--muted);
-    margin-top: 0.25rem;
-    line-height: 1.4;
-  }
-
   footer {
     border-top: 1px solid var(--hairline);
     padding-top: 1.2rem;
@@ -686,12 +643,11 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .stat-line .v, .price-readout { transition: opacity 0.12s ease; }
+    .stat-line .v, .slider-value { transition: opacity 0.12s ease; }
   }
 
   @media (max-width: 640px) {
     .control-label { width: auto; }
-    .price-readout { width: auto; margin-left: auto; }
   }
 </style>
 </head>
@@ -700,35 +656,36 @@
 <div class="page">
 
   <header>
-    <div class="eyebrow">International Roaming Pricing Case Study — decision-support tool</div>
+    <div class="eyebrow">International Roaming Pricing Case Study: decision-support tool</div>
     <h1>International Roaming Price Scenario Tool</h1>
-    <p class="lede">Pick a candidate roaming-pass price and see the annual revenue it's expected to produce, alongside how many roaming-pass purchasers that price is expected to cost — under three economic conditions, with the simulation's uncertainty shown alongside the estimate.</p>
+    <p class="lede">Pick a candidate roaming-pass price and see the annual revenue it's expected to produce, alongside how many roaming-pass purchasers that price is expected to cost, under three economic conditions, with the simulation's uncertainty shown alongside the estimate.</p>
   </header>
 
   <div class="controls">
     <div class="control-row">
       <span class="control-label">Price</span>
-      <input type="range" id="priceSlider" min="0" max="12" step="1" value="10" aria-label="Candidate price multiplier">
-      <span class="price-readout" id="priceReadout">1.150&times;<span class="delta" id="priceDelta">+15%</span></span>
+      <div class="slider-track-wrap">
+        <span class="slider-value" id="priceReadout">1.150&times;<span class="delta" id="priceDelta">+15%</span></span>
+        <input type="range" id="priceSlider" min="0" max="12" step="1" value="10" aria-label="Candidate price multiplier">
+        <div class="slider-endlabels"><span id="priceMinLabel"></span><span id="priceMaxLabel"></span></div>
+      </div>
     </div>
     <p class="price-note" id="priceNote"></p>
     <div class="control-row">
-      <span class="control-label">Economy</span>
-      <div class="segmented" role="group" aria-label="Economic scenario" id="scenarioToggle">
-        <button id="scenBase" aria-pressed="true">Base</button>
-        <button id="scenExpansion" aria-pressed="false">Expansion</button>
-        <button id="scenContraction" aria-pressed="false">Contraction</button>
+      <span class="control-label">Response sensitivity</span>
+      <div class="slider-track-wrap">
+        <span class="slider-value" id="responseReadout">&times;1.00</span>
+        <input type="range" id="responseSlider" min="0" max="2" step="1" value="0" aria-label="Price-response sensitivity">
+        <div class="slider-endlabels"><span id="responseMinLabel"></span><span id="responseMaxLabel"></span></div>
       </div>
     </div>
     <div class="control-row">
-      <span class="control-label">Response sensitivity</span>
-      <input type="range" id="responseSlider" min="0" max="2" step="1" value="0" aria-label="Price-response sensitivity">
-      <span class="price-readout" id="responseReadout">&times;1.00</span>
-    </div>
-    <div class="control-row">
       <span class="control-label">Depth sensitivity</span>
-      <input type="range" id="depthSlider" min="0" max="2" step="1" value="0" aria-label="Reduction-depth sensitivity">
-      <span class="price-readout" id="depthReadout">&times;1.00</span>
+      <div class="slider-track-wrap">
+        <span class="slider-value" id="depthReadout">&times;1.00</span>
+        <input type="range" id="depthSlider" min="0" max="2" step="1" value="0" aria-label="Reduction-depth sensitivity">
+        <div class="slider-endlabels"><span id="depthMinLabel"></span><span id="depthMaxLabel"></span></div>
+      </div>
     </div>
     <p class="case-note" id="caseNote"></p>
   </div>
@@ -738,16 +695,22 @@
     <p class="summary-sentence" id="summarySentence"></p>
     <div class="summary-grid">
       <div class="summary-col revenue">
-        <span class="col-head"><span class="sw"></span>Benefit — annual roaming-pass revenue</span>
+        <span class="col-head"><span class="sw"></span>Benefit: annual roaming-pass revenue</span>
         <div id="revStats"></div>
       </div>
       <div class="summary-col cost">
-        <span class="col-head"><span class="sw"></span>Cost — annual roaming-pass purchasers</span>
+        <span class="col-head"><span class="sw"></span>Cost: annual roaming-pass purchasers</span>
         <div id="costStats"></div>
       </div>
     </div>
     <p class="rpl-line" id="rplLine"></p>
   </section>
+
+  <div class="chart-tabs" role="tablist" aria-label="Economic scenario">
+    <button class="chart-tab" id="scenBase" role="tab" aria-selected="true">Base</button>
+    <button class="chart-tab" id="scenExpansion" role="tab" aria-selected="false">Expansion</button>
+    <button class="chart-tab" id="scenContraction" role="tab" aria-selected="false">Contraction</button>
+  </div>
 
   <div class="chart-card">
     <div class="chart-head">
@@ -771,15 +734,15 @@
 
   <section class="segment-card">
     <h2>Segment contribution at the selected price</h2>
-    <p class="segment-note">Pricing-eligible segments only. Both blocks below are deterministic expected-value decompositions computed once, at both sensitivity sliders' ceiling and Base economic conditions — they do not change with the controls above, and (unlike the chart and summary above) carry no simulation interval. Purchasers = per-account probability of at least one paid trip in the forward year, summed within segment, assuming independence across an account's trips — see Methodology. The portfolio-level chart and summary above are different: those are genuinely simulated, reactive to every control, and carry a real interval.</p>
+    <p class="segment-note">Pricing-eligible segments only. Both blocks below are deterministic expected-value decompositions computed once, at both sensitivity sliders' ceiling and Base economic conditions; they do not change with the controls above, and (unlike the chart and summary above) carry no simulation interval. Purchasers = per-account probability of at least one paid trip in the forward year, summed within segment, assuming independence across an account's trips (see Methodology). The portfolio-level chart and summary above are different: those are genuinely simulated, reactive to every control, and carry a real interval.</p>
     <div class="segment-table-wrap">
       <table class="segments" id="segTable">
         <thead>
           <tr>
             <th rowspan="2">Segment</th>
             <th rowspan="2">Accounts</th>
-            <th colspan="4" class="group-head revenue">Revenue — benefit</th>
-            <th colspan="4" class="group-head cost">Purchasers — cost</th>
+            <th colspan="4" class="group-head revenue">Revenue: benefit</th>
+            <th colspan="4" class="group-head cost">Purchasers: cost</th>
           </tr>
           <tr>
             <th>At 1.00&times;</th>
@@ -802,64 +765,27 @@
     <summary>Methodology, uncertainty, and exclusions</summary>
     <div class="body">
       <h3>What "simulation interval" means</h3>
-      <p>The shaded band on the revenue chart is a <b>simulation interval</b> — the 5th–95th percentile range of a Monte Carlo simulation of the next 12 months, not a statistical confidence interval. It reflects modeled dispersion in the simulation, not sampling error in an estimator.</p>
-
-      <h3>Simulation inputs and their distributions</h3>
-      <p>Two things are actually redrawn at random every simulated iteration — everything else below is a fixed model output or a named point-estimate scenario, not a distribution.</p>
-      <div class="inputs-grid">
-        <div class="input-card">
-          <span class="input-label">Macro-economic shock</span>
-          <svg class="input-curve" id="macroShockCurve" viewBox="0 0 220 90"></svg>
-          <p class="input-note">Normal(0, &sigma;=0.35), drawn monthly; the path itself follows an AR(1) process with persistence 0.85. Shared across every account within an iteration — this is what correlates trip-occurrence outcomes economy-wide.</p>
-        </div>
-        <div class="input-card">
-          <span class="input-label">Market-share shift</span>
-          <svg class="input-curve" id="shareShiftCurve" viewBox="0 0 220 90"></svg>
-          <p class="input-note">Normal(0, &sigma;=0.03), one draw per simulated year. Shifts the whole population's travel propensity together.</p>
-        </div>
-        <div class="input-card">
-          <span class="input-label">Coverage-state mix at the selected price</span>
-          <div class="state-mix-bar" id="stateMixBar"></div>
-          <div class="state-mix-legend">
-            <span class="key"><span class="dot" style="background:var(--muted)"></span>Null</span>
-            <span class="key"><span class="dot" style="background:var(--cost)"></span>Partial</span>
-            <span class="key"><span class="dot" style="background:var(--accent)"></span>Full</span>
-          </div>
-          <p class="input-note" id="stateMixPrice"></p>
-          <p class="input-note">Not a random draw — the State Model's fitted price-response probabilities themselves, population-averaged. This is the mechanism the revenue/purchaser trade-off chart is built on. Unaffected by the economic scenario: macro shift only changes whether a trip happens, never this mix.</p>
-        </div>
-      </div>
-      <p class="sensitivity-intro">The Response Sensitivity and Depth Sensitivity sliders' ceilings are <b>not distributions</b> — each is a single point estimate from one diagnostic, not a confidence bound, marking the far end of the range these controls span:</p>
-      <div class="sensitivity-badges">
-        <div class="sensitivity-badge">
-          <div class="badge-value">response_scale ceiling &times;<span id="mResponseScaleBadge"></span></div>
-          <div class="badge-note">Ratio of observed to predicted price response in a single Asia-Pacific regional holdout.</div>
-        </div>
-        <div class="sensitivity-badge">
-          <div class="badge-value">depth_scale ceiling &times;<span id="mDepthScaleBadge"></span></div>
-          <div class="badge-note">Ratio from a partial-label contamination diagnostic (bootstrap-checked for stability, but only the point ratio anchors the slider here).</div>
-        </div>
-      </div>
+      <p>The shaded band on the revenue chart is a <b>simulation interval</b>: the 5th–95th percentile range of a Monte Carlo simulation of the next 12 months, not a statistical confidence interval. It reflects modeled dispersion in the simulation, not sampling error in an estimator.</p>
 
       <h3>Response and depth sensitivity</h3>
-      <p>Two independent sliders, each 1.00&times; (as fitted) to its diagnostic-derived ceiling (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth), 3 pre-simulated points apiece. They move separately because they come from separate models and separate diagnostics: <b>response sensitivity</b> controls how strongly price shifts an account out of full coverage (the State Model); <b>depth sensitivity</b> controls how much revenue is retained when an account lands in partial coverage (the Magnitude Model) — it never affects whether an account counts as a purchaser, only how much they're worth once they do. Neither slider is a confidence bound or a second estimate of the truth; both are sensitivity scenarios, and the recommended price was selected at both ceilings simultaneously. Only available under the Base economy — Expansion and Contraction were only simulated at both ceilings, so selecting either forces both sliders there.</p>
+      <p>Two independent sliders, each 1.00&times; (as fitted) to its diagnostic-derived ceiling (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth), 3 pre-simulated points apiece. They move separately because they come from separate models and separate diagnostics: <b>response sensitivity</b> controls how strongly price shifts an account out of full coverage (the State Model); <b>depth sensitivity</b> controls how much revenue is retained when an account lands in partial coverage (the Magnitude Model), and never affects whether an account counts as a purchaser, only how much they're worth once they do. Neither slider is a confidence bound or a second estimate of the truth; both are sensitivity scenarios, and the recommended price was selected at both ceilings simultaneously. Only available under the Base economy: Expansion and Contraction were only simulated at both ceilings, so selecting either forces both sliders there.</p>
 
       <h3>Economic scenarios and price coverage</h3>
-      <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices — 1.00&times;, the recommended price, and 1.20&times; — always at both sensitivity sliders' ceiling, because that is the resolution the macro simulation was run at. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
+      <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices (1.00&times;, the recommended price, and 1.20&times;), always at both sensitivity sliders' ceiling, because that is the resolution the macro simulation was run at. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
 
       <h3>Roaming-pass purchasers vs. wireless subscribers</h3>
-      <p>This tool's purchaser measure counts <b>roaming-pass purchasers</b> — accounts with at least one roaming trip receiving partial or full paid coverage in the forward year — not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
+      <p>This tool's purchaser measure counts <b>roaming-pass purchasers</b>: accounts with at least one roaming trip receiving partial or full paid coverage in the forward year, not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
 
       <h3>How the purchaser chart and summary are simulated</h3>
-      <p>Purchasers are counted inside the same Monte Carlo loop that produces revenue: each iteration, an account counts as a purchaser if at least one of its forward trips lands in a non-null coverage state that draw. Because it comes from the same draws, purchasers stay properly paired with revenue — the p5–p95 band on the purchaser chart is a genuine simulation interval, not a derived or approximated range.</p>
-      <p>Where a <b>paired</b> difference is available — Expansion and Contraction, at the recommended price only, where both revenue and purchasers were differenced iteration-by-iteration against the 1.00&times; run — the summary above uses it and marks it <i>(paired)</i>. Everywhere else, "change vs. 1.00&times;" is the difference of two marginal medians; common random numbers are used across every price at a given response/depth sensitivity setting, which limits (but doesn't eliminate) the Monte Carlo noise this introduces.</p>
-      <p>The purchaser rate denominator (<span id="mEligibleAccounts"></span> accounts) is the forward-panel population the simulation actually draws purchases from — the account base with a modeled forward trip, not the full customer book.</p>
+      <p>Purchasers are counted inside the same Monte Carlo loop that produces revenue: each iteration, an account counts as a purchaser if at least one of its forward trips lands in a non-null coverage state that draw. Because it comes from the same draws, purchasers stay properly paired with revenue: the p5–p95 band on the purchaser chart is a genuine simulation interval, not a derived or approximated range.</p>
+      <p>Where a <b>paired</b> difference is available (Expansion and Contraction, at the recommended price only, where both revenue and purchasers were differenced iteration-by-iteration against the 1.00&times; run), the summary above uses it and marks it <i>(paired)</i>. Everywhere else, "change vs. 1.00&times;" is the difference of two marginal medians; common random numbers are used across every price at a given response/depth sensitivity setting, which limits (but doesn't eliminate) the Monte Carlo noise this introduces.</p>
+      <p>The purchaser rate denominator (<span id="mEligibleAccounts"></span> accounts) is the forward-panel population the simulation actually draws purchases from: the account base with a modeled forward trip, not the full customer book.</p>
 
       <h3>Why the segment table's purchaser figures are different</h3>
-      <p>Segment-level purchasers are a separate, <b>deterministic</b> calculation: per account, <code>P(at least one purchase) = 1 − ∏ P(null coverage)</code> across that account's forward trips, summed within segment. This <b>assumes conditional independence of an account's trip-purchase events</b> — no account-level dependence is modeled. It uses the same trip-probability data and grain as the segment revenue curve (both sliders at ceiling, unconditioned macro), so — like segment revenue — it carries no simulation interval and doesn't change with the controls above, unlike the simulated chart and summary.</p>
+      <p>Segment-level purchasers are a separate, <b>deterministic</b> calculation: per account, <code>P(at least one purchase) = 1 − ∏ P(null coverage)</code> across that account's forward trips, summed within segment. This <b>assumes conditional independence of an account's trip-purchase events</b>: no account-level dependence is modeled. It uses the same trip-probability data and grain as the segment revenue curve (both sliders at ceiling, unconditioned macro), so, like segment revenue, it carries no simulation interval and doesn't change with the controls above, unlike the simulated chart and summary.</p>
 
       <h3>Segment figures</h3>
-      <p>Segment revenue does not reconcile exactly with the portfolio total shown above: it is a probability-weighted expected value, while the portfolio figure is the <b>median</b> of a simulated, right-skewed distribution — the two differ by construction, currently by about <span id="mReconGap"></span> at the current price. The same is expected of segment vs. portfolio purchasers, for the same reason. Segment figures also exclude the <b>Dormant</b> segment, disclosed separately below.</p>
+      <p>Segment revenue does not reconcile exactly with the portfolio total shown above: it is a probability-weighted expected value, while the portfolio figure is the <b>median</b> of a simulated, right-skewed distribution: the two differ by construction, currently by about <span id="mReconGap"></span> at the current price. The same is expected of segment vs. portfolio purchasers, for the same reason. Segment figures also exclude the <b>Dormant</b> segment, disclosed separately below.</p>
 
       <h3>Run provenance</h3>
       <p>All figures on this page come from a single simulation run, <code id="mRunId"></code>.</p>
@@ -911,7 +837,7 @@ function activeSeries() {
 }
 
 // A genuinely paired revenue/purchaser difference (same simulation draws) exists
-// only for Expansion/Contraction, only at the recommended price — see build_data.py.
+// only for Expansion/Contraction, only at the recommended price; see build_data.py.
 // Returns null when the current scenario/price doesn't match, so callers fall back
 // to marginal-median subtraction (which is what Base always uses: mixing the macro
 // table's paired diff with the full-grid portfolio sweep would pair across two
@@ -937,11 +863,11 @@ el('priceSlider').addEventListener('input', (e) => {
 function setScenario(s) {
   const wasPrice = activeGrid()[state.priceIdx];
   state.scenario = s;
-  el('scenBase').setAttribute('aria-pressed', s === 'base');
-  el('scenExpansion').setAttribute('aria-pressed', s === 'expansion');
-  el('scenContraction').setAttribute('aria-pressed', s === 'contraction');
+  el('scenBase').setAttribute('aria-selected', s === 'base');
+  el('scenExpansion').setAttribute('aria-selected', s === 'expansion');
+  el('scenContraction').setAttribute('aria-selected', s === 'contraction');
 
-  // Response/depth sensitivity only vary under Base — the macro simulation was
+  // Response/depth sensitivity only vary under Base; the macro simulation was
   // only ever run at the ceiling point (RESPONSE_SCALE_GRID[-1]/DEPTH_SCALE_GRID[-1]
   // in the notebook), so Expansion/Contraction force both sliders there and disable
   // them, exactly like the old "As fitted" forced-disable, now for two controls.
@@ -956,11 +882,11 @@ function setScenario(s) {
     el('depthSlider').value = state.depthIdx;
   }
   el('caseNote').textContent = forceCeiling
-    ? 'Expansion and Contraction were only simulated at the maximum response/depth sensitivity — both sliders are unavailable here.'
+    ? 'Expansion and Contraction were only simulated at the maximum response/depth sensitivity; both sliders are unavailable here.'
     : '';
 
   // re-map the selected price onto the new grid at the nearest available point,
-  // explicitly (not silently) — the user's price selection carries over as best it can.
+  // explicitly (not silently); the user's price selection carries over as best it can.
   const newGrid = activeGrid();
   let idx = newGrid.findIndex((p) => Math.abs(p - wasPrice) < 1e-6);
   if (idx === -1) {
@@ -991,9 +917,26 @@ function syncSlider() {
   slider.max = grid.length - 1;
   slider.step = 1;
   slider.value = state.priceIdx;
+  el('priceMinLabel').textContent = `${grid[0].toFixed(2)}×`;
+  el('priceMaxLabel').textContent = `${grid[grid.length - 1].toFixed(2)}×`;
   el('priceNote').textContent = state.scenario === 'base'
     ? ''
     : `Restricted to the three prices simulated under this economic scenario.`;
+}
+
+// Positions a slider's floating value label directly above its thumb (pure
+// CSS calc, no layout read needed) and fills the track up to the thumb,
+// matching the reference slider style rather than a fixed side readout.
+function styleSlider(sliderId, labelId) {
+  const slider = el(sliderId);
+  const label = el(labelId);
+  const min = +slider.min, max = +slider.max, val = +slider.value;
+  const pct = max > min ? (val - min) / (max - min) : 0;
+  const thumb = 18; // matches the thumb width set in CSS
+  label.style.left = `calc(${(pct * 100).toFixed(3)}% + ${(thumb * (0.5 - pct)).toFixed(2)}px)`;
+  slider.style.background = slider.disabled
+    ? 'var(--hairline-strong)'
+    : `linear-gradient(to right, var(--accent) 0%, var(--accent) ${(pct * 100).toFixed(3)}%, var(--hairline-strong) ${(pct * 100).toFixed(3)}%, var(--hairline-strong) 100%)`;
 }
 
 // ---------------- rendering ----------------
@@ -1004,13 +947,15 @@ function render() {
   el('priceReadout').innerHTML = `${price.toFixed(3)}&times;<span class="delta">${fmtPctChange(price)}</span>`;
   el('responseReadout').innerHTML = `&times;${DATA.sensitivityGrid.responseScale[state.responseIdx].toFixed(2)}`;
   el('depthReadout').innerHTML = `&times;${DATA.sensitivityGrid.depthScale[state.depthIdx].toFixed(2)}`;
+  styleSlider('priceSlider', 'priceReadout');
+  styleSlider('responseSlider', 'responseReadout');
+  styleSlider('depthSlider', 'depthReadout');
 
   CHARTS = [];
   renderSummary(grid, price);
   renderRevChart(grid, price);
   renderCostChart(grid, price);
   renderSegments(price);
-  renderStateMix(price);
   renderMethodologyFacts();
 }
 
@@ -1033,7 +978,7 @@ function renderSummary(grid, price) {
 
   // Prefer a genuinely paired difference when one exists for this exact
   // scenario/price (see pairedAtRecommended) over subtracting two marginal
-  // medians — per the tool's spec, paired simulation differences are the
+  // medians; per the tool's spec, paired simulation differences are the
   // more defensible source for a "change" figure when available.
   const paired = pairedAtRecommended(grid, price);
   const revChange = paired ? paired.revenue_paired_median : (med - baseMed);
@@ -1065,7 +1010,7 @@ function renderSummary(grid, price) {
     const rpl = revChange / Math.abs(purchChange);
     el('rplLine').innerHTML = `Incremental revenue per purchaser lost${changeIsPaired ? ' <i>(paired)</i>' : ''}: <b>${fmtMoneyFull(rpl)}</b>`;
   } else {
-    el('rplLine').textContent = 'Incremental revenue per purchaser lost: Not applicable — revenue is not simultaneously up and purchasers down at this price.';
+    el('rplLine').textContent = 'Incremental revenue per purchaser lost: Not applicable (revenue is not simultaneously up and purchasers down at this price).';
   }
 }
 
@@ -1076,7 +1021,7 @@ const W = 900, H = 260;
 const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
 
 // Both charts share the active price grid and selected index, so hovering or
-// selecting on either one moves the crosshair/selection on both — CHARTS holds
+// selecting on either one moves the crosshair/selection on both; CHARTS holds
 // the current render's chart objects for that syncing.
 let CHARTS = [];
 
@@ -1259,7 +1204,7 @@ function drawCrosshair(chart, idx) {
 
 function moveCrosshair(chart, idx) {
   // idx is an index into THIS chart's own grid, which may be shorter (3-point
-  // scenario grids) than the grid the hover originated on — clamp defensively.
+  // scenario grids) than the grid the hover originated on; clamp defensively.
   const clamped = Math.max(0, Math.min(idx, chart.x.length - 1));
   const line = chart.svg.querySelector(`#crosshair-line-${chart.svg.id}`);
   if (!line) return;
@@ -1385,7 +1330,7 @@ function renderSegments(price) {
             const width = (Math.abs(r.purchChange) / maxAbsPurchChange) * 45;
             return `<div class="seg-bar-cell"><span>${pct.toFixed(0)}%</span><div class="seg-bar-track"><div class="seg-bar-mid"></div><div class="seg-bar-fill neg" style="width:${width}%"></div></div></div>`;
           })()
-        : '—';
+        : 'N/A';
       purchCells = `
         <td>${fmtCount(r.purchBase)}</td>
         <td>${fmtCount(r.purchSel)}</td>
@@ -1424,73 +1369,10 @@ function renderSegments(price) {
 function renderMethodologyFacts() {
   el('mResponseScale').textContent = DATA.meta.response_scale_joint_sensitivity.toFixed(2);
   el('mDepthScale').textContent = DATA.meta.depth_scale_joint_sensitivity.toFixed(2);
-  el('mResponseScaleBadge').textContent = DATA.meta.response_scale_joint_sensitivity.toFixed(2);
-  el('mDepthScaleBadge').textContent = DATA.meta.depth_scale_joint_sensitivity.toFixed(2);
   el('mReconGap').textContent = `${DATA.meta.reconciliation_gap_pct.toFixed(1)}%`;
   el('mEligibleAccounts').textContent = DATA.meta.eligible_accounts.toLocaleString();
   el('mRunId').textContent = DATA.meta.run_id;
   el('footerRunId').textContent = DATA.meta.run_id;
-}
-
-// ---------------- simulation-inputs visual ----------------
-
-// Static parametric density curves — pure math (the Normal PDF for the
-// disclosed sigma), not simulated or fetched data, so these render once and
-// never change with the controls above.
-function renderGaussianCurve(svgId, sigma) {
-  const svg = el(svgId);
-  const w = 220, h = 90, pad = 6;
-  svg.innerHTML = '';
-  const ns = 'http://www.w3.org/2000/svg';
-  const range = 3.2 * sigma;
-  const steps = 60;
-  const pdf = (x) => Math.exp(-(x * x) / (2 * sigma * sigma)) / (sigma * Math.sqrt(2 * Math.PI));
-  const xs = Array.from({ length: steps + 1 }, (_, i) => -range + (2 * range * i) / steps);
-  const ys = xs.map(pdf);
-  const maxY = Math.max(...ys);
-  const xScale = (x) => pad + ((x + range) / (2 * range)) * (w - 2 * pad);
-  const yScale = (y) => h - pad - (y / maxY) * (h - 2 * pad);
-
-  let d = `M ${xScale(xs[0])} ${yScale(0)}`;
-  xs.forEach((x, i) => { d += ` L ${xScale(x)} ${yScale(ys[i])}`; });
-  d += ` L ${xScale(xs[xs.length - 1])} ${yScale(0)} Z`;
-
-  const path = document.createElementNS(ns, 'path');
-  path.setAttribute('d', d);
-  path.setAttribute('fill', 'var(--accent)');
-  path.setAttribute('fill-opacity', '0.18');
-  path.setAttribute('stroke', 'var(--accent)');
-  path.setAttribute('stroke-width', '1.5');
-  path.setAttribute('stroke-linejoin', 'round');
-  svg.appendChild(path);
-
-  const zeroX = xScale(0);
-  const line = document.createElementNS(ns, 'line');
-  line.setAttribute('x1', zeroX); line.setAttribute('x2', zeroX);
-  line.setAttribute('y1', pad); line.setAttribute('y2', h - pad);
-  line.setAttribute('stroke', 'var(--neutral-ref)');
-  line.setAttribute('stroke-width', '1');
-  line.setAttribute('stroke-dasharray', '2 2');
-  svg.appendChild(line);
-}
-
-// Reactive — the actual State Model output, population-averaged, at the
-// selected price and response-sensitivity slider position (depth_scale never
-// enters: it only affects revenue magnitude, not coverage-state probability).
-// Always read off the full 13-point grid — probCurve is price/response-scale
-// only, never conditioned on economic scenario.
-function renderStateMix(price) {
-  const grid = DATA.grid;
-  let idx = grid.findIndex((p) => Math.abs(p - price) < 1e-6);
-  if (idx === -1) idx = grid.reduce((best, p, i) => Math.abs(p - price) < Math.abs(grid[best] - price) ? i : best, 0);
-  const curve = DATA.probCurve[String(state.responseIdx)];
-  const pNull = curve.p_null[idx], pPartial = curve.p_partial[idx], pFull = curve.p_full[idx];
-
-  const seg = (pct, color) => `<div class="seg" style="width:${(pct * 100).toFixed(2)}%; background:${color}">${pct >= 0.09 ? Math.round(pct * 100) + '%' : ''}</div>`;
-  el('stateMixBar').innerHTML =
-    seg(pNull, 'var(--muted)') + seg(pPartial, 'var(--cost)') + seg(pFull, 'var(--accent)');
-  const rs = DATA.sensitivityGrid.responseScale[state.responseIdx];
-  el('stateMixPrice').textContent = `At ${grid[idx].toFixed(3)}× · response sensitivity ×${rs.toFixed(2)}`;
 }
 
 function init() {
@@ -1499,8 +1381,14 @@ function init() {
   const recIdx = grid.findIndex((p) => Math.abs(p - DATA.meta.recommended_price) < 1e-6);
   state.priceIdx = recIdx === -1 ? Math.floor(grid.length / 2) : recIdx;
   syncSlider();
-  renderGaussianCurve('macroShockCurve', 0.35);
-  renderGaussianCurve('shareShiftCurve', 0.03);
+
+  // Response/depth sensitivity endpoints never change; set once.
+  const rs = DATA.sensitivityGrid.responseScale, ds = DATA.sensitivityGrid.depthScale;
+  el('responseMinLabel').textContent = `×${rs[0].toFixed(2)}`;
+  el('responseMaxLabel').textContent = `×${rs[rs.length - 1].toFixed(2)}`;
+  el('depthMinLabel').textContent = `×${ds[0].toFixed(2)}`;
+  el('depthMaxLabel').textContent = `×${ds[ds.length - 1].toFixed(2)}`;
+
   render();
 }
 
