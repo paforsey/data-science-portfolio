@@ -32,9 +32,12 @@ def main():
     grid = sorted(sweep["price_multiplier"].unique().tolist())
 
     # population sweep: as fitted / conservative, p5/median/p95 per price
+    # Output keys ("conservative") are fixed by index.html's JS; the source
+    # label in simulation_price_sweep.parquet has since been renamed to
+    # "joint sensitivity" — map old output key -> current parquet value.
     pop = {}
-    for case in ["as fitted", "conservative"]:
-        d = sweep[sweep["case"] == case].sort_values("price_multiplier")
+    for case, parquet_case in [("as fitted", "as fitted"), ("conservative", "joint sensitivity")]:
+        d = sweep[sweep["case"] == parquet_case].sort_values("price_multiplier")
         pop[case] = {
             "price": d["price_multiplier"].round(3).tolist(),
             "p5": d["p5"].round(0).astype(int).tolist(),
@@ -43,9 +46,11 @@ def main():
         }
 
     # macro scenarios: contraction/base/expansion at 1.0/1.1/1.2
+    # Output keys are lowercase (fixed by index.html's JS); the source
+    # labels in simulation_scenarios.parquet are Title Case.
     macro = {}
-    for s in ["contraction", "base", "expansion"]:
-        d = scen[scen["scenario"] == s].sort_values("price")
+    for s, parquet_scenario in [("contraction", "Contraction"), ("base", "Base"), ("expansion", "Expansion")]:
+        d = scen[scen["scenario"] == parquet_scenario].sort_values("price")
         macro[s] = {
             "price": d["price"].round(2).tolist(),
             "p5": d["p5"].round(0).astype(int).tolist(),
@@ -89,8 +94,8 @@ def main():
         "segMeta": seg_meta,
         "segOrder": seg_order,
         "assumptions": {
-            "response_ratio": round(float(assump.get("response scale (conservative)")), 3),
-            "depth_bias": round(float(assump.get("depth bias (conservative)")), 3),
+            "response_ratio": round(float(assump.get("response scale (joint sensitivity)")), 3),
+            "depth_bias": round(float(assump.get("depth scale (joint sensitivity)")), 3),
         },
     }
 
