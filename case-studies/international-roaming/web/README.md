@@ -6,13 +6,14 @@ expected annual revenue benefit alongside the expected purchaser cost, under
 three economic conditions, with the simulation's uncertainty shown alongside
 each estimate — no BI login required.
 
-Revenue is fully wired up. Purchaser figures are available at the **segment**
-grain (a deterministic expected-value decomposition — see the notebook's
-"Build Segment Purchaser Curves" section) but **not yet** at the portfolio or
-economic-scenario grain, where a properly simulated figure with a p5–p95
-interval is needed (see "Adding portfolio-level purchaser data" below). The
-tool discloses this asymmetry explicitly rather than approximating the
-missing piece, and stays fully usable for revenue exploration in the meantime.
+Both sides of the trade-off are wired up: revenue and purchasers, at the
+portfolio, economic-scenario, and segment grain. Portfolio and
+economic-scenario purchasers are genuinely *simulated* — counted inside the
+same Monte Carlo loop as revenue, from the same draws, so the two stay
+properly paired — while segment purchasers remain the deterministic
+expected-value figure Track A added (no interval; see the notebook's "Build
+Segment Purchaser Curves" section). The tool discloses this methodological
+difference rather than blurring it.
 
 ## Files
 
@@ -54,9 +55,10 @@ cd case-studies/international-roaming
 python3 web/build_data.py
 ```
 
-`build_data.py` validates the export as it reads it (grid consistency,
-`p5 <= median <= p95`, non-negative revenue, a shared `run_id`, and a
-consistency check between the two independent "Base" simulation runs) and
+`build_data.py` validates the export as it reads it — grid consistency,
+`p5 <= median <= p95` for revenue and purchasers, non-negative values,
+purchasers never exceeding `eligible_accounts`, a shared `run_id`, and a
+consistency check between the two independent "Base" simulation runs — and
 fails loudly rather than writing a `data.json` built on a broken assumption.
 
 Then re-zip if you're using `scenario-explorer.zip`:
@@ -74,49 +76,48 @@ zip -j scenario-explorer.zip index.html data.json
 `data.json` currently carries:
 
 - `meta` — run id, current/recommended price, behavioral-case scale factors,
-  the segment/portfolio reconciliation gap, `purchasers_available: false`
-  (portfolio/scenario grain), and `segment_purchasers_available: true`.
+  the segment/portfolio reconciliation gap, `purchasers_available: true`,
+  `segment_purchasers_available: true`, and `eligible_accounts` — the
+  forward-panel population (`N_ACCOUNTS_PANEL` in the notebook) that every
+  purchaser figure on the page is drawn from and rated against.
 - `grid` — the full 13-point evaluated price grid (0.90x–1.20x).
-- `portfolio` — revenue p5/median/p95 across the full grid, for the "as
-  fitted" and "joint sensitivity" cases, unconditioned on macro scenario
-  (what the tool calls the Base economy). No purchaser fields yet.
-- `scenarios.expansion` / `scenarios.contraction` — revenue p5/median/p95 at
-  exactly the three prices the macro simulation was run at (1.00x,
-  recommended, 1.20x), always under the joint-sensitivity case. No purchaser
-  fields yet.
+- `portfolio` — revenue **and purchasers** p5/median/p95 across the full
+  grid, for the "as fitted" and "joint sensitivity" cases, unconditioned on
+  macro scenario (what the tool calls the Base economy). Purchasers come
+  from the same simulation draws as revenue (see "How purchasers are
+  simulated" below), so the two stay properly paired.
+- `scenarios.expansion` / `scenarios.contraction` — revenue and purchasers
+  p5/median/p95 at exactly the three prices the macro simulation was run at
+  (1.00x, recommended, 1.20x), always under the joint-sensitivity case. Each
+  also carries `paired_at_recommended`: a genuinely paired revenue/purchaser
+  difference (1.15x vs. 1.00x, same iterations) — the tool prefers this over
+  subtracting two marginal medians whenever the scenario and selected price
+  make it valid, per the spec's preference for paired simulation differences.
 - `segOrder` / `segMeta` / `segCurve` — the four pricing-eligible segments'
   revenue **and expected purchasers** across the full grid, both deterministic
-  expected-value decompositions (not simulated — no interval). Purchasers is
-  the per-account `1 − ∏(p_null over that account's forward trips)`, summed
-  within segment; see the notebook's "Build Segment Purchaser Curves" cell
-  and the tool's own Methodology section for the independence assumption.
+  expected-value decompositions (not simulated — no interval, unlike the
+  simulated portfolio/scenario figures above). Purchasers is the per-account
+  `1 − ∏(p_null over that account's forward trips)`, summed within segment;
+  see the notebook's "Build Segment Purchaser Curves" cell and the tool's own
+  Methodology section for the independence assumption.
 - `dormant` — the excluded Dormant segment's size, for disclosure only.
 
-### Adding portfolio-level purchaser data
+### How purchasers are simulated (Track B)
 
-The segment-grain purchaser figures above (Track A) reuse data and code that
-already existed for segment revenue — no new simulation. Portfolio and
-economic-scenario purchasers (Track B) are a different, larger piece of work:
-they need a genuinely *simulated* figure with a p5–p95 interval, paired
-against revenue from the same Monte Carlo draws — not a second, independent
-simulation, which would break the pairing needed for a valid interval or a
-`revenue_per_purchaser_lost` figure.
+The notebook's `simulate()` function accumulates `simulated_revenue[iteration]`
+inside its Monte Carlo loop; it now optionally also accumulates
+`simulated_purchasers[iteration]` from the *same* per-iteration draws — an
+account counts as a purchaser that iteration if any of its forward trips
+occurred and landed in a non-null coverage state. This is gated behind a
+`track_purchasers=False` keyword so every diagnostic-only call site
+(convergence checks, the antithetic-variance comparison, the baseline
+distribution) is unchanged; only the full price sweep and the macro-scenario
+cell pass `track_purchasers=True` and export the result.
 
-Concretely: the notebook's `simulate()` function currently only accumulates
-`simulated_revenue[iteration]`. It would need a second per-iteration
-accumulator — e.g. track which accounts had at least one non-null-coverage
-trip that iteration, count them — output alongside revenue from every call.
-`simulate()` is invoked for the full 13-point sweep (both cases) and the
-3-scenario × 3-price macro runs; both call sites, and the tables they feed
-(`fact_portfolio_simulation`, `fact_macro_scenario`), would need the new
-`purchasers_median`/`_p5`/`_p95` columns.
-
-Once those exist, `data.json` needs, mirroring the revenue fields:
-
-- `portfolio.<case>.purchasers_median` / `_p5` / `_p95`, full grid, both cases.
-- `scenarios.<scenario>.purchasers_median` / `_p5` / `_p95`, at the three
-  macro-simulation prices.
-
-— at which point `meta.purchasers_available` flips to `true` and the page's
-purchaser chart, decision-summary cost column, and `revenue_per_purchaser_lost`
-figure can be lit up. Until then, don't fabricate or approximate them here.
+Implementation: `ACCOUNT_IDX = pd.factorize(panel['account_id'])[0]` maps
+each forward-trip row to an integer account index once, up front; per
+iteration, `np.bincount(ACCOUNT_IDX, weights=purchased_trip, minlength=N_ACCOUNTS_PANEL) > 0`
+gives a per-account purchased-this-iteration flag in one vectorized call, and
+`.sum()` is the iteration's purchaser count. Segment-level purchasers were
+deliberately **not** extended to simulated intervals — the deterministic
+Track A figure stays as documented above; see the commit history for why.

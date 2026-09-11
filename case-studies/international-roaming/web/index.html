@@ -664,9 +664,10 @@
   <div class="chart-card">
     <div class="chart-head">
       <span class="chart-title cost" id="costChartTitle"><span class="sw"></span>Annual roaming-pass purchasers by price</span>
+      <div class="legend" id="costLegend"></div>
     </div>
-    <div class="unavailable-panel">
-      Purchaser estimates are not included in this simulation export. The notebook's price sweep produces revenue distributions only — no account-level purchase-probability table is exported at the price/scenario grain this tool needs. See Methodology below for the data contract that would enable this chart.
+    <div class="chart-wrap">
+      <svg class="chart" id="costChart" viewBox="0 0 900 260" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="costChartTitle"></svg>
     </div>
   </div>
 
@@ -714,12 +715,16 @@
       <h3>Roaming-pass purchasers vs. wireless subscribers</h3>
       <p>This tool's purchaser measure counts <b>roaming-pass purchasers</b> — accounts with at least one roaming trip receiving partial or full paid coverage in the forward year — not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
 
-      <h3>Why the segment table has purchaser figures and the chart above doesn't</h3>
-      <p>Segment-level purchasers are computed as a deterministic expected value: per account, <code>P(at least one purchase) = 1 − ∏ P(null coverage)</code> across that account's forward trips, summed within segment. This <b>assumes conditional independence of an account's trip-purchase events</b> — no account-level dependence is modeled. It uses the same trip-probability data and grain as the segment revenue curve (joint-sensitivity case, unconditioned macro), so it carries no simulation interval, same as segment revenue.</p>
-      <p>The chart and decision summary above need something stronger: a properly <em>simulated</em> purchaser count — with a p5–p95 interval, paired against revenue from the same simulation draws — at every price, economic scenario, and behavioral case. That requires accumulating purchaser counts inside the notebook's Monte Carlo simulation loop alongside revenue, not a second independent simulation (which would break the pairing needed for a valid interval or a revenue-per-purchaser-lost figure). That work is not done yet — see <code>web/README.md</code> for the field-level data contract this page expects once it is.</p>
+      <h3>How the purchaser chart and summary are simulated</h3>
+      <p>Purchasers are counted inside the same Monte Carlo loop that produces revenue: each iteration, an account counts as a purchaser if at least one of its forward trips lands in a non-null coverage state that draw. Because it comes from the same draws, purchasers stay properly paired with revenue — the p5–p95 band on the purchaser chart is a genuine simulation interval, not a derived or approximated range.</p>
+      <p>Where a <b>paired</b> difference is available — Expansion and Contraction, at the recommended price only, where both revenue and purchasers were differenced iteration-by-iteration against the 1.00&times; run — the summary above uses it and marks it <i>(paired)</i>. Everywhere else, "change vs. 1.00&times;" is the difference of two marginal medians; common random numbers are used across every price within a case, which limits (but doesn't eliminate) the Monte Carlo noise this introduces.</p>
+      <p>The purchaser rate denominator (<span id="mEligibleAccounts"></span> accounts) is the forward-panel population the simulation actually draws purchases from — the account base with a modeled forward trip, not the full customer book.</p>
+
+      <h3>Why the segment table's purchaser figures are different</h3>
+      <p>Segment-level purchasers are a separate, <b>deterministic</b> calculation: per account, <code>P(at least one purchase) = 1 − ∏ P(null coverage)</code> across that account's forward trips, summed within segment. This <b>assumes conditional independence of an account's trip-purchase events</b> — no account-level dependence is modeled. It uses the same trip-probability data and grain as the segment revenue curve (joint-sensitivity case, unconditioned macro), so — like segment revenue — it carries no simulation interval and doesn't change with the toggles above, unlike the simulated chart and summary.</p>
 
       <h3>Segment figures</h3>
-      <p>Segment revenue does not reconcile exactly with the portfolio total shown above: it is a probability-weighted expected value, while the portfolio figure is the <b>median</b> of a simulated, right-skewed distribution — the two differ by construction, currently by about <span id="mReconGap"></span> at the current price. Segment figures also exclude the <b>Dormant</b> segment, disclosed separately below, and are not simulated, so no interval is shown for them.</p>
+      <p>Segment revenue does not reconcile exactly with the portfolio total shown above: it is a probability-weighted expected value, while the portfolio figure is the <b>median</b> of a simulated, right-skewed distribution — the two differ by construction, currently by about <span id="mReconGap"></span> at the current price. The same is expected of segment vs. portfolio purchasers, for the same reason. Segment figures also exclude the <b>Dormant</b> segment, disclosed separately below.</p>
 
       <h3>Run provenance</h3>
       <p>All figures on this page come from a single simulation run, <code id="mRunId"></code>.</p>
@@ -762,12 +767,24 @@ function activeGrid() {
 }
 
 function activeSeries() {
-  // returns { median, p5, p95 } for the active scenario/case over the active grid
+  // returns revenue_*/purchasers_* arrays for the active scenario/case over the active grid
   if (state.scenario === 'base') {
     return DATA.portfolio[state.behaviorCase];
   }
-  const s = DATA.scenarios[state.scenario];
-  return { revenue_median: s.revenue_median, revenue_p5: s.revenue_p5, revenue_p95: s.revenue_p95 };
+  return DATA.scenarios[state.scenario];
+}
+
+// A genuinely paired revenue/purchaser difference (same simulation draws) exists
+// only for Expansion/Contraction, only at the recommended price — see build_data.py.
+// Returns null when the current scenario/price doesn't match, so callers fall back
+// to marginal-median subtraction (which is what Base always uses: mixing the macro
+// table's paired diff with the full-grid portfolio sweep would pair across two
+// different simulation runs, which isn't a valid pairing).
+function pairedAtRecommended(grid, price) {
+  if (state.scenario === 'base') return null;
+  const paired = DATA.scenarios[state.scenario].paired_at_recommended;
+  if (!paired || Math.abs(price - paired.price) > 1e-6) return null;
+  return paired;
 }
 
 function baseIdx(grid) {
@@ -843,8 +860,10 @@ function render() {
   const price = grid[state.priceIdx];
   el('priceReadout').innerHTML = `${price.toFixed(3)}&times;<span class="delta">${fmtPctChange(price)}</span>`;
 
+  CHARTS = [];
   renderSummary(grid, price);
   renderRevChart(grid, price);
+  renderCostChart(grid, price);
   renderSegments(price);
   renderMethodologyFacts();
 }
@@ -855,26 +874,53 @@ function renderSummary(grid, price) {
   const series = activeSeries();
   const i = state.priceIdx;
   const b = baseIdx(grid);
+  const scenLabel = state.scenario === 'base' ? 'Base' : (state.scenario === 'expansion' ? 'Expansion' : 'Contraction');
+  const atCurrent = Math.abs(price - DATA.meta.current_price) < 1e-6;
+
+  // Revenue
   const med = series.revenue_median[i], baseMed = series.revenue_median[b];
   const p5 = series.revenue_p5[i], p95 = series.revenue_p95[i];
-  const change = med - baseMed;
-  const changePct = (med / baseMed - 1) * 100;
-  const pctLabel = fmtPctChange(price).replace('+', '');
-  const scenLabel = state.scenario === 'base' ? 'Base' : (state.scenario === 'expansion' ? 'Expansion' : 'Contraction');
 
-  const sentence = Math.abs(price - DATA.meta.current_price) < 1e-6
-    ? `At the current price (1.00&times;) under the ${scenLabel} economy, modeled annual revenue is <span class="rev-figure">${fmtMoney(med)}</span>. Purchaser figures are <span class="cost-figure">not available</span> in this export.`
-    : `At a ${fmtPctChange(price)} price change under the ${scenLabel} economy, modeled annual revenue ${change >= 0 ? 'increases' : 'decreases'} by <span class="rev-figure">${fmtMoney(Math.abs(change))}</span> (${fmtPct(changePct)}) versus 1.00&times;. The expected change in annual roaming-pass purchasers is <span class="cost-figure">not available</span> in this export.`;
+  // Purchasers
+  const pMed = series.purchasers_median[i], pBaseMed = series.purchasers_median[b];
+  const pP5 = series.purchasers_p5[i], pP95 = series.purchasers_p95[i];
+
+  // Prefer a genuinely paired difference when one exists for this exact
+  // scenario/price (see pairedAtRecommended) over subtracting two marginal
+  // medians — per the tool's spec, paired simulation differences are the
+  // more defensible source for a "change" figure when available.
+  const paired = pairedAtRecommended(grid, price);
+  const revChange = paired ? paired.revenue_paired_median : (med - baseMed);
+  const purchChange = paired ? paired.purchasers_paired_median : (pMed - pBaseMed);
+  const changeIsPaired = !!paired;
+
+  const revChangePct = (med / baseMed - 1) * 100;
+  const purchRate = pMed / DATA.meta.eligible_accounts;
+  const purchRateBase = pBaseMed / DATA.meta.eligible_accounts;
+  const purchRateChangePts = (purchRate - purchRateBase) * 100;
+
+  const sentence = atCurrent
+    ? `At the current price (1.00&times;) under the ${scenLabel} economy, modeled annual revenue is <span class="rev-figure">${fmtMoney(med)}</span> and expected annual roaming-pass purchasers are <span class="cost-figure">${fmtCount(pMed)}</span>.`
+    : `At a ${fmtPctChange(price)} price change under the ${scenLabel} economy, modeled annual revenue ${revChange >= 0 ? 'increases' : 'decreases'} by <span class="rev-figure">${fmtMoney(Math.abs(revChange))}</span> (${fmtPct(revChangePct)}) while the expected number of annual roaming-pass purchasers ${purchChange >= 0 ? 'increases' : 'decreases'} by <span class="cost-figure">${fmtCount(Math.abs(purchChange))}</span>, versus 1.00&times;.`;
   el('summarySentence').innerHTML = sentence;
 
   el('revStats').innerHTML = `
     <div class="stat-line"><span class="k">Expected annual revenue</span><span class="v">${fmtMoneyFull(med)}</span></div>
-    <div class="stat-line"><span class="k">Change vs. 1.00&times;</span><span class="v">${fmtMoneyFull(change)} (${fmtPct(changePct)})</span></div>
+    <div class="stat-line"><span class="k">Change vs. 1.00&times;${changeIsPaired ? ' <i>(paired)</i>' : ''}</span><span class="v">${fmtMoneyFull(revChange)} (${fmtPct(revChangePct)})</span></div>
     <div class="stat-line"><span class="k">Simulation interval (p5–p95)</span><span class="v">${fmtMoney(p5)} – ${fmtMoney(p95)}</span></div>`;
 
-  el('costStats').innerHTML = `<div class="unavailable-note">Purchaser estimates are not included in this simulation export — no expected annual purchaser count, change vs. 1.00&times;, or purchaser-rate figure can be shown. Revenue exploration above remains fully usable.</div>`;
+  el('costStats').innerHTML = `
+    <div class="stat-line"><span class="k">Expected annual purchasers</span><span class="v">${fmtCount(pMed)}</span></div>
+    <div class="stat-line"><span class="k">Change vs. 1.00&times;${changeIsPaired ? ' <i>(paired)</i>' : ''}</span><span class="v">${purchChange >= 0 ? '+' : ''}${fmtCount(purchChange)}</span></div>
+    <div class="stat-line"><span class="k">Purchaser rate</span><span class="v">${(purchRate * 100).toFixed(1)}% (${purchRateChangePts >= 0 ? '+' : ''}${purchRateChangePts.toFixed(2)}pt)</span></div>
+    <div class="stat-line"><span class="k">Simulation interval (p5–p95)</span><span class="v">${fmtCount(pP5)} – ${fmtCount(pP95)}</span></div>`;
 
-  el('rplLine').textContent = 'Incremental revenue per purchaser lost: Not applicable — purchaser estimates are unavailable.';
+  if (revChange > 0 && purchChange < 0) {
+    const rpl = revChange / Math.abs(purchChange);
+    el('rplLine').innerHTML = `Incremental revenue per purchaser lost${changeIsPaired ? ' <i>(paired)</i>' : ''}: <b>${fmtMoneyFull(rpl)}</b>`;
+  } else {
+    el('rplLine').textContent = 'Incremental revenue per purchaser lost: Not applicable — revenue is not simultaneously up and purchasers down at this price.';
+  }
 }
 
 // ---------------- SVG chart engine ----------------
@@ -882,6 +928,11 @@ function renderSummary(grid, price) {
 const M = { top: 14, right: 18, bottom: 28, left: 62 };
 const W = 900, H = 260;
 const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+// Both charts share the active price grid and selected index, so hovering or
+// selecting on either one moves the crosshair/selection on both — CHARTS holds
+// the current render's chart objects for that syncing.
+let CHARTS = [];
 
 function renderRevChart(grid, price) {
   const series = activeSeries();
@@ -896,6 +947,7 @@ function renderRevChart(grid, price) {
   const yMax = Math.max(...allVals) * 1.03;
 
   const chart = buildChart({
+    svgId: 'revChart',
     x: grid, yMin, yMax,
     xTickFmt: (p) => fmtPctChange(p),
     yTickFmt: fmtMoney,
@@ -906,12 +958,48 @@ function renderRevChart(grid, price) {
   drawLine(chart, series.revenue_median, 'var(--accent)', 1, true);
   drawSelectedPoint(chart, state.priceIdx, series.revenue_median[state.priceIdx], 'var(--accent)');
   drawCrosshair(chart, state.priceIdx);
-  wireHover(chart, (idx) => showTooltip(chart, idx, series, grid));
+  wireHover(chart, (idx) => { moveAllCrosshairs(idx); showTooltip(chart, idx, series, grid, 'revenue'); });
+  CHARTS.push(chart);
 }
 
-function buildChart({ x, yMin, yMax, xTickFmt, yTickFmt }) {
-  const svg = el('revChart');
+function renderCostChart(grid, price) {
+  const series = activeSeries();
+  const b = baseIdx(grid);
+
+  el('costLegend').innerHTML = `
+    <span class="key"><span class="swatch-line" style="--swatch-color:var(--cost)"></span>Median</span>
+    <span class="key"><span class="swatch-line ref"></span>1.00&times; reference</span>`;
+
+  const allVals = [...series.purchasers_p5, ...series.purchasers_p95];
+  const yMin = Math.min(...allVals) * 0.97;
+  const yMax = Math.max(...allVals) * 1.03;
+
+  const chart = buildChart({
+    svgId: 'costChart',
+    x: grid, yMin, yMax,
+    xTickFmt: (p) => fmtPctChange(p),
+    yTickFmt: fmtCount,
+  });
+
+  drawVerticalRef(chart, grid[b], 'CURRENT 1.00×');
+  drawBand(chart, series.purchasers_p5, series.purchasers_p95, 'var(--cost)', 1);
+  drawLine(chart, series.purchasers_median, 'var(--cost)', 1, true);
+  drawSelectedPoint(chart, state.priceIdx, series.purchasers_median[state.priceIdx], 'var(--cost)');
+  drawCrosshair(chart, state.priceIdx);
+  wireHover(chart, (idx) => { moveAllCrosshairs(idx); showTooltip(chart, idx, series, grid, 'purchasers'); });
+  CHARTS.push(chart);
+}
+
+function moveAllCrosshairs(idx) {
+  CHARTS.forEach((c) => moveCrosshair(c, idx));
+}
+
+function buildChart({ svgId, x, yMin, yMax, xTickFmt, yTickFmt }) {
+  const svg = el(svgId);
   svg.innerHTML = '';
+  const wrapEl = svg.closest('.chart-wrap');
+  const oldTt = wrapEl.querySelector('.tooltip');
+  if (oldTt) oldTt.remove();
   const ns = 'http://www.w3.org/2000/svg';
   const xScale = (v) => M.left + ((v - x[0]) / (x[x.length - 1] - x[0])) * plotW;
   const yScale = (v) => M.top + plotH - ((v - yMin) / (yMax - yMin)) * plotH;
@@ -944,7 +1032,7 @@ function buildChart({ x, yMin, yMax, xTickFmt, yTickFmt }) {
     svg.appendChild(text);
   });
 
-  return { svg, ns, x, xScale, yScale, yMin, yMax };
+  return { svg, ns, wrapEl, x, xScale, yScale, yMin, yMax };
 }
 
 function pathFor(chart, values) {
@@ -1017,16 +1105,19 @@ function drawCrosshair(chart, idx) {
   const x = chart.xScale(chart.x[idx]);
   const line = document.createElementNS(ns, 'line');
   line.setAttribute('class', 'crosshair');
-  line.setAttribute('id', 'crosshair-line');
+  line.setAttribute('id', `crosshair-line-${svg.id}`);
   line.setAttribute('x1', x); line.setAttribute('x2', x);
   line.setAttribute('y1', M.top); line.setAttribute('y2', H - M.bottom);
   svg.appendChild(line);
 }
 
 function moveCrosshair(chart, idx) {
-  const line = chart.svg.querySelector('#crosshair-line');
+  // idx is an index into THIS chart's own grid, which may be shorter (3-point
+  // scenario grids) than the grid the hover originated on — clamp defensively.
+  const clamped = Math.max(0, Math.min(idx, chart.x.length - 1));
+  const line = chart.svg.querySelector(`#crosshair-line-${chart.svg.id}`);
   if (!line) return;
-  const x = chart.xScale(chart.x[idx]);
+  const x = chart.xScale(chart.x[clamped]);
   line.setAttribute('x1', x); line.setAttribute('x2', x);
 }
 
@@ -1056,8 +1147,9 @@ function wireHover(chart, onIdx) {
     onIdx(idx, e);
   });
   rect.addEventListener('pointerleave', () => {
-    const tt = document.querySelector('.tooltip');
+    const tt = chart.wrapEl.querySelector('.tooltip');
     if (tt) tt.remove();
+    moveAllCrosshairs(state.priceIdx);
   });
   rect.addEventListener('click', (e) => {
     const idx = nearestIdx(e.clientX);
@@ -1068,11 +1160,11 @@ function wireHover(chart, onIdx) {
 }
 
 function tooltipBase(chart, idx) {
-  let tt = document.querySelector('.tooltip');
+  let tt = chart.wrapEl.querySelector('.tooltip');
   if (!tt) {
     tt = document.createElement('div');
     tt.className = 'tooltip';
-    document.querySelector('.chart-wrap').appendChild(tt);
+    chart.wrapEl.appendChild(tt);
   }
   const box = chart.svg.getBoundingClientRect();
   const scale = box.width / W;
@@ -1082,16 +1174,21 @@ function tooltipBase(chart, idx) {
   return tt;
 }
 
-function showTooltip(chart, idx, series, grid) {
+function showTooltip(chart, idx, series, grid, kind) {
   const tt = tooltipBase(chart, idx);
   const price = chart.x[idx];
-  const change = series.revenue_median[idx] - series.revenue_median[baseIdx(grid)];
+  const isRevenue = kind === 'revenue';
+  const color = isRevenue ? 'var(--accent)' : 'var(--cost)';
+  const median = isRevenue ? series.revenue_median : series.purchasers_median;
+  const p5 = isRevenue ? series.revenue_p5 : series.purchasers_p5;
+  const p95 = isRevenue ? series.revenue_p95 : series.purchasers_p95;
+  const fmt = isRevenue ? fmtMoney : fmtCount;
+  const change = median[idx] - median[baseIdx(grid)];
   tt.innerHTML = `
     <div class="tt-price">${price.toFixed(3)}× · ${fmtPctChange(price)}</div>
-    <div class="tt-row"><span class="tt-key"><span class="tt-swatch" style="--sw:var(--accent)"></span>median</span><span class="tt-val">${fmtMoney(series.revenue_median[idx])}</span></div>
-    <div class="tt-row"><span class="tt-key">p5–p95</span><span class="tt-val">${fmtMoney(series.revenue_p5[idx])}–${fmtMoney(series.revenue_p95[idx])}</span></div>
-    <div class="tt-row"><span class="tt-key">vs. 1.00×</span><span class="tt-val">${fmtMoney(change)}</span></div>`;
-  moveCrosshair(chart, idx);
+    <div class="tt-row"><span class="tt-key"><span class="tt-swatch" style="--sw:${color}"></span>median</span><span class="tt-val">${fmt(median[idx])}</span></div>
+    <div class="tt-row"><span class="tt-key">p5–p95</span><span class="tt-val">${fmt(p5[idx])}–${fmt(p95[idx])}</span></div>
+    <div class="tt-row"><span class="tt-key">vs. 1.00×</span><span class="tt-val">${change >= 0 ? '+' : ''}${fmt(change)}</span></div>`;
 }
 
 // ---------------- segments ----------------
@@ -1182,6 +1279,7 @@ function renderMethodologyFacts() {
   el('mResponseScale').textContent = DATA.meta.response_scale_joint_sensitivity.toFixed(2);
   el('mDepthScale').textContent = DATA.meta.depth_scale_joint_sensitivity.toFixed(2);
   el('mReconGap').textContent = `${DATA.meta.reconciliation_gap_pct.toFixed(1)}%`;
+  el('mEligibleAccounts').textContent = DATA.meta.eligible_accounts.toLocaleString();
   el('mRunId').textContent = DATA.meta.run_id;
   el('footerRunId').textContent = DATA.meta.run_id;
 }

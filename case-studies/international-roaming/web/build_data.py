@@ -34,17 +34,25 @@ Data contract, in brief (see web/README.md for the full version):
               scenario/case is selected in the UI. Purchasers = per-account
               P(at least one purchase) = 1 - prod(p_null over that account's
               forward trips), summed within segment; assumes conditional
-              independence of an account's trip-purchase events. The tool
-              discloses both the fixed-condition caveat and the independence
-              assumption.
-  purchasers  Segment-level only (see above) — NOT exported at the
-              portfolio or economic-scenario grain. Getting a properly
-              simulated purchasers_median/_p5/_p95 there needs the same
-              per-iteration accounting added to the notebook's simulate()
-              loop, paired with revenue from the same draws (not a second,
-              independent simulation) — see README's "Adding purchaser
-              data" section. Until then those views show an explicit
-              "unavailable" state rather than deriving or approximating one.
+              independence of an account's trip-purchase events. No
+              interval — see the tool's Methodology section.
+  purchasers  Now simulated (not just segment-level): portfolio (both
+              cases, full grid) and Expansion/Contraction (3 prices) carry
+              purchasers_p5/_median/_p95 from the same simulate() draws as
+              revenue — added to the notebook's inner loop as a per-
+              iteration count of distinct accounts with >=1 non-null trip
+              (np.bincount over account_id), paired with revenue rather
+              than a second independent simulation. eligible_accounts is
+              the forward-panel population those counts are drawn from
+              (N_ACCOUNTS_PANEL), constant across every row.
+              Expansion/Contraction additionally carry a genuinely paired
+              revenue/purchaser difference (1.15x vs 1.00x, same iterations)
+              under `paired_at_recommended` — preferred over subtracting
+              marginal medians per the tool's spec (§12), and used by the
+              page whenever the scenario and selected price make it valid.
+              Segment-level purchasers remain the Track-A deterministic
+              figure above; no plan to simulate intervals at that grain
+              (see the scoping note in README's git history).
 """
 
 import json
@@ -86,6 +94,19 @@ def main():
     assert any(abs(g - current_price) < 1e-9 for g in grid), "1.00x missing from price grid"
     assert any(abs(g - recommended_price) < 1e-9 for g in grid), "recommended price missing from grid"
 
+    # eligible_accounts is a single constant (the forward-panel population);
+    # confirm it really is constant before treating it as a scalar downstream.
+    assert fact_portfolio["eligible_accounts"].nunique() == 1, (
+        "eligible_accounts is not constant in fact_portfolio_simulation"
+    )
+    assert fact_macro["eligible_accounts"].nunique() == 1, (
+        "eligible_accounts is not constant in fact_macro_scenario"
+    )
+    eligible_accounts = int(fact_portfolio["eligible_accounts"].iloc[0])
+    assert eligible_accounts == int(fact_macro["eligible_accounts"].iloc[0]), (
+        "eligible_accounts differs between fact_portfolio_simulation and fact_macro_scenario"
+    )
+
     # ---- portfolio: full grid, both cases, unconditioned (= "Base") ----
     portfolio = {}
     for case in ["as fitted", "joint sensitivity"]:
@@ -93,10 +114,20 @@ def main():
         assert d["price_multiplier"].round(4).tolist() == grid, f"{case}: price grid mismatch"
         assert (d["p5"] <= d["median"]).all() and (d["median"] <= d["p95"]).all(), f"{case}: p5<=median<=p95 violated"
         assert (d["p5"] >= 0).all(), f"{case}: negative revenue bound"
+        assert (d["purchasers_p5"] <= d["purchasers_median"]).all() and (
+            d["purchasers_median"] <= d["purchasers_p95"]
+        ).all(), f"{case}: purchasers p5<=median<=p95 violated"
+        assert (d["purchasers_p5"] >= 0).all(), f"{case}: negative purchasers bound"
+        assert (d["purchasers_p95"] <= eligible_accounts + 1e-6).all(), (
+            f"{case}: purchasers p95 exceeds eligible_accounts"
+        )
         portfolio[case] = {
             "revenue_p5": d["p5"].round(0).astype(int).tolist(),
             "revenue_median": d["median"].round(0).astype(int).tolist(),
             "revenue_p95": d["p95"].round(0).astype(int).tolist(),
+            "purchasers_p5": d["purchasers_p5"].round(0).astype(int).tolist(),
+            "purchasers_median": d["purchasers_median"].round(0).astype(int).tolist(),
+            "purchasers_p95": d["purchasers_p95"].round(0).astype(int).tolist(),
         }
 
     # ---- scenarios: Expansion / Contraction, 3 prices, joint sensitivity only ----
@@ -109,11 +140,40 @@ def main():
             f"{key}: expected prices {scenario_prices}, got {prices}"
         )
         assert (d["p5"] <= d["median"]).all() and (d["median"] <= d["p95"]).all(), f"{key}: p5<=median<=p95 violated"
+        assert (d["purchasers_p5"] <= d["purchasers_median"]).all() and (
+            d["purchasers_median"] <= d["purchasers_p95"]
+        ).all(), f"{key}: purchasers p5<=median<=p95 violated"
+        assert (d["purchasers_p5"] >= 0).all(), f"{key}: negative purchasers bound"
+        assert (d["purchasers_p95"] <= eligible_accounts + 1e-6).all(), (
+            f"{key}: purchasers p95 exceeds eligible_accounts"
+        )
+
+        # Genuinely paired revenue/purchaser difference at the recommended price
+        # (1.15x vs 1.00x, same simulation draws) — only defined there, since
+        # that's the only pair the notebook's paired-difference cell computes.
+        rec_row = d.loc[d["price"].round(4) == round(recommended_price, 4)].iloc[0]
+        assert pd.notna(rec_row["purchasers_paired_median"]), (
+            f"{key}: missing paired purchaser difference at the recommended price"
+        )
+        paired_at_recommended = {
+            "price": recommended_price,
+            "revenue_paired_p5": round(float(rec_row["paired_p5"]), 0),
+            "revenue_paired_median": round(float(rec_row["paired_median"]), 0),
+            "revenue_paired_p95": round(float(rec_row["paired_p95"]), 0),
+            "purchasers_paired_p5": round(float(rec_row["purchasers_paired_p5"]), 1),
+            "purchasers_paired_median": round(float(rec_row["purchasers_paired_median"]), 1),
+            "purchasers_paired_p95": round(float(rec_row["purchasers_paired_p95"]), 1),
+        }
+
         scenarios[key] = {
             "price": prices,
             "revenue_p5": d["p5"].round(0).astype(int).tolist(),
             "revenue_median": d["median"].round(0).astype(int).tolist(),
             "revenue_p95": d["p95"].round(0).astype(int).tolist(),
+            "purchasers_p5": d["purchasers_p5"].round(0).astype(int).tolist(),
+            "purchasers_median": d["purchasers_median"].round(0).astype(int).tolist(),
+            "purchasers_p95": d["purchasers_p95"].round(0).astype(int).tolist(),
+            "paired_at_recommended": paired_at_recommended,
         }
 
     # Base-row consistency check: fact_macro_scenario's own "Base" row (separate,
@@ -203,8 +263,9 @@ def main():
             "run_id": run_id,
             "current_price": current_price,
             "recommended_price": recommended_price,
-            "purchasers_available": False,
+            "purchasers_available": True,
             "segment_purchasers_available": True,
+            "eligible_accounts": eligible_accounts,
             "response_scale_joint_sensitivity": round(
                 float(assumption_values.get("response scale (joint sensitivity)")), 4
             ),

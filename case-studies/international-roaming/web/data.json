@@ -3,8 +3,9 @@
     "run_id": "sim-crn4242-sweep400-macro300-paired800",
     "current_price": 1.0,
     "recommended_price": 1.15,
-    "purchasers_available": false,
+    "purchasers_available": true,
     "segment_purchasers_available": true,
+    "eligible_accounts": 22328,
     "response_scale_joint_sensitivity": 1.7567,
     "depth_scale_joint_sensitivity": 1.0408,
     "reconciliation_gap_pct": 10.9
@@ -70,6 +71,51 @@
         3235591,
         3273653,
         3309883
+      ],
+      "purchasers_p5": [
+        16479,
+        16424,
+        16376,
+        16322,
+        16278,
+        16241,
+        16203,
+        16146,
+        16103,
+        16049,
+        15978,
+        15910,
+        15826
+      ],
+      "purchasers_median": [
+        19724,
+        19672,
+        19630,
+        19576,
+        19524,
+        19482,
+        19439,
+        19386,
+        19337,
+        19273,
+        19199,
+        19132,
+        19048
+      ],
+      "purchasers_p95": [
+        21092,
+        21035,
+        20992,
+        20936,
+        20884,
+        20842,
+        20795,
+        20740,
+        20684,
+        20631,
+        20547,
+        20468,
+        20388
       ]
     },
     "joint sensitivity": {
@@ -117,6 +163,51 @@
         3086474,
         3081747,
         3058102
+      ],
+      "purchasers_p5": [
+        16591,
+        16522,
+        16449,
+        16361,
+        16278,
+        16207,
+        16120,
+        16024,
+        15881,
+        15731,
+        15563,
+        15335,
+        15036
+      ],
+      "purchasers_median": [
+        19861,
+        19783,
+        19695,
+        19616,
+        19524,
+        19452,
+        19356,
+        19244,
+        19110,
+        18942,
+        18742,
+        18498,
+        18170
+      ],
+      "purchasers_p95": [
+        21234,
+        21154,
+        21064,
+        20975,
+        20884,
+        20805,
+        20713,
+        20596,
+        20442,
+        20266,
+        20053,
+        19795,
+        19452
       ]
     }
   },
@@ -141,7 +232,31 @@
         2938224,
         3103209,
         3076135
-      ]
+      ],
+      "purchasers_p5": [
+        18366,
+        17632,
+        17082
+      ],
+      "purchasers_median": [
+        20428,
+        19626,
+        19036
+      ],
+      "purchasers_p95": [
+        20921,
+        20111,
+        19523
+      ],
+      "paired_at_recommended": {
+        "price": 1.15,
+        "revenue_paired_p5": 123884.0,
+        "revenue_paired_median": 152331.0,
+        "revenue_paired_p95": 164770.0,
+        "purchasers_paired_p5": -853.0,
+        "purchasers_paired_median": -800.0,
+        "purchasers_paired_p95": -742.9
+      }
     },
     "contraction": {
       "price": [
@@ -163,7 +278,31 @@
         2796276,
         2945941,
         2919948
-      ]
+      ],
+      "purchasers_p5": [
+        14650,
+        13983,
+        13529
+      ],
+      "purchasers_median": [
+        17917,
+        17175,
+        16663
+      ],
+      "purchasers_p95": [
+        20371,
+        19521,
+        18935
+      ],
+      "paired_at_recommended": {
+        "price": 1.15,
+        "revenue_paired_p5": 84133.0,
+        "revenue_paired_median": 120714.0,
+        "revenue_paired_p95": 151261.0,
+        "purchasers_paired_p5": -820.0,
+        "purchasers_paired_median": -746.0,
+        "purchasers_paired_p95": -634.0
+      }
     }
   },
   "segOrder": [
