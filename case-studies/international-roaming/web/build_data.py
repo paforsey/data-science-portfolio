@@ -53,6 +53,12 @@ Data contract, in brief (see web/README.md for the full version):
               Segment-level purchasers remain the Track-A deterministic
               figure above; no plan to simulate intervals at that grain
               (see the scoping note in README's git history).
+  probCurve   Population-mean P(null)/P(partial)/P(full) by price and case —
+              the State Model's price-response mechanism itself, not a
+              simulated quantity. Not conditioned on macro scenario: the
+              macro shift only ever affects trip occurrence, never these
+              state probabilities, so this curve is the same regardless of
+              which economic scenario is selected in the UI.
 """
 
 import json
@@ -76,11 +82,13 @@ def main():
     fact_portfolio = pd.read_parquet(PBI / "fact_portfolio_simulation.parquet")
     fact_macro = pd.read_parquet(PBI / "fact_macro_scenario.parquet")
     fact_seg_rev = pd.read_parquet(PBI / "fact_segment_revenue.parquet")
+    fact_prob_curve = pd.read_parquet(PBI / "fact_probability_curve.parquet")
 
     run_ids = set(
         pd.concat([
             dim_price["run_id"], dim_segment["run_id"], dim_model_case["run_id"],
             fact_portfolio["run_id"], fact_macro["run_id"], fact_seg_rev["run_id"],
+            fact_prob_curve["run_id"],
         ]).unique()
     )
     assert len(run_ids) == 1, f"export tables span multiple run_ids: {run_ids}"
@@ -238,6 +246,21 @@ def main():
             "rev_per_acct": round(float(r["rev_per_acct"]), 2),
         }
 
+    # ---- coverage-state probability curve: full grid, both cases, price-only ----
+    # Not conditioned on economic scenario — macro shift never touches these.
+    prob_curve = {}
+    for case in ["as fitted", "joint sensitivity"]:
+        d = fact_prob_curve[fact_prob_curve["case"] == case].sort_values("price_multiplier")
+        assert d["price_multiplier"].round(4).tolist() == grid, f"prob curve {case}: price grid mismatch"
+        totals = d["p_null"] + d["p_partial"] + d["p_full"]
+        assert np.allclose(totals, 1.0, atol=1e-6), f"prob curve {case}: probabilities don't sum to 1"
+        assert ((d[["p_null", "p_partial", "p_full"]] >= 0).all()).all(), f"prob curve {case}: negative probability"
+        prob_curve[case] = {
+            "p_null": d["p_null"].round(4).tolist(),
+            "p_partial": d["p_partial"].round(4).tolist(),
+            "p_full": d["p_full"].round(4).tolist(),
+        }
+
     # ---- segment/portfolio reconciliation note ----
     # Segment revenue is a deterministic expected-value decomposition; the portfolio
     # figure above is the median of a simulated (right-skewed) distribution. The two
@@ -281,6 +304,7 @@ def main():
         "segMeta": seg_meta,
         "segCurve": seg_curve,
         "dormant": dormant,
+        "probCurve": prob_curve,
     }
 
     OUT.write_text(json.dumps(payload, indent=2) + "\n")

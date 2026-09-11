@@ -578,6 +578,101 @@
   .methodology ul { margin: 0; padding-left: 1.1rem; color: var(--ink); opacity: 0.88; }
   .methodology li { margin: 0.15rem 0; }
 
+  /* ---------- simulation-inputs visual ---------- */
+
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.9rem;
+    margin: 0.2rem 0;
+  }
+
+  .input-card {
+    border: 1px solid var(--hairline);
+    border-radius: 3px;
+    padding: 0.8rem 0.9rem;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .input-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.64rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .input-curve { width: 100%; height: auto; display: block; }
+
+  .input-note {
+    font-size: 0.74rem;
+    color: var(--muted) !important;
+    opacity: 1 !important;
+    line-height: 1.4;
+  }
+
+  .state-mix-bar {
+    display: flex;
+    height: 22px;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .state-mix-bar .seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.64rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .state-mix-legend {
+    display: flex;
+    gap: 0.8rem;
+    font-size: 0.72rem;
+    color: var(--ink);
+  }
+
+  .state-mix-legend .key { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .state-mix-legend .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+  .sensitivity-intro { margin-top: 0.6rem !important; }
+
+  .sensitivity-badges {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .sensitivity-badge {
+    flex: 1 1 220px;
+    border: 1px dashed var(--hairline-strong);
+    border-radius: 3px;
+    padding: 0.55rem 0.75rem;
+    background: var(--unavailable-bg);
+  }
+
+  .sensitivity-badge .badge-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--ink);
+  }
+
+  .sensitivity-badge .badge-note {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.25rem;
+    line-height: 1.4;
+  }
+
   footer {
     border-top: 1px solid var(--hairline);
     padding-top: 1.2rem;
@@ -705,6 +800,43 @@
     <div class="body">
       <h3>What "simulation interval" means</h3>
       <p>The shaded band on the revenue chart is a <b>simulation interval</b> — the 5th–95th percentile range of a Monte Carlo simulation of the next 12 months, not a statistical confidence interval. It reflects modeled dispersion in the simulation, not sampling error in an estimator.</p>
+
+      <h3>Simulation inputs and their distributions</h3>
+      <p>Two things are actually redrawn at random every simulated iteration — everything else below is a fixed model output or a named point-estimate scenario, not a distribution.</p>
+      <div class="inputs-grid">
+        <div class="input-card">
+          <span class="input-label">Macro-economic shock</span>
+          <svg class="input-curve" id="macroShockCurve" viewBox="0 0 220 90"></svg>
+          <p class="input-note">Normal(0, &sigma;=0.35), drawn monthly; the path itself follows an AR(1) process with persistence 0.85. Shared across every account within an iteration — this is what correlates trip-occurrence outcomes economy-wide.</p>
+        </div>
+        <div class="input-card">
+          <span class="input-label">Market-share shift</span>
+          <svg class="input-curve" id="shareShiftCurve" viewBox="0 0 220 90"></svg>
+          <p class="input-note">Normal(0, &sigma;=0.03), one draw per simulated year. Shifts the whole population's travel propensity together.</p>
+        </div>
+        <div class="input-card">
+          <span class="input-label">Coverage-state mix at the selected price</span>
+          <div class="state-mix-bar" id="stateMixBar"></div>
+          <div class="state-mix-legend">
+            <span class="key"><span class="dot" style="background:var(--muted)"></span>Null</span>
+            <span class="key"><span class="dot" style="background:var(--cost)"></span>Partial</span>
+            <span class="key"><span class="dot" style="background:var(--accent)"></span>Full</span>
+          </div>
+          <p class="input-note" id="stateMixPrice"></p>
+          <p class="input-note">Not a random draw — the State Model's fitted price-response probabilities themselves, population-averaged. This is the mechanism the revenue/purchaser trade-off chart is built on. Unaffected by the economic scenario: macro shift only changes whether a trip happens, never this mix.</p>
+        </div>
+      </div>
+      <p class="sensitivity-intro">The two behavioral-case scale factors are <b>not distributions</b> — each is a single point estimate from one diagnostic, applied as a fixed multiplier:</p>
+      <div class="sensitivity-badges">
+        <div class="sensitivity-badge">
+          <div class="badge-value">response_scale &times;<span id="mResponseScaleBadge"></span></div>
+          <div class="badge-note">Ratio of observed to predicted price response in a single Asia-Pacific regional holdout — not a confidence bound.</div>
+        </div>
+        <div class="sensitivity-badge">
+          <div class="badge-value">depth_scale &times;<span id="mDepthScaleBadge"></span></div>
+          <div class="badge-note">Ratio from a partial-label contamination diagnostic (bootstrap-checked for stability, but only the point ratio is used here) — not a confidence bound.</div>
+        </div>
+      </div>
 
       <h3>Behavioral case</h3>
       <p>"As fitted" uses the response and depth models exactly as fitted to historical data. "Joint stronger-response sensitivity" scales both models up (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth) to test what happens if customers are more price-sensitive than fitted — it is <b>a sensitivity scenario, not a confidence bound or a second estimate of the truth</b>, and it is the case the recommended price was selected under.</p>
@@ -865,6 +997,7 @@ function render() {
   renderRevChart(grid, price);
   renderCostChart(grid, price);
   renderSegments(price);
+  renderStateMix(price);
   renderMethodologyFacts();
 }
 
@@ -1278,10 +1411,70 @@ function renderSegments(price) {
 function renderMethodologyFacts() {
   el('mResponseScale').textContent = DATA.meta.response_scale_joint_sensitivity.toFixed(2);
   el('mDepthScale').textContent = DATA.meta.depth_scale_joint_sensitivity.toFixed(2);
+  el('mResponseScaleBadge').textContent = DATA.meta.response_scale_joint_sensitivity.toFixed(2);
+  el('mDepthScaleBadge').textContent = DATA.meta.depth_scale_joint_sensitivity.toFixed(2);
   el('mReconGap').textContent = `${DATA.meta.reconciliation_gap_pct.toFixed(1)}%`;
   el('mEligibleAccounts').textContent = DATA.meta.eligible_accounts.toLocaleString();
   el('mRunId').textContent = DATA.meta.run_id;
   el('footerRunId').textContent = DATA.meta.run_id;
+}
+
+// ---------------- simulation-inputs visual ----------------
+
+// Static parametric density curves — pure math (the Normal PDF for the
+// disclosed sigma), not simulated or fetched data, so these render once and
+// never change with the controls above.
+function renderGaussianCurve(svgId, sigma) {
+  const svg = el(svgId);
+  const w = 220, h = 90, pad = 6;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const range = 3.2 * sigma;
+  const steps = 60;
+  const pdf = (x) => Math.exp(-(x * x) / (2 * sigma * sigma)) / (sigma * Math.sqrt(2 * Math.PI));
+  const xs = Array.from({ length: steps + 1 }, (_, i) => -range + (2 * range * i) / steps);
+  const ys = xs.map(pdf);
+  const maxY = Math.max(...ys);
+  const xScale = (x) => pad + ((x + range) / (2 * range)) * (w - 2 * pad);
+  const yScale = (y) => h - pad - (y / maxY) * (h - 2 * pad);
+
+  let d = `M ${xScale(xs[0])} ${yScale(0)}`;
+  xs.forEach((x, i) => { d += ` L ${xScale(x)} ${yScale(ys[i])}`; });
+  d += ` L ${xScale(xs[xs.length - 1])} ${yScale(0)} Z`;
+
+  const path = document.createElementNS(ns, 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('fill', 'var(--accent)');
+  path.setAttribute('fill-opacity', '0.18');
+  path.setAttribute('stroke', 'var(--accent)');
+  path.setAttribute('stroke-width', '1.5');
+  path.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(path);
+
+  const zeroX = xScale(0);
+  const line = document.createElementNS(ns, 'line');
+  line.setAttribute('x1', zeroX); line.setAttribute('x2', zeroX);
+  line.setAttribute('y1', pad); line.setAttribute('y2', h - pad);
+  line.setAttribute('stroke', 'var(--neutral-ref)');
+  line.setAttribute('stroke-width', '1');
+  line.setAttribute('stroke-dasharray', '2 2');
+  svg.appendChild(line);
+}
+
+// Reactive — the actual State Model output, population-averaged, at the
+// selected price and behavioral case. Always read off the full 13-point grid
+// (probCurve is price/case only, never conditioned on economic scenario).
+function renderStateMix(price) {
+  const grid = DATA.grid;
+  let idx = grid.findIndex((p) => Math.abs(p - price) < 1e-6);
+  if (idx === -1) idx = grid.reduce((best, p, i) => Math.abs(p - price) < Math.abs(grid[best] - price) ? i : best, 0);
+  const curve = DATA.probCurve[state.behaviorCase];
+  const pNull = curve.p_null[idx], pPartial = curve.p_partial[idx], pFull = curve.p_full[idx];
+
+  const seg = (pct, color) => `<div class="seg" style="width:${(pct * 100).toFixed(2)}%; background:${color}">${pct >= 0.09 ? Math.round(pct * 100) + '%' : ''}</div>`;
+  el('stateMixBar').innerHTML =
+    seg(pNull, 'var(--muted)') + seg(pPartial, 'var(--cost)') + seg(pFull, 'var(--accent)');
+  el('stateMixPrice').textContent = `At ${grid[idx].toFixed(3)}× · ${state.behaviorCase}`;
 }
 
 function init() {
@@ -1290,6 +1483,8 @@ function init() {
   const recIdx = grid.findIndex((p) => Math.abs(p - DATA.meta.recommended_price) < 1e-6);
   state.priceIdx = recIdx === -1 ? Math.floor(grid.length / 2) : recIdx;
   syncSlider();
+  renderGaussianCurve('macroShockCurve', 0.35);
+  renderGaussianCurve('shareShiftCurve', 0.03);
   render();
 }
 

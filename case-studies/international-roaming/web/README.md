@@ -101,6 +101,14 @@ zip -j scenario-explorer.zip index.html data.json
   see the notebook's "Build Segment Purchaser Curves" cell and the tool's own
   Methodology section for the independence assumption.
 - `dormant` — the excluded Dormant segment's size, for disclosure only.
+- `probCurve` — population-mean P(null)/P(partial)/P(full) across the full
+  grid, for both behavioral cases. This is the State Model's fitted
+  price-response mechanism itself (not simulated, not a distribution — a
+  direct mean of `probs_at(price, response_scale)` over the forward panel)
+  and is **not** conditioned on economic scenario: macro shift only ever
+  affects trip occurrence, never these coverage-state probabilities. Powers
+  the "Simulation inputs and their distributions" visual in the tool's
+  Methodology section.
 
 ### How purchasers are simulated (Track B)
 
