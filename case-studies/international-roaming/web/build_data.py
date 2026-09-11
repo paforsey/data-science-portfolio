@@ -59,6 +59,18 @@ Data contract, in brief (see web/README.md for the full version):
               macro shift only ever affects trip occurrence, never these
               state probabilities, so this curve is the same regardless of
               which economic scenario is selected in the UI.
+  sensitivityGrid
+              Independent response_scale x depth_scale controls, replacing
+              the old bundled "Behavior Case" toggle. 3 points each
+              (1.0, midpoint, the diagnostic-derived ceiling), full price
+              grid, Base economy only — Expansion/Contraction stay fixed at
+              the ceiling point (RESPONSE_SCALE_GRID[-1] /
+              DEPTH_SCALE_GRID[-1] in the notebook), unchanged from before
+              this grid existed. `cells["<ri>_<di>"]` indexes into
+              `responseScale[ri]` x `depthScale[di]`. Purely additive at the
+              notebook/export layer — the original two-case sweep
+              (`portfolio`, `dim_model_case`, `fact_portfolio_simulation`)
+              is untouched, so nothing depending on it needed to change.
 """
 
 import json
@@ -83,12 +95,13 @@ def main():
     fact_macro = pd.read_parquet(PBI / "fact_macro_scenario.parquet")
     fact_seg_rev = pd.read_parquet(PBI / "fact_segment_revenue.parquet")
     fact_prob_curve = pd.read_parquet(PBI / "fact_probability_curve.parquet")
+    fact_sensitivity = pd.read_parquet(PBI / "fact_sensitivity_grid.parquet")
 
     run_ids = set(
         pd.concat([
             dim_price["run_id"], dim_segment["run_id"], dim_model_case["run_id"],
             fact_portfolio["run_id"], fact_macro["run_id"], fact_seg_rev["run_id"],
-            fact_prob_curve["run_id"],
+            fact_prob_curve["run_id"], fact_sensitivity["run_id"],
         ]).unique()
     )
     assert len(run_ids) == 1, f"export tables span multiple run_ids: {run_ids}"
@@ -246,20 +259,72 @@ def main():
             "rev_per_acct": round(float(r["rev_per_acct"]), 2),
         }
 
-    # ---- coverage-state probability curve: full grid, both cases, price-only ----
-    # Not conditioned on economic scenario — macro shift never touches these.
+    # ---- coverage-state probability curve: full grid, response-scale only ----
+    # Not conditioned on economic scenario (macro shift never touches these) or
+    # depth_scale (which only touches revenue magnitude, never coverage-state
+    # probability). Indexed 0/1/2 to match sensitivityGrid.responseScale below.
+    prob_curve_response_grid = sorted(fact_prob_curve["response_scale"].unique().tolist())
+    assert len(prob_curve_response_grid) == 3, "expected a 3-point response_scale grid in prob curve"
     prob_curve = {}
-    for case in ["as fitted", "joint sensitivity"]:
-        d = fact_prob_curve[fact_prob_curve["case"] == case].sort_values("price_multiplier")
-        assert d["price_multiplier"].round(4).tolist() == grid, f"prob curve {case}: price grid mismatch"
+    for ri, rs in enumerate(prob_curve_response_grid):
+        d = fact_prob_curve[np.isclose(fact_prob_curve["response_scale"], rs)].sort_values("price_multiplier")
+        assert d["price_multiplier"].round(4).tolist() == grid, f"prob curve [{ri}]: price grid mismatch"
         totals = d["p_null"] + d["p_partial"] + d["p_full"]
-        assert np.allclose(totals, 1.0, atol=1e-6), f"prob curve {case}: probabilities don't sum to 1"
-        assert ((d[["p_null", "p_partial", "p_full"]] >= 0).all()).all(), f"prob curve {case}: negative probability"
-        prob_curve[case] = {
+        assert np.allclose(totals, 1.0, atol=1e-6), f"prob curve [{ri}]: probabilities don't sum to 1"
+        assert ((d[["p_null", "p_partial", "p_full"]] >= 0).all()).all(), f"prob curve [{ri}]: negative probability"
+        prob_curve[str(ri)] = {
             "p_null": d["p_null"].round(4).tolist(),
             "p_partial": d["p_partial"].round(4).tolist(),
             "p_full": d["p_full"].round(4).tolist(),
         }
+
+    # ---- sensitivity grid: independent response-scale x depth-scale controls ----
+    # Base economy only (Expansion/Contraction stay fixed at the ceiling point,
+    # unchanged — see build note in the notebook's "Sweep Sensitivity Grid" cell).
+    response_scale_grid = sorted(fact_sensitivity["response_scale"].unique().tolist())
+    depth_scale_grid = sorted(fact_sensitivity["depth_scale"].unique().tolist())
+    assert len(response_scale_grid) == 3, "expected a 3-point response_scale grid"
+    assert len(depth_scale_grid) == 3, "expected a 3-point depth_scale grid"
+    assert abs(response_scale_grid[0] - 1.0) < 1e-6, "response_scale grid should start at 1.0"
+    assert abs(depth_scale_grid[0] - 1.0) < 1e-6, "depth_scale grid should start at 1.0"
+
+    sensitivity_cells = {}
+    for ri, rs in enumerate(response_scale_grid):
+        for di, ds in enumerate(depth_scale_grid):
+            d = fact_sensitivity[
+                np.isclose(fact_sensitivity["response_scale"], rs)
+                & np.isclose(fact_sensitivity["depth_scale"], ds)
+            ].sort_values("price_multiplier")
+            assert d["price_multiplier"].round(4).tolist() == grid, (
+                f"sensitivity grid [{ri},{di}]: price grid mismatch"
+            )
+            assert (d["p5"] <= d["median"]).all() and (d["median"] <= d["p95"]).all(), (
+                f"sensitivity grid [{ri},{di}]: revenue p5<=median<=p95 violated"
+            )
+            assert (d["purchasers_p5"] <= d["purchasers_median"]).all() and (
+                d["purchasers_median"] <= d["purchasers_p95"]
+            ).all(), f"sensitivity grid [{ri},{di}]: purchasers p5<=median<=p95 violated"
+            assert (d["p5"] >= 0).all() and (d["purchasers_p5"] >= 0).all(), (
+                f"sensitivity grid [{ri},{di}]: negative value"
+            )
+            sensitivity_cells[f"{ri}_{di}"] = {
+                "revenue_p5": d["p5"].round(0).astype(int).tolist(),
+                "revenue_median": d["median"].round(0).astype(int).tolist(),
+                "revenue_p95": d["p95"].round(0).astype(int).tolist(),
+                "purchasers_p5": d["purchasers_p5"].round(0).astype(int).tolist(),
+                "purchasers_median": d["purchasers_median"].round(0).astype(int).tolist(),
+                "purchasers_p95": d["purchasers_p95"].round(0).astype(int).tolist(),
+            }
+
+    sensitivity_grid_payload = {
+        "responseScale": [round(v, 4) for v in response_scale_grid],
+        "depthScale": [round(v, 4) for v in depth_scale_grid],
+        "cells": sensitivity_cells,
+    }
+
+    assert [round(v, 4) for v in prob_curve_response_grid] == [round(v, 4) for v in response_scale_grid], (
+        "probability-curve response_scale grid disagrees with the sensitivity grid's"
+    )
 
     # ---- segment/portfolio reconciliation note ----
     # Segment revenue is a deterministic expected-value decomposition; the portfolio
@@ -305,6 +370,7 @@ def main():
         "segCurve": seg_curve,
         "dormant": dormant,
         "probCurve": prob_curve,
+        "sensitivityGrid": sensitivity_grid_payload,
     }
 
     OUT.write_text(json.dumps(payload, indent=2) + "\n")

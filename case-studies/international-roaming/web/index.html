@@ -721,11 +721,14 @@
       </div>
     </div>
     <div class="control-row">
-      <span class="control-label">Behavior case</span>
-      <div class="segmented" role="group" aria-label="Behavioral assumption case" id="caseToggle">
-        <button id="caseFitted" aria-pressed="true">As fitted</button>
-        <button id="caseJoint" aria-pressed="false">Joint stronger-response sensitivity</button>
-      </div>
+      <span class="control-label">Response sensitivity</span>
+      <input type="range" id="responseSlider" min="0" max="2" step="1" value="0" aria-label="Price-response sensitivity">
+      <span class="price-readout" id="responseReadout">&times;1.00</span>
+    </div>
+    <div class="control-row">
+      <span class="control-label">Depth sensitivity</span>
+      <input type="range" id="depthSlider" min="0" max="2" step="1" value="0" aria-label="Reduction-depth sensitivity">
+      <span class="price-readout" id="depthReadout">&times;1.00</span>
     </div>
     <p class="case-note" id="caseNote"></p>
   </div>
@@ -768,7 +771,7 @@
 
   <section class="segment-card">
     <h2>Segment contribution at the selected price</h2>
-    <p class="segment-note">Pricing-eligible segments only. Both blocks below are deterministic expected-value decompositions computed once, under the joint-sensitivity behavioral case and Base economic conditions — they do not change with the toggles above, and (unlike the chart and summary above) carry no simulation interval. Purchasers = per-account probability of at least one paid trip in the forward year, summed within segment, assuming independence across an account's trips — see Methodology. This is different from the portfolio-level purchaser figures above, which remain unavailable pending a simulated (not deterministic) export.</p>
+    <p class="segment-note">Pricing-eligible segments only. Both blocks below are deterministic expected-value decompositions computed once, at both sensitivity sliders' ceiling and Base economic conditions — they do not change with the controls above, and (unlike the chart and summary above) carry no simulation interval. Purchasers = per-account probability of at least one paid trip in the forward year, summed within segment, assuming independence across an account's trips — see Methodology. The portfolio-level chart and summary above are different: those are genuinely simulated, reactive to every control, and carry a real interval.</p>
     <div class="segment-table-wrap">
       <table class="segments" id="segTable">
         <thead>
@@ -826,34 +829,34 @@
           <p class="input-note">Not a random draw — the State Model's fitted price-response probabilities themselves, population-averaged. This is the mechanism the revenue/purchaser trade-off chart is built on. Unaffected by the economic scenario: macro shift only changes whether a trip happens, never this mix.</p>
         </div>
       </div>
-      <p class="sensitivity-intro">The two behavioral-case scale factors are <b>not distributions</b> — each is a single point estimate from one diagnostic, applied as a fixed multiplier:</p>
+      <p class="sensitivity-intro">The Response Sensitivity and Depth Sensitivity sliders' ceilings are <b>not distributions</b> — each is a single point estimate from one diagnostic, not a confidence bound, marking the far end of the range these controls span:</p>
       <div class="sensitivity-badges">
         <div class="sensitivity-badge">
-          <div class="badge-value">response_scale &times;<span id="mResponseScaleBadge"></span></div>
-          <div class="badge-note">Ratio of observed to predicted price response in a single Asia-Pacific regional holdout — not a confidence bound.</div>
+          <div class="badge-value">response_scale ceiling &times;<span id="mResponseScaleBadge"></span></div>
+          <div class="badge-note">Ratio of observed to predicted price response in a single Asia-Pacific regional holdout.</div>
         </div>
         <div class="sensitivity-badge">
-          <div class="badge-value">depth_scale &times;<span id="mDepthScaleBadge"></span></div>
-          <div class="badge-note">Ratio from a partial-label contamination diagnostic (bootstrap-checked for stability, but only the point ratio is used here) — not a confidence bound.</div>
+          <div class="badge-value">depth_scale ceiling &times;<span id="mDepthScaleBadge"></span></div>
+          <div class="badge-note">Ratio from a partial-label contamination diagnostic (bootstrap-checked for stability, but only the point ratio anchors the slider here).</div>
         </div>
       </div>
 
-      <h3>Behavioral case</h3>
-      <p>"As fitted" uses the response and depth models exactly as fitted to historical data. "Joint stronger-response sensitivity" scales both models up (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth) to test what happens if customers are more price-sensitive than fitted — it is <b>a sensitivity scenario, not a confidence bound or a second estimate of the truth</b>, and it is the case the recommended price was selected under.</p>
+      <h3>Response and depth sensitivity</h3>
+      <p>Two independent sliders, each 1.00&times; (as fitted) to its diagnostic-derived ceiling (&times;<span id="mResponseScale"></span> response, &times;<span id="mDepthScale"></span> depth), 3 pre-simulated points apiece. They move separately because they come from separate models and separate diagnostics: <b>response sensitivity</b> controls how strongly price shifts an account out of full coverage (the State Model); <b>depth sensitivity</b> controls how much revenue is retained when an account lands in partial coverage (the Magnitude Model) — it never affects whether an account counts as a purchaser, only how much they're worth once they do. Neither slider is a confidence bound or a second estimate of the truth; both are sensitivity scenarios, and the recommended price was selected at both ceilings simultaneously. Only available under the Base economy — Expansion and Contraction were only simulated at both ceilings, so selecting either forces both sliders there.</p>
 
       <h3>Economic scenarios and price coverage</h3>
-      <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices — 1.00&times;, the recommended price, and 1.20&times; — always under the joint-sensitivity case, because that is the resolution the macro simulation was run at. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
+      <p>The Base economy uses the full evaluated price grid (13 points from 0.90&times; to 1.20&times;), unconditioned on any macro shift. Expansion and Contraction were only simulated at three prices — 1.00&times;, the recommended price, and 1.20&times; — always at both sensitivity sliders' ceiling, because that is the resolution the macro simulation was run at. Selecting Expansion or Contraction restricts the slider to those three prices rather than substituting the nearest tested one.</p>
 
       <h3>Roaming-pass purchasers vs. wireless subscribers</h3>
       <p>This tool's purchaser measure counts <b>roaming-pass purchasers</b> — accounts with at least one roaming trip receiving partial or full paid coverage in the forward year — not wireless-subscription cancellations. The study does not estimate wireless-account churn, and no figure on this page should be read as one.</p>
 
       <h3>How the purchaser chart and summary are simulated</h3>
       <p>Purchasers are counted inside the same Monte Carlo loop that produces revenue: each iteration, an account counts as a purchaser if at least one of its forward trips lands in a non-null coverage state that draw. Because it comes from the same draws, purchasers stay properly paired with revenue — the p5–p95 band on the purchaser chart is a genuine simulation interval, not a derived or approximated range.</p>
-      <p>Where a <b>paired</b> difference is available — Expansion and Contraction, at the recommended price only, where both revenue and purchasers were differenced iteration-by-iteration against the 1.00&times; run — the summary above uses it and marks it <i>(paired)</i>. Everywhere else, "change vs. 1.00&times;" is the difference of two marginal medians; common random numbers are used across every price within a case, which limits (but doesn't eliminate) the Monte Carlo noise this introduces.</p>
+      <p>Where a <b>paired</b> difference is available — Expansion and Contraction, at the recommended price only, where both revenue and purchasers were differenced iteration-by-iteration against the 1.00&times; run — the summary above uses it and marks it <i>(paired)</i>. Everywhere else, "change vs. 1.00&times;" is the difference of two marginal medians; common random numbers are used across every price at a given response/depth sensitivity setting, which limits (but doesn't eliminate) the Monte Carlo noise this introduces.</p>
       <p>The purchaser rate denominator (<span id="mEligibleAccounts"></span> accounts) is the forward-panel population the simulation actually draws purchases from — the account base with a modeled forward trip, not the full customer book.</p>
 
       <h3>Why the segment table's purchaser figures are different</h3>
-      <p>Segment-level purchasers are a separate, <b>deterministic</b> calculation: per account, <code>P(at least one purchase) = 1 − ∏ P(null coverage)</code> across that account's forward trips, summed within segment. This <b>assumes conditional independence of an account's trip-purchase events</b> — no account-level dependence is modeled. It uses the same trip-probability data and grain as the segment revenue curve (joint-sensitivity case, unconditioned macro), so — like segment revenue — it carries no simulation interval and doesn't change with the toggles above, unlike the simulated chart and summary.</p>
+      <p>Segment-level purchasers are a separate, <b>deterministic</b> calculation: per account, <code>P(at least one purchase) = 1 − ∏ P(null coverage)</code> across that account's forward trips, summed within segment. This <b>assumes conditional independence of an account's trip-purchase events</b> — no account-level dependence is modeled. It uses the same trip-probability data and grain as the segment revenue curve (both sliders at ceiling, unconditioned macro), so — like segment revenue — it carries no simulation interval and doesn't change with the controls above, unlike the simulated chart and summary.</p>
 
       <h3>Segment figures</h3>
       <p>Segment revenue does not reconcile exactly with the portfolio total shown above: it is a probability-weighted expected value, while the portfolio figure is the <b>median</b> of a simulated, right-skewed distribution — the two differ by construction, currently by about <span id="mReconGap"></span> at the current price. The same is expected of segment vs. portfolio purchasers, for the same reason. Segment figures also exclude the <b>Dormant</b> segment, disclosed separately below.</p>
@@ -874,9 +877,10 @@
 let DATA = null;
 
 const state = {
-  scenario: 'base',       // 'base' | 'expansion' | 'contraction'
-  behaviorCase: 'as fitted', // 'as fitted' | 'joint sensitivity'
-  priceIdx: 10,            // index into the ACTIVE price grid
+  scenario: 'base',   // 'base' | 'expansion' | 'contraction'
+  responseIdx: 0,     // index into DATA.sensitivityGrid.responseScale (0 = as fitted)
+  depthIdx: 0,         // index into DATA.sensitivityGrid.depthScale (0 = as fitted)
+  priceIdx: 10,        // index into the ACTIVE price grid
 };
 
 const el = (id) => document.getElementById(id);
@@ -899,9 +903,9 @@ function activeGrid() {
 }
 
 function activeSeries() {
-  // returns revenue_*/purchasers_* arrays for the active scenario/case over the active grid
+  // returns revenue_*/purchasers_* arrays for the active scenario/sensitivity over the active grid
   if (state.scenario === 'base') {
-    return DATA.portfolio[state.behaviorCase];
+    return DATA.sensitivityGrid.cells[`${state.responseIdx}_${state.depthIdx}`];
   }
   return DATA.scenarios[state.scenario];
 }
@@ -937,14 +941,22 @@ function setScenario(s) {
   el('scenExpansion').setAttribute('aria-pressed', s === 'expansion');
   el('scenContraction').setAttribute('aria-pressed', s === 'contraction');
 
-  const forceJoint = s !== 'base';
-  el('caseFitted').disabled = forceJoint;
-  el('caseFitted').setAttribute('aria-disabled', String(forceJoint));
-  if (forceJoint) state.behaviorCase = 'joint sensitivity';
-  el('caseFitted').setAttribute('aria-pressed', state.behaviorCase === 'as fitted');
-  el('caseJoint').setAttribute('aria-pressed', state.behaviorCase === 'joint sensitivity');
-  el('caseNote').textContent = forceJoint
-    ? 'Expansion and Contraction were only simulated under the joint-sensitivity case — "As fitted" is unavailable here.'
+  // Response/depth sensitivity only vary under Base — the macro simulation was
+  // only ever run at the ceiling point (RESPONSE_SCALE_GRID[-1]/DEPTH_SCALE_GRID[-1]
+  // in the notebook), so Expansion/Contraction force both sliders there and disable
+  // them, exactly like the old "As fitted" forced-disable, now for two controls.
+  const forceCeiling = s !== 'base';
+  const lastIdx = DATA.sensitivityGrid.responseScale.length - 1;
+  el('responseSlider').disabled = forceCeiling;
+  el('depthSlider').disabled = forceCeiling;
+  if (forceCeiling) {
+    state.responseIdx = lastIdx;
+    state.depthIdx = DATA.sensitivityGrid.depthScale.length - 1;
+    el('responseSlider').value = state.responseIdx;
+    el('depthSlider').value = state.depthIdx;
+  }
+  el('caseNote').textContent = forceCeiling
+    ? 'Expansion and Contraction were only simulated at the maximum response/depth sensitivity — both sliders are unavailable here.'
     : '';
 
   // re-map the selected price onto the new grid at the nearest available point,
@@ -959,19 +971,18 @@ function setScenario(s) {
   render();
 }
 
-function setCase(c) {
-  if (el('caseFitted').disabled && c === 'as fitted') return;
-  state.behaviorCase = c;
-  el('caseFitted').setAttribute('aria-pressed', c === 'as fitted');
-  el('caseJoint').setAttribute('aria-pressed', c === 'joint sensitivity');
-  render();
-}
-
 el('scenBase').addEventListener('click', () => setScenario('base'));
 el('scenExpansion').addEventListener('click', () => setScenario('expansion'));
 el('scenContraction').addEventListener('click', () => setScenario('contraction'));
-el('caseFitted').addEventListener('click', () => setCase('as fitted'));
-el('caseJoint').addEventListener('click', () => setCase('joint sensitivity'));
+
+el('responseSlider').addEventListener('input', (e) => {
+  state.responseIdx = +e.target.value;
+  render();
+});
+el('depthSlider').addEventListener('input', (e) => {
+  state.depthIdx = +e.target.value;
+  render();
+});
 
 function syncSlider() {
   const grid = activeGrid();
@@ -991,6 +1002,8 @@ function render() {
   const grid = activeGrid();
   const price = grid[state.priceIdx];
   el('priceReadout').innerHTML = `${price.toFixed(3)}&times;<span class="delta">${fmtPctChange(price)}</span>`;
+  el('responseReadout').innerHTML = `&times;${DATA.sensitivityGrid.responseScale[state.responseIdx].toFixed(2)}`;
+  el('depthReadout').innerHTML = `&times;${DATA.sensitivityGrid.depthScale[state.depthIdx].toFixed(2)}`;
 
   CHARTS = [];
   renderSummary(grid, price);
@@ -1462,19 +1475,22 @@ function renderGaussianCurve(svgId, sigma) {
 }
 
 // Reactive — the actual State Model output, population-averaged, at the
-// selected price and behavioral case. Always read off the full 13-point grid
-// (probCurve is price/case only, never conditioned on economic scenario).
+// selected price and response-sensitivity slider position (depth_scale never
+// enters: it only affects revenue magnitude, not coverage-state probability).
+// Always read off the full 13-point grid — probCurve is price/response-scale
+// only, never conditioned on economic scenario.
 function renderStateMix(price) {
   const grid = DATA.grid;
   let idx = grid.findIndex((p) => Math.abs(p - price) < 1e-6);
   if (idx === -1) idx = grid.reduce((best, p, i) => Math.abs(p - price) < Math.abs(grid[best] - price) ? i : best, 0);
-  const curve = DATA.probCurve[state.behaviorCase];
+  const curve = DATA.probCurve[String(state.responseIdx)];
   const pNull = curve.p_null[idx], pPartial = curve.p_partial[idx], pFull = curve.p_full[idx];
 
   const seg = (pct, color) => `<div class="seg" style="width:${(pct * 100).toFixed(2)}%; background:${color}">${pct >= 0.09 ? Math.round(pct * 100) + '%' : ''}</div>`;
   el('stateMixBar').innerHTML =
     seg(pNull, 'var(--muted)') + seg(pPartial, 'var(--cost)') + seg(pFull, 'var(--accent)');
-  el('stateMixPrice').textContent = `At ${grid[idx].toFixed(3)}× · ${state.behaviorCase}`;
+  const rs = DATA.sensitivityGrid.responseScale[state.responseIdx];
+  el('stateMixPrice').textContent = `At ${grid[idx].toFixed(3)}× · response sensitivity ×${rs.toFixed(2)}`;
 }
 
 function init() {
