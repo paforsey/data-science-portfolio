@@ -82,6 +82,19 @@ Data contract, in brief (see web/README.md for the full version):
               notebook/export layer — the original two-case sweep
               (`portfolio`, `dim_model_case`, `fact_portfolio_simulation`)
               is untouched, so nothing depending on it needed to change.
+  travelers   Forward-year international travel volume on the simulation's
+              forward panel, keyed by economic scenario: per forecast month,
+              distinct accounts with >=1 trip that occurs (p5/median/p95),
+              plus distinct accounts traveling at least once in the 12
+              months. Not exported by the notebook; replay_forward_travel()
+              replays simulate()'s random stream instead (same CRN seed,
+              iteration counts, antithetic pairing), and the build asserts
+              the replay reproduces the published purchaser median at 1.00x
+              for every scenario, so these counts come from the same draws as
+              the revenue/purchaser figures. Trip occurrence depends only on
+              the macro path and seasonality, never on price or either
+              sensitivity slider, so one series per scenario covers every
+              control combination.
 """
 
 import json
@@ -101,6 +114,93 @@ OUT = Path(__file__).resolve().parent / "data.json"  # web/data.json
 MARKET_SHARE = 0.30
 
 MACRO_CONSISTENCY_TOLERANCE = 0.05  # 5% — "Base" cross-check, see module docstring
+
+FORWARD_MONTHS = 12
+NULL_STATE = 0  # column order p_null, p_partial, p_full
+
+
+def build_forward_panel():
+    """Rebuilds the notebook's forward panel ("Build Forward Panel" cell) as
+    row-aligned arrays in the same trip order simulate() draws against."""
+    trips = pd.read_parquet(SYN / "trips.parquet")
+    macro = pd.read_parquet(SYN / "macro.parquet")
+    prob_scen = pd.read_parquet(SYN / "sim_prob_scenarios.parquet")
+    rev_trip_ids = pd.read_parquet(SYN / "sim_revenue_scenarios.parquet", columns=["trip_id"])["trip_id"]
+
+    last12 = trips.loc[trips["month"] >= trips["month"].max() - 11].copy()
+    last12["fwd_month"] = last12["month"] - last12["month"].min()
+    last12["hist_macro_mult"] = last12["month"].map(macro.set_index("month")["travel_multiplier"]).to_numpy()
+
+    months = np.arange(FORWARD_MONTHS)
+    fwd_season = 1.0 + 0.15 * np.sin(2 * np.pi * (months - 2) / 12) + 0.06 * (months == 11)
+
+    valid_trip_ids = set(prob_scen["trip_id"].unique()) & set(rev_trip_ids.unique())
+    panel = last12.loc[last12["trip_id"].isin(valid_trip_ids)]
+    fwd_month = panel["fwd_month"].to_numpy()
+
+    return {
+        "trip_ids": panel["trip_id"].to_numpy(),
+        "month": fwd_month,
+        "season": fwd_season[fwd_month],
+        "hist_mult": panel["hist_macro_mult"].to_numpy(),
+        "account_idx": pd.factorize(panel["account_id"].to_numpy())[0],
+        "z_last": float(macro.sort_values("month")["macro_index"].tail(3).mean()),
+        "prob_scen": prob_scen,
+    }
+
+
+def replay_forward_travel(panel, n_iter, macro_shift, seed, state_prob):
+    """Replays the notebook's simulate() random stream (antithetic=True, its
+    default) draw for draw. Returns per-iteration monthly distinct travelers
+    [n_iter x 12], annual distinct travelers [n_iter], and purchasers under
+    `state_prob` [n_iter]; the last exists only to verify the replay against
+    the published export, since occurrence draws don't depend on price."""
+    n = len(panel["trip_ids"])
+    month = panel["month"]
+    account_idx = panel["account_idx"]
+    n_accounts = int(account_idx.max()) + 1
+    account_month_key = account_idx * FORWARD_MONTHS + month
+    cumulative_probability = state_prob.cumsum(axis=1)
+
+    rng = np.random.default_rng(seed)
+    independent_paths = (n_iter + 1) // 2
+    cached_paths = []
+
+    monthly = np.zeros((n_iter, FORWARD_MONTHS))
+    annual = np.zeros(n_iter)
+    purchasers = np.zeros(n_iter)
+
+    for iteration in range(n_iter):
+        if iteration < independent_paths:
+            macro_shocks = rng.normal(0, 0.35, 12)
+            travel_share_shift = rng.normal(0, 0.03)
+            cached_paths.append((macro_shocks, travel_share_shift))
+        else:
+            macro_shocks, travel_share_shift = cached_paths[iteration - independent_paths]
+            macro_shocks, travel_share_shift = -macro_shocks, -travel_share_shift
+
+        macro_index = np.zeros(12)
+        macro_index[0] = 0.85 * panel["z_last"] + macro_shocks[0]
+        for month_index in range(1, 12):
+            macro_index[month_index] = 0.85 * macro_index[month_index - 1] + macro_shocks[month_index]
+        macro_index += macro_shift
+
+        travel_multiplier = np.exp(0.55 * macro_index) * (1.0 + travel_share_shift)
+        occurrence_probability = np.clip(travel_multiplier[month] * panel["season"] / panel["hist_mult"], 0, 1)
+        occurs = rng.random(n) < occurrence_probability
+        state = (rng.random(n)[:, None] > cumulative_probability).sum(axis=1)
+
+        traveled = (
+            np.bincount(account_month_key, weights=occurs, minlength=n_accounts * FORWARD_MONTHS)
+            .reshape(n_accounts, FORWARD_MONTHS) > 0
+        )
+        monthly[iteration] = traveled.sum(axis=0)
+        annual[iteration] = traveled.any(axis=1).sum()
+        purchasers[iteration] = (
+            np.bincount(account_idx, weights=occurs & (state != NULL_STATE), minlength=n_accounts) > 0
+        ).sum()
+
+    return monthly, annual, purchasers
 
 
 def main():
@@ -396,6 +496,85 @@ def main():
     i92_year = int(i92_annual.index.max())
     i92_trips = float(i92_annual.loc[i92_year])
 
+    # ---- travelers: forward-year international travel volume by month ----
+    # Replayed from the run's own random stream (see replay_forward_travel), then
+    # checked against each run's published purchaser median at 1.00x: an exact
+    # match means the occurrence draws, and so these counts, are the run's own.
+    crn_seed = int(float(assumption_values["common random-number seed"]))
+    sweep_iter = int(float(assumption_values["sweep iterations per price"]))
+    macro_iter = int(float(assumption_values["macro iterations per scenario"]))
+
+    panel = build_forward_panel()
+    assert int(panel["account_idx"].max()) + 1 == eligible_accounts, (
+        "rebuilt forward panel's account count differs from eligible_accounts"
+    )
+    prob_idx = (
+        panel["prob_scen"]
+        .assign(price_multiplier=lambda d: d["price_multiplier"].round(4))
+        .set_index(["response_scenario", "price_multiplier", "trip_id"])
+        .sort_index()
+    )
+
+    def state_prob_at_current(response_scenario):
+        return (
+            prob_idx.loc[(response_scenario, round(current_price, 4)), ["p_null", "p_partial", "p_full"]]
+            .reindex(panel["trip_ids"])
+            .to_numpy()
+        )
+
+    macro_shifts = fact_macro.groupby("scenario")["macro_shift"].first()
+    assert abs(macro_shifts["Base"]) < 1e-9, "Base macro shift should be 0"
+    base_published = fact_sensitivity.loc[
+        np.isclose(fact_sensitivity["response_scale"], 1.0)
+        & np.isclose(fact_sensitivity["depth_scale"], 1.0)
+        & np.isclose(fact_sensitivity["price_multiplier"], current_price),
+        "purchasers_median",
+    ].iloc[0]
+
+    def macro_published(parquet_scenario):
+        return fact_macro.loc[
+            (fact_macro["scenario"] == parquet_scenario) & np.isclose(fact_macro["price"], current_price),
+            "purchasers_median",
+        ].iloc[0]
+
+    # key, macro shift, iterations, response scenario that run used, published purchaser median
+    travel_runs = [
+        ("base", 0.0, sweep_iter, "base", base_published),
+        ("expansion", float(macro_shifts["Expansion"]), macro_iter, "stronger", macro_published("Expansion")),
+        ("contraction", float(macro_shifts["Contraction"]), macro_iter, "stronger", macro_published("Contraction")),
+    ]
+
+    # Most distinct travelers a month can have: every panel trip in it occurring.
+    # The simulation only re-draws the panel's own trips, so no draw can exceed this.
+    n_panel_accounts = int(panel["account_idx"].max()) + 1
+    panel_monthly_ceiling = (
+        np.bincount(
+            panel["account_idx"] * FORWARD_MONTHS + panel["month"],
+            minlength=n_panel_accounts * FORWARD_MONTHS,
+        ).reshape(n_panel_accounts, FORWARD_MONTHS) > 0
+    ).sum(axis=0)
+
+    travelers = {"panel_monthly_ceiling": panel_monthly_ceiling.astype(int).tolist()}
+    for key, macro_shift, n_iter, response_scenario, published in travel_runs:
+        monthly, annual, purchasers = replay_forward_travel(
+            panel, n_iter, macro_shift, crn_seed, state_prob_at_current(response_scenario)
+        )
+        assert abs(np.median(purchasers) - published) < 1e-6, (
+            f"travelers [{key}]: replayed draws give a purchaser median of {np.median(purchasers)}, "
+            f"published is {published}; simulate() or the forward panel changed, so update "
+            f"replay_forward_travel() to match the notebook"
+        )
+        assert (monthly <= annual[:, None]).all(), f"travelers [{key}]: a month exceeds the annual count"
+        assert (monthly <= panel_monthly_ceiling).all(), f"travelers [{key}]: a month exceeds the panel ceiling"
+        travelers[key] = {
+            "monthly_p5": np.percentile(monthly, 5, axis=0).round(0).astype(int).tolist(),
+            "monthly_median": np.median(monthly, axis=0).round(0).astype(int).tolist(),
+            "monthly_p95": np.percentile(monthly, 95, axis=0).round(0).astype(int).tolist(),
+            "annual_p5": int(round(np.percentile(annual, 5))),
+            "annual_median": int(round(np.median(annual))),
+            "annual_p95": int(round(np.percentile(annual, 95))),
+        }
+
     payload = {
         "meta": {
             "run_id": run_id,
@@ -421,6 +600,7 @@ def main():
         "dormant": dormant,
         "probCurve": prob_curve,
         "sensitivityGrid": sensitivity_grid_payload,
+        "travelers": travelers,
         "marketSizing": {
             "meta": {
                 "i92_year": i92_year,
