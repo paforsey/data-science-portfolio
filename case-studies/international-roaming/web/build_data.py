@@ -100,7 +100,9 @@ Data contract, in brief (see web/README.md for the full version):
               over the full grid, expansion/contraction[priceIdx] over the
               three scenario prices. Depth scale never changes purchasers, so
               it has no axis here. Segments carry per-iteration means, which
-              add up to the total mean; the total also carries p5/p95. Every
+              add up to the total mean; the total also carries p5/p95.
+              subscribers_mean counts traveling subscribers on those
+              accounts (see replay_forward_year). Every
               cell's replay is asserted to reproduce its published annual
               purchaser median.
   meta.scale_factor
@@ -181,6 +183,9 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
     default) draw for draw. Returns per-iteration distinct-account counts:
     monthly_travelers [n_iter x 12], annual_travelers [n_iter],
     annual_person_trips [n_iter] (travelers summed over occurring trips),
+    monthly_subscribers [n_iter x 12] (traveling subscribers on accounts buying
+    a pass that month: each account's largest traveling party among its
+    purchased trips that month, so the same people aren't counted twice),
     annual_purchasers [n_iter], monthly_purchasers_by_segment
     [n_iter x segments x 12], and annual_purchasers_by_segment
     [n_iter x segments]. Trip occurrence, and so the traveler counts, doesn't
@@ -195,6 +200,14 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
     cumulative_probability = state_prob.cumsum(axis=1)
     segment_matrix = segment_onehot.T  # [segments x accounts]
     trip_segment = segment_onehot.argmax(axis=1)[account_idx]
+
+    # Trips grouped by account-month once, so the per-iteration "largest party"
+    # is a single reduceat instead of a slow np.maximum.at.
+    trip_order = np.argsort(account_month_key, kind="stable")
+    sorted_keys = account_month_key[trip_order]
+    group_starts = np.flatnonzero(np.r_[True, sorted_keys[1:] != sorted_keys[:-1]])
+    group_month = sorted_keys[group_starts] % FORWARD_MONTHS
+    sorted_lines = panel["lines_traveling"][trip_order]
 
     def any_per_account_month(trip_flags):
         return (
@@ -214,6 +227,7 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
         "monthly_purchasers_by_segment": np.zeros((n_iter, n_segments, FORWARD_MONTHS)),
         "annual_purchasers_by_segment": np.zeros((n_iter, n_segments)),
         "annual_person_trips": np.zeros(n_iter),
+        "monthly_subscribers": np.zeros((n_iter, FORWARD_MONTHS)),
     }
     if state_revenue is not None:
         out["annual_revenue"] = np.zeros(n_iter)
@@ -240,12 +254,17 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
         state = (rng.random(n)[:, None] > cumulative_probability).sum(axis=1)
 
         traveled = any_per_account_month(occurs)
-        purchased = any_per_account_month(occurs & (state != NULL_STATE))
+        bought = occurs & (state != NULL_STATE)
+        purchased = any_per_account_month(bought)
         purchased_in_year = purchased.any(axis=1)
 
         out["monthly_travelers"][iteration] = traveled.sum(axis=0)
         out["annual_travelers"][iteration] = traveled.any(axis=1).sum()
         out["annual_person_trips"][iteration] = panel["lines_traveling"][occurs].sum()
+        largest_party = np.maximum.reduceat(np.where(bought[trip_order], sorted_lines, 0.0), group_starts)
+        out["monthly_subscribers"][iteration] = np.bincount(
+            group_month, weights=largest_party, minlength=FORWARD_MONTHS
+        )
         out["annual_purchasers"][iteration] = purchased_in_year.sum()
         out["monthly_purchasers_by_segment"][iteration] = segment_matrix @ purchased.astype(float)
         out["annual_purchasers_by_segment"][iteration] = segment_matrix @ purchased_in_year.astype(float)
@@ -610,6 +629,7 @@ def main():
         )
         total = result["monthly_purchasers_by_segment"].sum(axis=1)
         assert (total <= result["monthly_travelers"]).all(), f"{label}: monthly purchasers exceed travelers"
+        assert (result["monthly_subscribers"] >= total).all(), f"{label}: fewer subscribers than accounts"
         return result
 
     def summarize_monthly_purchasers(result):
@@ -619,6 +639,7 @@ def main():
             "total_mean": total.mean(axis=0).round(1).tolist(),
             "total_p5": np.percentile(total, 5, axis=0).round(2).tolist(),
             "total_p95": np.percentile(total, 95, axis=0).round(2).tolist(),
+            "subscribers_mean": result["monthly_subscribers"].mean(axis=0).round(2).tolist(),
             "segment_mean": {
                 sid: by_segment[:, s, :].mean(axis=0).round(1).tolist()
                 for s, sid in enumerate(stack_segment_ids)
