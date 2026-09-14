@@ -150,7 +150,8 @@ def build_forward_panel():
     last12["hist_macro_mult"] = last12["month"].map(macro.set_index("month")["travel_multiplier"]).to_numpy()
 
     months = np.arange(FORWARD_MONTHS)
-    fwd_season = 1.0 + 0.15 * np.sin(2 * np.pi * (months - 2) / 12) + 0.06 * (months == 11)
+    # Same I-92 seasonality index the synthetic data was generated with (month 0 = January).
+    fwd_season = macro.set_index("month")["seasonality"].loc[months].to_numpy()
 
     valid_trip_ids = set(prob_scen["trip_id"].unique()) & set(rev_scen["trip_id"].unique())
     panel = last12.loc[last12["trip_id"].isin(valid_trip_ids)]
