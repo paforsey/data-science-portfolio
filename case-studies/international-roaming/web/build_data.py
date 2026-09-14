@@ -113,6 +113,15 @@ Data contract, in brief (see web/README.md for the full version):
               the page's input ranking one consistent as-fitted basis. Same
               seed and iteration count as the as-fitted sweep, whose
               macro_shift = 0 replay is asserted against the notebook.
+  incremental Change in annual revenue from 1.00x, one cell per control
+              position the revenue chart reflects: base["<ri>_<di>"] over the
+              full grid, expansion/contraction over the three scenario prices.
+              p5/p95 are percentiles of each run's own change (the same draws
+              priced both ways), not differences of marginal percentiles;
+              median is the change in the median, the figure the page quotes.
+              Every replay is asserted to reproduce its published revenue
+              p5/median/p95, and each outlook's 1.15x change its published
+              paired percentiles.
   meta.scale_factor
               National addressable trips (I-92 x MARKET_SHARE) / forecast
               panel trips: the factor market_sizing.parquet effectively
@@ -732,6 +741,85 @@ def main():
             purchasers_median.append(round(float(np.median(result["annual_purchasers"])), 2))
         outlook_as_fitted[key] = {"revenue_median": revenue_median, "purchasers_median": purchasers_median}
 
+    # ---- incremental revenue: each run's change from 1.00x (revenue chart) ----
+    # Percentiles of each run's own change, so the band shows how much the gain
+    # varies rather than the spread of total revenue.
+    depth_scenario_names = ["lower", "reported", "stronger"]
+
+    def state_revenue_at(depth_scenario, price):
+        return (
+            rev_idx.loc[(depth_scenario, round(price, 4)), ["rev_null", "rev_partial", "rev_full"]]
+            .reindex(panel["trip_ids"])
+            .to_numpy()
+        )
+
+    def revenue_runs(label, prices, n_iter, macro_shift, response_scenario, depth_scenario, published):
+        runs = {}
+        for price in prices:
+            revenue = replay_forward_year(
+                panel, n_iter, macro_shift, crn_seed, state_prob(response_scenario, price), segment_onehot,
+                state_revenue=state_revenue_at(depth_scenario, price),
+            )["annual_revenue"]
+            row = published.loc[round(price, 4)]
+            for stat, value in [
+                ("p5", np.percentile(revenue, 5)), ("median", np.median(revenue)), ("p95", np.percentile(revenue, 95)),
+            ]:
+                assert abs(value - row[stat]) < 1e-6 * abs(row[stat]), (
+                    f"{label} {price}x: replayed revenue {stat} {value} != published {row[stat]}"
+                )
+            runs[round(price, 4)] = revenue
+        return runs
+
+    def summarize_increments(label, runs, prices):
+        current = runs[round(current_price, 4)]
+        out = {"revenue_p5": [], "revenue_median": [], "revenue_p95": []}
+        for price in prices:
+            change = runs[round(price, 4)] - current
+            p5, p95 = np.percentile(change, 5), np.percentile(change, 95)
+            median = np.median(runs[round(price, 4)]) - np.median(current)
+            assert p5 - 1e-6 <= median <= p95 + 1e-6, f"{label} {price}x: median change outside its paired band"
+            out["revenue_p5"].append(round(float(p5), 2))
+            out["revenue_median"].append(round(float(median), 2))
+            out["revenue_p95"].append(round(float(p95), 2))
+        return out
+
+    incremental = {"base": {}}
+    for ri, response_scenario in enumerate(response_scenario_names):
+        for di, depth_scenario in enumerate(depth_scenario_names):
+            label = f"incremental base {ri}_{di}"
+            published = (
+                fact_sensitivity[
+                    np.isclose(fact_sensitivity["response_scale"], response_scale_grid[ri])
+                    & np.isclose(fact_sensitivity["depth_scale"], depth_scale_grid[di])
+                ]
+                .assign(p=lambda d: d["price_multiplier"].round(4))
+                .set_index("p")
+            )
+            runs = revenue_runs(label, grid, sweep_iter, 0.0, response_scenario, depth_scenario, published)
+            incremental["base"][f"{ri}_{di}"] = summarize_increments(label, runs, grid)
+
+    # Expansion/Contraction run at the joint-sensitivity settings (stronger response and depth).
+    for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
+        published = (
+            fact_macro[fact_macro["scenario"] == parquet_scenario]
+            .assign(p=lambda d: d["price"].round(4))
+            .set_index("p")
+        )
+        runs = revenue_runs(
+            f"incremental {key}", scenario_prices, macro_iter, float(macro_shifts[parquet_scenario]),
+            "stronger", "stronger", published,
+        )
+        incremental[key] = summarize_increments(f"incremental {key}", runs, scenario_prices)
+        stress_change = runs[round(STRESS_TEST_PRICE, 4)] - runs[round(current_price, 4)]
+        paired = scenarios[key]["paired_at_stress_price"]
+        for stat, value in [
+            ("p5", np.percentile(stress_change, 5)), ("median", np.median(stress_change)),
+            ("p95", np.percentile(stress_change, 95)),
+        ]:
+            assert abs(value - paired[f"revenue_paired_{stat}"]) < 0.05, (
+                f"incremental {key}: replayed 1.15x change {stat} {value} != published {paired[f'revenue_paired_{stat}']}"
+            )
+
     # ---- travelers: national forecast from published I-92 actuals ----
     # Each forecast month = the same month a year earlier x year-to-date growth
     # (latest year's months vs. the same months a year before). The outlook tabs
@@ -815,6 +903,7 @@ def main():
         "travelers": travelers,
         "purchasersByMonth": purchasers_by_month,
         "outlookAsFitted": outlook_as_fitted,
+        "incremental": incremental,
         "marketSizing": {
             "meta": {
                 "i92_year": i92_year,
