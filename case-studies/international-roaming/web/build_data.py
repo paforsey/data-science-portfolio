@@ -81,19 +81,15 @@ Data contract, in brief (see web/README.md for the full version):
               notebook/export layer — the original two-case sweep
               (`portfolio`, `dim_model_case`, `fact_portfolio_simulation`)
               is untouched, so nothing depending on it needed to change.
-  travelers   Forward-year international travel volume on the simulation's
-              forward panel, keyed by economic scenario: per forecast month,
-              distinct accounts with >=1 trip that occurs (p5/median/p95),
-              plus distinct accounts traveling at least once in the 12
-              months. Not exported by the notebook; replay_forward_year()
-              replays simulate()'s random stream instead (same CRN seed,
-              iteration counts, antithetic pairing), and the build asserts
-              the replay reproduces the published purchaser median at 1.00x
-              for every scenario, so these counts come from the same draws as
-              the revenue/purchaser figures. Trip occurrence depends only on
-              the macro path and seasonality, never on price or either
-              sensitivity slider, so one series per scenario covers every
-              control combination.
+  travelers   National forecast of U.S. citizen international air departures
+              for the 12 calendar months after the latest I-92 actual. Built
+              from published actuals, not the simulation: each month is the
+              same month a year earlier times year-to-date growth. Expansion /
+              Contraction scale it by the simulation's own effect on travel
+              volume (travelers summed over occurring trips, median vs. Base,
+              from the replayed 1.00x runs); p5/p95 apply the simulation's
+              spread in that volume. Not scaled by meta.scale_factor: these are
+              already national figures.
   purchasersByMonth
               Distinct accounts buying a pass in each forecast month, split
               by segment (Dormant included, so segments cover the whole
@@ -169,6 +165,7 @@ def build_forward_panel():
         "month": fwd_month,
         "season": fwd_season[fwd_month],
         "hist_mult": panel["hist_macro_mult"].to_numpy(),
+        "lines_traveling": panel["lines_traveling"].to_numpy(dtype=float),
         "account_idx": account_idx,
         "account_segment_id": account_segment.astype(int).to_numpy(),
         "z_last": float(macro.sort_values("month")["macro_index"].tail(3).mean()),
@@ -181,6 +178,7 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
     """Replays the notebook's simulate() random stream (antithetic=True, its
     default) draw for draw. Returns per-iteration distinct-account counts:
     monthly_travelers [n_iter x 12], annual_travelers [n_iter],
+    annual_person_trips [n_iter] (travelers summed over occurring trips),
     annual_purchasers [n_iter], monthly_purchasers_by_segment
     [n_iter x segments x 12], and annual_purchasers_by_segment
     [n_iter x segments]. Trip occurrence, and so the traveler counts, doesn't
@@ -213,6 +211,7 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
         "annual_purchasers": np.zeros(n_iter),
         "monthly_purchasers_by_segment": np.zeros((n_iter, n_segments, FORWARD_MONTHS)),
         "annual_purchasers_by_segment": np.zeros((n_iter, n_segments)),
+        "annual_person_trips": np.zeros(n_iter),
     }
     if state_revenue is not None:
         out["annual_revenue"] = np.zeros(n_iter)
@@ -244,6 +243,7 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
 
         out["monthly_travelers"][iteration] = traveled.sum(axis=0)
         out["annual_travelers"][iteration] = traveled.any(axis=1).sum()
+        out["annual_person_trips"][iteration] = panel["lines_traveling"][occurs].sum()
         out["annual_purchasers"][iteration] = purchased_in_year.sum()
         out["monthly_purchasers_by_segment"][iteration] = segment_matrix @ purchased.astype(float)
         out["annual_purchasers_by_segment"][iteration] = segment_matrix @ purchased_in_year.astype(float)
@@ -685,28 +685,44 @@ def main():
             cells.append(summarize_monthly_purchasers(result))
         purchasers_by_month[key] = cells
 
-    # Most distinct travelers a month can have: every panel trip in it occurring.
-    # The simulation only re-draws the panel's own trips, so no draw can exceed this.
-    n_panel_accounts = int(panel["account_idx"].max()) + 1
-    panel_monthly_ceiling = (
-        np.bincount(
-            panel["account_idx"] * FORWARD_MONTHS + panel["month"],
-            minlength=n_panel_accounts * FORWARD_MONTHS,
-        ).reshape(n_panel_accounts, FORWARD_MONTHS) > 0
-    ).sum(axis=0)
+    # ---- travelers: national forecast from published I-92 actuals ----
+    # Each forecast month = the same month a year earlier x year-to-date growth
+    # (latest year's months vs. the same months a year before). The outlook tabs
+    # scale it by the simulation's own effect on travel volume, and the band
+    # applies the simulation's p5/p95 spread in that volume around Baseline.
+    i92_monthly = (
+        i92.assign(date=pd.to_datetime(dict(year=i92["Year"], month=i92["Month Number"], day=1)))
+        .set_index("date")["U.S. Citizen Originating"]
+        .sort_index()
+    )
+    assert i92_monthly.index.is_unique, "duplicate I-92 months"
+    last_actual = i92_monthly.index.max()
+    ytd = i92_monthly[i92_monthly.index.year == last_actual.year]
+    ytd_prior = i92_monthly[
+        (i92_monthly.index.year == last_actual.year - 1) & (i92_monthly.index.month <= last_actual.month)
+    ]
+    assert len(ytd) == len(ytd_prior) == last_actual.month, "I-92 year-to-date months incomplete"
+    yoy_growth = float(ytd.sum() / ytd_prior.sum() - 1)
+    forecast_months = pd.date_range(last_actual + pd.offsets.MonthBegin(1), periods=FORWARD_MONTHS, freq="MS")
+    prior_year_actual = np.array(
+        [i92_monthly[m - pd.DateOffset(years=1)] for m in forecast_months], dtype=float
+    )
+    baseline_forecast = prior_year_actual * (1 + yoy_growth)
 
-    travelers = {"panel_monthly_ceiling": panel_monthly_ceiling.astype(int).tolist()}
+    base_volume = np.median(current_price_runs["base"]["annual_person_trips"])
+    travelers = {
+        "last_actual": last_actual.strftime("%b %Y"),
+        "yoy_growth": round(yoy_growth, 6),
+        "months": [m.strftime("%b %Y") for m in forecast_months],
+        "prior_year_actual": prior_year_actual.astype(int).tolist(),
+    }
     for key, result in current_price_runs.items():
-        monthly, annual = result["monthly_travelers"], result["annual_travelers"]
-        assert (monthly <= annual[:, None]).all(), f"travelers [{key}]: a month exceeds the annual count"
-        assert (monthly <= panel_monthly_ceiling).all(), f"travelers [{key}]: a month exceeds the panel ceiling"
+        volume = result["annual_person_trips"]
         travelers[key] = {
-            "monthly_p5": np.percentile(monthly, 5, axis=0).round(2).tolist(),
-            "monthly_median": np.median(monthly, axis=0).round(2).tolist(),
-            "monthly_p95": np.percentile(monthly, 95, axis=0).round(2).tolist(),
-            "annual_p5": int(round(np.percentile(annual, 5))),
-            "annual_median": int(round(np.median(annual))),
-            "annual_p95": int(round(np.percentile(annual, 95))),
+            "median": (baseline_forecast * np.median(volume) / base_volume).round(0).tolist(),
+            "p5": (baseline_forecast * np.percentile(volume, 5) / base_volume).round(0).tolist(),
+            "p95": (baseline_forecast * np.percentile(volume, 95) / base_volume).round(0).tolist(),
+            "outlook_index": round(float(np.median(volume) / base_volume), 4),
         }
 
     # ---- company scale: the one factor behind every scaled figure ----
