@@ -105,6 +105,14 @@ Data contract, in brief (see web/README.md for the full version):
               accounts (see replay_forward_year). Every
               cell's replay is asserted to reproduce its published annual
               purchaser median.
+  outlookAsFitted
+              Expansion / Contraction replayed at the as-fitted settings
+              (response and depth 1.0) over the full price grid: median annual
+              revenue and purchasers by price. The published macro runs cover
+              only the joint-sensitivity settings at three prices; these give
+              the page's input ranking one consistent as-fitted basis. Same
+              seed and iteration count as the as-fitted sweep, whose
+              macro_shift = 0 replay is asserted against the notebook.
   meta.scale_factor
               National addressable trips (I-92 x MARKET_SHARE) / forecast
               panel trips: the factor market_sizing.parquet effectively
@@ -711,6 +719,19 @@ def main():
             cells.append(summarize_monthly_purchasers(result))
         purchasers_by_month[key] = cells
 
+    # ---- economic outlook at the as-fitted settings (input ranking) ----
+    outlook_as_fitted = {}
+    for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
+        revenue_median, purchasers_median = [], []
+        for price in grid:
+            result = replay_forward_year(
+                panel, sweep_iter, float(macro_shifts[parquet_scenario]), crn_seed,
+                state_prob("base", price), segment_onehot, state_revenue=state_revenue_as_fitted(price),
+            )
+            revenue_median.append(round(float(np.median(result["annual_revenue"])), 2))
+            purchasers_median.append(round(float(np.median(result["annual_purchasers"])), 2))
+        outlook_as_fitted[key] = {"revenue_median": revenue_median, "purchasers_median": purchasers_median}
+
     # ---- travelers: national forecast from published I-92 actuals ----
     # Each forecast month = the same month a year earlier x year-to-date growth
     # (latest year's months vs. the same months a year before). The outlook tabs
@@ -793,6 +814,7 @@ def main():
         "sensitivityGrid": sensitivity_grid_payload,
         "travelers": travelers,
         "purchasersByMonth": purchasers_by_month,
+        "outlookAsFitted": outlook_as_fitted,
         "marketSizing": {
             "meta": {
                 "i92_year": i92_year,
