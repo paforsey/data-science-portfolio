@@ -72,7 +72,7 @@ Data contract, in brief (see web/README.md for the full version):
   sensitivityGrid
               Independent response_scale x depth_scale controls, replacing
               the old bundled "Behavior Case" toggle. 3 points each
-              (1.0, midpoint, the diagnostic-derived ceiling), full price
+              (a Lower case mirrored below 1.0, 1.0 as fitted, and the diagnostic-derived ceiling; index 1 is as fitted), full price
               grid, Base economy only — Expansion/Contraction stay fixed at
               the ceiling point (RESPONSE_SCALE_GRID[-1] /
               DEPTH_SCALE_GRID[-1] in the notebook), unchanged from before
@@ -477,8 +477,10 @@ def main():
     depth_scale_grid = sorted(fact_sensitivity["depth_scale"].unique().tolist())
     assert len(response_scale_grid) == 3, "expected a 3-point response_scale grid"
     assert len(depth_scale_grid) == 3, "expected a 3-point depth_scale grid"
-    assert abs(response_scale_grid[0] - 1.0) < 1e-6, "response_scale grid should start at 1.0"
-    assert abs(depth_scale_grid[0] - 1.0) < 1e-6, "depth_scale grid should start at 1.0"
+    # Ordered Lower / Modeled / Higher: index 1 is the as-fitted 1.0 setting.
+    assert abs(response_scale_grid[1] - 1.0) < 1e-6, "response_scale grid should be Lower / 1.0 / Higher"
+    assert abs(depth_scale_grid[1] - 1.0) < 1e-6, "depth_scale grid should be Lower / 1.0 / Higher"
+    assert response_scale_grid[0] < 1.0 < response_scale_grid[2] and depth_scale_grid[0] < 1.0 < depth_scale_grid[2]
 
     sensitivity_cells = {}
     for ri, rs in enumerate(response_scale_grid):
@@ -581,7 +583,7 @@ def main():
     assert (segment_onehot.sum(axis=1) == 1).all(), "every panel account needs exactly one segment"
 
     # response_scale_grid index -> the response_scenario its probabilities are stored under
-    response_scenario_names = ["base", "mid", "stronger"]
+    response_scenario_names = ["lower", "base", "stronger"]
 
     rev_idx = (
         panel["rev_scen"]
@@ -668,7 +670,7 @@ def main():
                 & np.isclose(fact_sensitivity["price_multiplier"], price),
                 "purchasers_median",
             ].iloc[0]
-            as_fitted = ri == 0
+            as_fitted = ri == 1  # Modeled (1.0) is the middle setting
             result = replay_checked(
                 f"base response[{ri}] {price}x", sweep_iter, 0.0, response_scenario_names[ri], price, published,
                 state_revenue=state_revenue_as_fitted(price) if as_fitted else None,
@@ -760,7 +762,7 @@ def main():
             f"scale factor doesn't reproduce market_sizing's scaled revenue at {p}x"
         )
     assert np.allclose(
-        sensitivity_cells["0_0"]["revenue_median"], portfolio["as fitted"]["revenue_median"]
+        sensitivity_cells["1_1"]["revenue_median"], portfolio["as fitted"]["revenue_median"]
     ), "sensitivity cell 0_0 differs from the as-fitted sweep, so scaled charts won't match the company-scale card"
 
     payload = {
