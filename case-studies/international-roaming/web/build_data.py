@@ -35,16 +35,15 @@ Data contract, in brief (see web/README.md for the full version):
               it is deliberately NOT surfaced in the UI as a second "Base"
               source — see README — but is checked below for consistency
               with `portfolio` so a large divergence fails the build.
-  segments    non-dormant segments, full 13-point grid, revenue AND expected
-              purchasers. Both are deterministic expected-value decomposi-
-              tions (not simulated), always under "joint sensitivity" +
-              unconditioned macro — i.e. they correspond to the same
-              condition as portfolio["joint sensitivity"], not to whichever
-              scenario/case is selected in the UI. Purchasers = per-account
-              P(at least one purchase) = 1 - prod(p_null over that account's
-              forward trips), summed within segment; assumes conditional
-              independence of an account's trip-purchase events. No
-              interval — see the tool's Methodology section.
+  segments    every segment (Dormant included), full 13-point grid, revenue
+              and purchasers from the as-fitted replay (Base economy, both
+              sensitivity scales 1.0), the same run as the headline figures.
+              Segment medians don't add up to a portfolio median, so each
+              segment gets the portfolio median in proportion to its share of
+              the simulation mean at that price: rows sum exactly to the
+              headline figures, and their changes to the headline change.
+              The replay is asserted to reproduce the published as-fitted
+              revenue and purchaser medians at every price.
   purchasers  Now simulated (not just segment-level): portfolio (both
               cases, full grid) and Expansion/Contraction (3 prices) carry
               purchasers_p5/_median/_p95 from the same simulate() draws as
@@ -144,7 +143,7 @@ def build_forward_panel():
     trips = pd.read_parquet(SYN / "trips.parquet")
     macro = pd.read_parquet(SYN / "macro.parquet")
     prob_scen = pd.read_parquet(SYN / "sim_prob_scenarios.parquet")
-    rev_trip_ids = pd.read_parquet(SYN / "sim_revenue_scenarios.parquet", columns=["trip_id"])["trip_id"]
+    rev_scen = pd.read_parquet(SYN / "sim_revenue_scenarios.parquet")
 
     last12 = trips.loc[trips["month"] >= trips["month"].max() - 11].copy()
     last12["fwd_month"] = last12["month"] - last12["month"].min()
@@ -153,7 +152,7 @@ def build_forward_panel():
     months = np.arange(FORWARD_MONTHS)
     fwd_season = 1.0 + 0.15 * np.sin(2 * np.pi * (months - 2) / 12) + 0.06 * (months == 11)
 
-    valid_trip_ids = set(prob_scen["trip_id"].unique()) & set(rev_trip_ids.unique())
+    valid_trip_ids = set(prob_scen["trip_id"].unique()) & set(rev_scen["trip_id"].unique())
     panel = last12.loc[last12["trip_id"].isin(valid_trip_ids)]
     fwd_month = panel["fwd_month"].to_numpy()
 
@@ -174,17 +173,20 @@ def build_forward_panel():
         "account_segment_id": account_segment.astype(int).to_numpy(),
         "z_last": float(macro.sort_values("month")["macro_index"].tail(3).mean()),
         "prob_scen": prob_scen,
+        "rev_scen": rev_scen,
     }
 
 
-def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_onehot):
+def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_onehot, state_revenue=None):
     """Replays the notebook's simulate() random stream (antithetic=True, its
     default) draw for draw. Returns per-iteration distinct-account counts:
     monthly_travelers [n_iter x 12], annual_travelers [n_iter],
     annual_purchasers [n_iter], monthly_purchasers_by_segment
     [n_iter x segments x 12], and annual_purchasers_by_segment
     [n_iter x segments]. Trip occurrence, and so the traveler counts, doesn't
-    depend on `state_prob`; only purchases do."""
+    depend on `state_prob`; only purchases do. Given `state_revenue`
+    [trips x 3], also returns annual_revenue [n_iter], summed exactly as
+    simulate() sums it, and annual_revenue_by_segment [n_iter x segments]."""
     n = len(panel["trip_ids"])
     month = panel["month"]
     account_idx = panel["account_idx"]
@@ -192,6 +194,7 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
     account_month_key = account_idx * FORWARD_MONTHS + month
     cumulative_probability = state_prob.cumsum(axis=1)
     segment_matrix = segment_onehot.T  # [segments x accounts]
+    trip_segment = segment_onehot.argmax(axis=1)[account_idx]
 
     def any_per_account_month(trip_flags):
         return (
@@ -211,6 +214,9 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
         "monthly_purchasers_by_segment": np.zeros((n_iter, n_segments, FORWARD_MONTHS)),
         "annual_purchasers_by_segment": np.zeros((n_iter, n_segments)),
     }
+    if state_revenue is not None:
+        out["annual_revenue"] = np.zeros(n_iter)
+        out["annual_revenue_by_segment"] = np.zeros((n_iter, n_segments))
 
     for iteration in range(n_iter):
         if iteration < independent_paths:
@@ -241,6 +247,13 @@ def replay_forward_year(panel, n_iter, macro_shift, seed, state_prob, segment_on
         out["annual_purchasers"][iteration] = purchased_in_year.sum()
         out["monthly_purchasers_by_segment"][iteration] = segment_matrix @ purchased.astype(float)
         out["annual_purchasers_by_segment"][iteration] = segment_matrix @ purchased_in_year.astype(float)
+
+        if state_revenue is not None:
+            trip_revenue = np.where(occurs, state_revenue[np.arange(n), state], 0.0)
+            out["annual_revenue"][iteration] = trip_revenue.sum()
+            out["annual_revenue_by_segment"][iteration] = np.bincount(
+                trip_segment, weights=trip_revenue, minlength=n_segments
+            )
 
     return out
 
@@ -383,27 +396,14 @@ def main():
                 f"unconditioned joint-sensitivity median — check the notebook rerun"
             )
 
-    # ---- segments: non-dormant, full grid, revenue only (deterministic) ----
-    dim_seg_active = dim_segment[~dim_segment["is_dormant"]].sort_values("sort_order")
-    seg_order = dim_seg_active["segment_id"].astype(str).tolist()
-
-    seg_curve = {}
-    for _, seg_row in dim_seg_active.iterrows():
-        sid = str(seg_row["segment_id"])
-        d = fact_seg_rev[fact_seg_rev["segment"] == seg_row["segment"]].sort_values("price_multiplier")
-        assert d["price_multiplier"].round(4).tolist() == grid, f"segment {sid}: price grid mismatch"
-        assert (d["revenue"] >= 0).all(), f"segment {sid}: negative revenue"
-        assert (d["purchasers"] >= 0).all(), f"segment {sid}: negative purchasers"
-        assert (d["purchasers"] <= seg_row["accounts"] + 1e-6).all(), (
-            f"segment {sid}: expected purchasers exceed account count"
-        )
-        seg_curve[sid] = {
-            "revenue": d["revenue"].round(2).tolist(),
-            "purchasers": d["purchasers"].round(1).tolist(),
-        }
+    # ---- segment metadata: every segment, Dormant included ----
+    # The contribution curves (seg_curve) come from the as-fitted replay further
+    # down; Dormant is a row there so the rows add up to the headline totals.
+    segments_sorted = dim_segment.sort_values("sort_order")
+    seg_order = segments_sorted["segment_id"].astype(str).tolist()
 
     seg_meta = {}
-    for _, r in dim_seg_active.iterrows():
+    for _, r in segments_sorted.iterrows():
         sid = str(r["segment_id"])
         seg_meta[sid] = {
             "name": r["segment"],
@@ -496,24 +496,6 @@ def main():
         "probability-curve response_scale grid disagrees with the sensitivity grid's"
     )
 
-    # ---- segment/portfolio reconciliation note ----
-    # Segment revenue is a deterministic expected-value decomposition; the portfolio
-    # figure above is the median of a simulated (right-skewed) distribution. The two
-    # are different estimands and will not sum to the same number — report the gap
-    # rather than imply they reconcile.
-    seg_sum_at_base = sum(
-        fact_seg_rev.loc[
-            (fact_seg_rev["segment"] == seg_row["segment"])
-            & (fact_seg_rev["price_multiplier"].round(4) == current_price),
-            "revenue",
-        ].iloc[0]
-        for _, seg_row in dim_seg_active.iterrows()
-    )
-    portfolio_median_at_base = portfolio["joint sensitivity"]["revenue_median"][grid.index(current_price)]
-    reconciliation_gap_pct = round(
-        (seg_sum_at_base / portfolio_median_at_base - 1) * 100, 1
-    )
-
     assumption_values = dim_assumption.set_index("assumption")["value"]
 
     # ---- market sizing: I-92 real-world travel anchor x assumed carrier share ----
@@ -579,9 +561,44 @@ def main():
     # response_scale_grid index -> the response_scenario its probabilities are stored under
     response_scenario_names = ["base", "mid", "stronger"]
 
-    def replay_checked(label, n_iter, macro_shift, response_scenario, price, published):
+    rev_idx = (
+        panel["rev_scen"]
+        .assign(price_multiplier=lambda d: d["price_multiplier"].round(4))
+        .set_index(["depth_scenario", "price_multiplier", "trip_id"])
+        .sort_index()
+    )
+
+    def state_revenue_as_fitted(price):
+        return (
+            rev_idx.loc[("reported", round(price, 4)), ["rev_null", "rev_partial", "rev_full"]]
+            .reindex(panel["trip_ids"])
+            .to_numpy()
+        )
+
+    fitted_median = (
+        fact_portfolio[fact_portfolio["case"] == "as fitted"]
+        .assign(p=lambda d: d["price_multiplier"].round(4))
+        .set_index("p")["median"]
+    )
+
+    # Segment split of the as-fitted headline figures. Segment medians don't add
+    # up to the portfolio median, so each segment gets the portfolio median in
+    # proportion to its share of the simulation mean at that price; rows then
+    # sum exactly to the headline figures, and their changes to its change.
+    def allocate_to_segments(result):
+        allocated = {}
+        for metric, total_key, by_segment_key in [
+            ("revenue", "annual_revenue", "annual_revenue_by_segment"),
+            ("purchasers", "annual_purchasers", "annual_purchasers_by_segment"),
+        ]:
+            segment_mean = result[by_segment_key].mean(axis=0)
+            allocated[metric] = np.median(result[total_key]) * segment_mean / segment_mean.sum()
+        return allocated
+
+    def replay_checked(label, n_iter, macro_shift, response_scenario, price, published, state_revenue=None):
         result = replay_forward_year(
-            panel, n_iter, macro_shift, crn_seed, state_prob(response_scenario, price), segment_onehot
+            panel, n_iter, macro_shift, crn_seed, state_prob(response_scenario, price), segment_onehot,
+            state_revenue=state_revenue,
         )
         replayed = np.median(result["annual_purchasers"])
         assert abs(replayed - published) < 1e-6, (
@@ -616,6 +633,7 @@ def main():
         "base": {},
     }
     current_price_runs = {}  # scenario key -> replay at 1.00x, for the traveler counts
+    segment_rows = []  # as-fitted segment allocation, one per grid price
 
     for ri, response_scale in enumerate(response_scale_grid):
         cells = []
@@ -626,13 +644,31 @@ def main():
                 & np.isclose(fact_sensitivity["price_multiplier"], price),
                 "purchasers_median",
             ].iloc[0]
+            as_fitted = ri == 0
             result = replay_checked(
-                f"base response[{ri}] {price}x", sweep_iter, 0.0, response_scenario_names[ri], price, published
+                f"base response[{ri}] {price}x", sweep_iter, 0.0, response_scenario_names[ri], price, published,
+                state_revenue=state_revenue_as_fitted(price) if as_fitted else None,
             )
-            if ri == 0 and abs(price - current_price) < 1e-9:
-                current_price_runs["base"] = result
+            if as_fitted:
+                replayed_revenue = np.median(result["annual_revenue"])
+                published_revenue = fitted_median[round(price, 4)]
+                assert abs(replayed_revenue - published_revenue) < 1e-6 * published_revenue, (
+                    f"as-fitted {price}x: replayed revenue median {replayed_revenue} != published {published_revenue}"
+                )
+                segment_rows.append(allocate_to_segments(result))
+                if abs(price - current_price) < 1e-9:
+                    current_price_runs["base"] = result
             cells.append(summarize_monthly_purchasers(result))
         purchasers_by_month["base"][str(ri)] = cells
+
+    seg_curve = {
+        sid: {
+            "revenue": [round(float(row["revenue"][s]), 2) for row in segment_rows],
+            "purchasers": [round(float(row["purchasers"][s]), 2) for row in segment_rows],
+        }
+        for s, sid in enumerate(stack_segment_ids)
+    }
+    assert stack_segment_ids == seg_order, "segment curve order differs from segOrder"
 
     for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
         cells = []
@@ -679,11 +715,6 @@ def main():
     # model figure by national_trips / panel_trips puts it on the same scale.
     panel_trips = len(panel["trip_ids"])
     scale_factor = i92_trips * MARKET_SHARE / panel_trips
-    fitted_median = (
-        fact_portfolio[fact_portfolio["case"] == "as fitted"]
-        .assign(p=lambda d: d["price_multiplier"].round(4))
-        .set_index("p")["median"]
-    )
     for _, row in market_sizing_df.iterrows():
         p = round(float(row["Price Multiplier"]), 4)
         assert abs(fitted_median[p] * scale_factor - row["Scaled Annual Revenue"]) < 1.0, (
@@ -707,7 +738,6 @@ def main():
             "depth_scale_joint_sensitivity": round(
                 float(assumption_values.get("depth scale (joint sensitivity)")), 4
             ),
-            "reconciliation_gap_pct": reconciliation_gap_pct,
             "scale_factor": scale_factor,
             "panel_trips": panel_trips,
         },
