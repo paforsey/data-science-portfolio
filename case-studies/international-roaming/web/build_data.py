@@ -82,7 +82,9 @@ Data contract, in brief (see web/README.md for the full version):
               (`portfolio`, `dim_model_case`, `fact_portfolio_simulation`)
               is untouched, so nothing depending on it needed to change.
   travelers   National forecast of U.S. citizen international air departures
-              for the 12 calendar months after the latest I-92 actual. Built
+              for each calendar month, ordered January to December (M1-M12
+              on the page), covering the 12 months after the latest I-92
+              actual. Built
               from published actuals, not the simulation: each month is the
               same month a year earlier times year-to-date growth. Expansion /
               Contraction scale it by the simulation's own effect on travel
@@ -704,18 +706,17 @@ def main():
     assert len(ytd) == len(ytd_prior) == last_actual.month, "I-92 year-to-date months incomplete"
     yoy_growth = float(ytd.sum() / ytd_prior.sum() - 1)
     forecast_months = pd.date_range(last_actual + pd.offsets.MonthBegin(1), periods=FORWARD_MONTHS, freq="MS")
-    prior_year_actual = np.array(
-        [i92_monthly[m - pd.DateOffset(years=1)] for m in forecast_months], dtype=float
+    # Index 0 = January ... 11 = December, so M1 is January on the page.
+    forecast_months = sorted(forecast_months, key=lambda m: m.month)
+    assert [m.month for m in forecast_months] == list(range(1, 13)), (
+        "forecast doesn't cover each calendar month exactly once"
     )
-    baseline_forecast = prior_year_actual * (1 + yoy_growth)
+    baseline_forecast = np.array(
+        [i92_monthly[m - pd.DateOffset(years=1)] for m in forecast_months], dtype=float
+    ) * (1 + yoy_growth)
 
     base_volume = np.median(current_price_runs["base"]["annual_person_trips"])
-    travelers = {
-        "last_actual": last_actual.strftime("%b %Y"),
-        "yoy_growth": round(yoy_growth, 6),
-        "months": [m.strftime("%b %Y") for m in forecast_months],
-        "prior_year_actual": prior_year_actual.astype(int).tolist(),
-    }
+    travelers = {"yoy_growth": round(yoy_growth, 6)}
     for key, result in current_price_runs.items():
         volume = result["annual_person_trips"]
         travelers[key] = {
