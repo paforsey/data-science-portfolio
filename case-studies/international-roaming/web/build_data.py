@@ -106,6 +106,14 @@ Data contract, in brief (see web/README.md for the full version):
               add up to the total mean; the total also carries p5/p95. Every
               cell's replay is asserted to reproduce its published annual
               purchaser median.
+  meta.scale_factor
+              National addressable trips (I-92 x MARKET_SHARE) / forecast
+              panel trips: the factor market_sizing.parquet effectively
+              applies to as-fitted revenue. All figures in this file stay at
+              model scale (revenue and counts unrounded to integers so scaling
+              stays exact); the page multiplies every count and dollar figure
+              by this one factor on load. The build asserts it reproduces
+              market_sizing's scaled revenue at every price.
 """
 
 import json
@@ -294,12 +302,12 @@ def main():
             f"{case}: purchasers p95 exceeds eligible_accounts"
         )
         portfolio[case] = {
-            "revenue_p5": d["p5"].round(0).astype(int).tolist(),
-            "revenue_median": d["median"].round(0).astype(int).tolist(),
-            "revenue_p95": d["p95"].round(0).astype(int).tolist(),
-            "purchasers_p5": d["purchasers_p5"].round(0).astype(int).tolist(),
-            "purchasers_median": d["purchasers_median"].round(0).astype(int).tolist(),
-            "purchasers_p95": d["purchasers_p95"].round(0).astype(int).tolist(),
+            "revenue_p5": d["p5"].round(2).tolist(),
+            "revenue_median": d["median"].round(2).tolist(),
+            "revenue_p95": d["p95"].round(2).tolist(),
+            "purchasers_p5": d["purchasers_p5"].round(2).tolist(),
+            "purchasers_median": d["purchasers_median"].round(2).tolist(),
+            "purchasers_p95": d["purchasers_p95"].round(2).tolist(),
         }
 
     # ---- scenarios: Expansion / Contraction, 3 prices, joint sensitivity only ----
@@ -340,9 +348,9 @@ def main():
         )
         paired_at_stress_price = {
             "price": STRESS_TEST_PRICE,
-            "revenue_paired_p5": round(float(stress_row["paired_p5"]), 0),
-            "revenue_paired_median": round(float(stress_row["paired_median"]), 0),
-            "revenue_paired_p95": round(float(stress_row["paired_p95"]), 0),
+            "revenue_paired_p5": round(float(stress_row["paired_p5"]), 2),
+            "revenue_paired_median": round(float(stress_row["paired_median"]), 2),
+            "revenue_paired_p95": round(float(stress_row["paired_p95"]), 2),
             "purchasers_paired_p5": round(float(stress_row["purchasers_paired_p5"]), 1),
             "purchasers_paired_median": round(float(stress_row["purchasers_paired_median"]), 1),
             "purchasers_paired_p95": round(float(stress_row["purchasers_paired_p95"]), 1),
@@ -350,12 +358,12 @@ def main():
 
         scenarios[key] = {
             "price": prices,
-            "revenue_p5": d["p5"].round(0).astype(int).tolist(),
-            "revenue_median": d["median"].round(0).astype(int).tolist(),
-            "revenue_p95": d["p95"].round(0).astype(int).tolist(),
-            "purchasers_p5": d["purchasers_p5"].round(0).astype(int).tolist(),
-            "purchasers_median": d["purchasers_median"].round(0).astype(int).tolist(),
-            "purchasers_p95": d["purchasers_p95"].round(0).astype(int).tolist(),
+            "revenue_p5": d["p5"].round(2).tolist(),
+            "revenue_median": d["median"].round(2).tolist(),
+            "revenue_p95": d["p95"].round(2).tolist(),
+            "purchasers_p5": d["purchasers_p5"].round(2).tolist(),
+            "purchasers_median": d["purchasers_median"].round(2).tolist(),
+            "purchasers_p95": d["purchasers_p95"].round(2).tolist(),
             "paired_at_stress_price": paired_at_stress_price,
         }
 
@@ -390,7 +398,7 @@ def main():
             f"segment {sid}: expected purchasers exceed account count"
         )
         seg_curve[sid] = {
-            "revenue": d["revenue"].round(0).astype(int).tolist(),
+            "revenue": d["revenue"].round(2).tolist(),
             "purchasers": d["purchasers"].round(1).tolist(),
         }
 
@@ -470,12 +478,12 @@ def main():
                 f"sensitivity grid [{ri},{di}]: negative value"
             )
             sensitivity_cells[f"{ri}_{di}"] = {
-                "revenue_p5": d["p5"].round(0).astype(int).tolist(),
-                "revenue_median": d["median"].round(0).astype(int).tolist(),
-                "revenue_p95": d["p95"].round(0).astype(int).tolist(),
-                "purchasers_p5": d["purchasers_p5"].round(0).astype(int).tolist(),
-                "purchasers_median": d["purchasers_median"].round(0).astype(int).tolist(),
-                "purchasers_p95": d["purchasers_p95"].round(0).astype(int).tolist(),
+                "revenue_p5": d["p5"].round(2).tolist(),
+                "revenue_median": d["median"].round(2).tolist(),
+                "revenue_p95": d["p95"].round(2).tolist(),
+                "purchasers_p5": d["purchasers_p5"].round(2).tolist(),
+                "purchasers_median": d["purchasers_median"].round(2).tolist(),
+                "purchasers_p95": d["purchasers_p95"].round(2).tolist(),
             }
 
     sensitivity_grid_payload = {
@@ -515,8 +523,8 @@ def main():
     market_sizing_payload = {
         str(round(float(row["Price Multiplier"]), 4)): {
             "revenue_per_trip": round(float(row["Revenue per Trip (As Fitted)"]), 2),
-            "scaled_annual_revenue": round(float(row["Scaled Annual Revenue"]), 0),
-            "scaled_lift": round(float(row["Scaled Lift vs. Standard"]), 0),
+            "scaled_annual_revenue": round(float(row["Scaled Annual Revenue"]), 2),
+            "scaled_lift": round(float(row["Scaled Lift vs. Standard"]), 2),
             "share_of_target": round(float(row["Share of $100M Target"]), 4),
         }
         for _, row in market_sizing_df.iterrows()
@@ -590,8 +598,8 @@ def main():
         total = by_segment.sum(axis=1)
         return {
             "total_mean": total.mean(axis=0).round(1).tolist(),
-            "total_p5": np.percentile(total, 5, axis=0).round(0).astype(int).tolist(),
-            "total_p95": np.percentile(total, 95, axis=0).round(0).astype(int).tolist(),
+            "total_p5": np.percentile(total, 5, axis=0).round(2).tolist(),
+            "total_p95": np.percentile(total, 95, axis=0).round(2).tolist(),
             "segment_mean": {
                 sid: by_segment[:, s, :].mean(axis=0).round(1).tolist()
                 for s, sid in enumerate(stack_segment_ids)
@@ -657,13 +665,33 @@ def main():
         assert (monthly <= annual[:, None]).all(), f"travelers [{key}]: a month exceeds the annual count"
         assert (monthly <= panel_monthly_ceiling).all(), f"travelers [{key}]: a month exceeds the panel ceiling"
         travelers[key] = {
-            "monthly_p5": np.percentile(monthly, 5, axis=0).round(0).astype(int).tolist(),
-            "monthly_median": np.median(monthly, axis=0).round(0).astype(int).tolist(),
-            "monthly_p95": np.percentile(monthly, 95, axis=0).round(0).astype(int).tolist(),
+            "monthly_p5": np.percentile(monthly, 5, axis=0).round(2).tolist(),
+            "monthly_median": np.median(monthly, axis=0).round(2).tolist(),
+            "monthly_p95": np.percentile(monthly, 95, axis=0).round(2).tolist(),
             "annual_p5": int(round(np.percentile(annual, 5))),
             "annual_median": int(round(np.median(annual))),
             "annual_p95": int(round(np.percentile(annual, 95))),
         }
+
+    # ---- company scale: the one factor behind every scaled figure ----
+    # market_sizing.parquet multiplies revenue per forecast trip (as-fitted
+    # median / panel trips) by national addressable trips, so multiplying any
+    # model figure by national_trips / panel_trips puts it on the same scale.
+    panel_trips = len(panel["trip_ids"])
+    scale_factor = i92_trips * MARKET_SHARE / panel_trips
+    fitted_median = (
+        fact_portfolio[fact_portfolio["case"] == "as fitted"]
+        .assign(p=lambda d: d["price_multiplier"].round(4))
+        .set_index("p")["median"]
+    )
+    for _, row in market_sizing_df.iterrows():
+        p = round(float(row["Price Multiplier"]), 4)
+        assert abs(fitted_median[p] * scale_factor - row["Scaled Annual Revenue"]) < 1.0, (
+            f"scale factor doesn't reproduce market_sizing's scaled revenue at {p}x"
+        )
+    assert np.allclose(
+        sensitivity_cells["0_0"]["revenue_median"], portfolio["as fitted"]["revenue_median"]
+    ), "sensitivity cell 0_0 differs from the as-fitted sweep, so scaled charts won't match the company-scale card"
 
     payload = {
         "meta": {
@@ -680,6 +708,8 @@ def main():
                 float(assumption_values.get("depth scale (joint sensitivity)")), 4
             ),
             "reconciliation_gap_pct": reconciliation_gap_pct,
+            "scale_factor": scale_factor,
+            "panel_trips": panel_trips,
         },
         "grid": [round(g, 4) for g in grid],
         "portfolio": portfolio,
