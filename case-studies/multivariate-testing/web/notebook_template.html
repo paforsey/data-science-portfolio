@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Notebook · {{TITLE}}</title>
+<meta name="description" content="Research notebook for the direct mail case study: an A/B test, a 2×2 factorial and a D-optimal multivariate landing-page test.">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+{{CSS}}
+</style>
+</head>
+<body data-restyled="notebook">
+
+<header class="nb-top">
+  <div class="nb-top-row">
+    <a class="brand" href="/"><span class="brand-mark">PF</span><span class="brand-name">Research Notebook</span></a>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Portfolio</a><span aria-hidden="true">/</span><a href="data-science-lifecycle.html">Direct Mail Acquisition</a><span aria-hidden="true">/</span><b>Research Notebook</b></nav>
+    <a class="btn btn-primary" href="data-science-lifecycle.html">Back to case study</a>
+  </div>
+  <div class="nb-toolbar">
+    <button type="button" class="tool" id="toggleCode" aria-pressed="false">Hide code</button>
+    <span class="tool-sep" aria-hidden="true"></span>
+    <span class="chip ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Executed</span>
+    <span class="chip">{{KERNEL}}</span>
+    <span class="toolbar-note">Read-only export of the notebook</span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="toc" aria-label="Notebook sections">
+    <p class="rail-title">Contents</p>
+    <ol>{{TOC}}</ol>
+  </aside>
+
+  <main class="nb-main">
+    <header class="nb-header">
+      <p class="nb-eyebrow">Experimental Design &middot; Direct Mail Testing</p>
+      <h1>{{TITLE}}</h1>
+      <p class="nb-subtitle">{{SUBTITLE}}</p>
+      <div class="stats">{{STATS}}</div>
+      <div class="disclosure">{{SHIELD}}<div><b>Disclosure</b><ul>{{DISCLOSURE}}</ul></div></div>
+    </header>
+{{BODY}}
+  </main>
+
+  <aside class="rail" aria-label="Notebook summary">
+    <section>
+      <p class="rail-title">Key decisions</p>
+      <ol class="decisions">{{DECISIONS}}</ol>
+    </section>
+    <section>
+      <p class="rail-title">Sections read</p>
+      <ol class="progress">{{PROGRESS}}</ol>
+    </section>
+    <section>
+      <p class="rail-title">Related</p>
+      <ul class="related">{{RELATED}}</ul>
+    </section>
+  </aside>
+</div>
+
+<script>
+(function () {
+  // Hide code shows only the narrative and outputs.
+  var toggle = document.getElementById('toggleCode');
+  toggle.addEventListener('click', function () {
+    var hidden = document.body.classList.toggle('hide-code');
+    toggle.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+    toggle.textContent = hidden ? 'Show code' : 'Hide code';
+  });
+
+  document.querySelectorAll('.code-card .copy').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var code = button.parentElement.querySelector('pre').innerText;
+      navigator.clipboard.writeText(code).then(function () {
+        button.textContent = 'Copied';
+        setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+      });
+    });
+  });
+
+  // The current section is the last one whose top has passed 35% of the viewport;
+  // sections above it count as read, and the page's end marks them all read.
+  var sections = [].slice.call(document.querySelectorAll('.nb-section'));
+  var tocLinks = document.querySelectorAll('[data-toc]');
+  var progress = document.querySelectorAll('[data-progress]');
+  function update() {
+    var line = window.innerHeight * 0.35, current = 0;
+    sections.forEach(function (s, i) { if (s.getBoundingClientRect().top < line) current = i; });
+    var atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+    if (atEnd) current = sections.length - 1;
+    tocLinks.forEach(function (a, i) { a.classList.toggle('is-current', i === current); });
+    progress.forEach(function (li, i) {
+      li.classList.toggle('is-done', i < current || atEnd);
+      li.classList.toggle('is-current', i === current && !atEnd);
+    });
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+
+</body>
+</html>
