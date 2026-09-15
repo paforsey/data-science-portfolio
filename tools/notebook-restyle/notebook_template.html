@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
+<script type="module" src="/firebase-analytics.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Research Notebook · {{TITLE}}</title>
-<meta name="description" content="Research notebook for the direct mail case study: an A/B test, a 2×2 factorial and a D-optimal multivariate landing-page test.">
+<meta name="description" content="{{DESCRIPTION}}">
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -16,8 +17,8 @@
 <header class="nb-top">
   <div class="nb-top-row">
     <a class="brand" href="/"><span class="brand-mark">PF</span><span class="brand-name">Research Notebook</span></a>
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Portfolio</a><span aria-hidden="true">/</span><a href="data-science-lifecycle.html">Direct Mail Acquisition</a><span aria-hidden="true">/</span><b>Research Notebook</b></nav>
-    <a class="btn btn-primary" href="data-science-lifecycle.html">Back to case study</a>
+    <nav class="crumbs" aria-label="Breadcrumb">{{CRUMBS}}</nav>
+    <a class="btn btn-primary" href="{{BACK_HREF}}">{{BACK_LABEL}}</a>
   </div>
   <div class="nb-toolbar">
     <button type="button" class="tool" id="toggleCode" aria-pressed="false">Hide code</button>
@@ -36,11 +37,11 @@
 
   <main class="nb-main">
     <header class="nb-header">
-      <p class="nb-eyebrow">Experimental Design &middot; Direct Mail Testing</p>
+      <p class="nb-eyebrow">{{EYEBROW}}</p>
       <h1>{{TITLE}}</h1>
       <p class="nb-subtitle">{{SUBTITLE}}</p>
       <div class="stats">{{STATS}}</div>
-      <div class="disclosure">{{SHIELD}}<div><b>Disclosure</b><ul>{{DISCLOSURE}}</ul></div></div>
+      {{NOTICE}}
     </header>
 {{BODY}}
   </main>

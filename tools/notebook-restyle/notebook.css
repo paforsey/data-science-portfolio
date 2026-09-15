@@ -101,6 +101,9 @@ a { color: var(--accent); }
 .disclosure .icon { stroke: var(--orange); }
 .disclosure b { display: block; margin-bottom: 0.2rem; }
 .disclosure ul { margin: 0; padding-left: 1.1rem; }
+.disclosure p { margin: 0; line-height: 1.55; }
+.disclosure.info { border-color: var(--accent-line); background: var(--accent-soft); }
+.disclosure.info .icon { stroke: var(--accent); }
 
 /* ---------- sections and markdown ---------- */
 .nb-section { margin-top: 1.4rem; padding: 0.4rem 1.2rem 1.2rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
@@ -128,6 +131,7 @@ h3:hover .anchor-link { opacity: 1; }
 .code-card:hover .copy, .copy:focus-visible { opacity: 1; }
 .out-html, .out-text, .out-image { min-width: 0; overflow-x: auto; font-size: 0.85rem; }
 .out-text pre { margin: 0; padding: 0.5rem 0.2rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.76rem; line-height: 1.45; color: var(--ink-soft); }
+.out-text.wrap pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .out-html table { margin: 0.3rem 0; border-collapse: collapse; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 .out-html th, .out-html td { padding: 0.35rem 0.7rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
 .out-html thead th { border-bottom: 1.5px solid var(--line); background: var(--bg); font-weight: 600; }
@@ -151,6 +155,18 @@ h3:hover .anchor-link { opacity: 1; }
 .callout.decision .callout-title { color: var(--teal); }
 .callout p { margin: 0; color: var(--ink-soft); }
 .callout ul { margin: 0; padding-left: 1.1rem; color: var(--ink-soft); }
+.callout ol { margin: 0; padding-left: 1.2rem; color: var(--ink-soft); }
+.callout li + li { margin-top: 0.25rem; }
+
+/* ---------- labelled markdown blocks (TIDY_MARKDOWN) ---------- */
+.md .lead { margin: 0.2rem 0 0.8rem; font-size: 0.95rem; line-height: 1.6; color: var(--ink); }
+.lead-label { display: inline-block; margin-right: 0.2rem; padding: 0.08rem 0.45rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: 0.12em; }
+.md .md-label { margin: 1rem 0 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.md ol > li > ul { margin: 0.25rem 0 0.45rem; }
+.md ol > li > ul > li { color: var(--muted); }
+.toc .toc-sub { margin: 0.1rem 0 0.35rem 2.35rem; }
+.toc .toc-sub a { padding: 0.25rem 0.6rem; border-left: 0; font-size: 0.8rem; color: var(--muted); }
+.toc .toc-sub a:hover { color: var(--accent); }
 
 /* ---------- syntax colors ---------- */
 .highlight .k, .highlight .kn, .highlight .kc, .highlight .ow { color: var(--syn-kw); font-weight: 500; }
