@@ -150,8 +150,24 @@
       }
     });
 
-    var fromHash = sections.findIndex(function (s) { return '#' + s.id === location.hash; });
-    showSection(fromHash > -1 ? fromHash : 0, false);
+    // The page opens at the top. A section named in the address opens that tab
+    // without the browser jumping down to its heading; a heading inside a section
+    // opens the section and goes to the heading.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    var hashTarget = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+    var hashOwner = hashTarget && sections.indexOf(hashTarget) === -1 ? hashTarget.closest('.nb-section') : null;
+    showSection(hashOwner ? sections.indexOf(hashOwner) : Math.max(sections.indexOf(hashTarget), 0), false);
+    var land = function () {
+      if (hashOwner) hashTarget.scrollIntoView();
+      else window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    land();
+    // The browser scrolls to the address fragment again once the page loads;
+    // land again then, unless the reader has already started moving.
+    var moved = false;
+    var markMoved = function () { moved = true; };
+    ['wheel', 'touchstart', 'keydown'].forEach(function (t) { window.addEventListener(t, markMoved, { once: true, passive: true }); });
+    window.addEventListener('load', function () { if (!moved) land(); });
   } else {
     // Every section on one page: highlight whichever one the reader has reached.
     var update = function () {
