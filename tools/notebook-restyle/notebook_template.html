@@ -27,6 +27,7 @@
     <span class="chip">{{KERNEL}}</span>
     <span class="toolbar-note">Read-only export of the notebook</span>
   </div>
+  {{NAVIGATOR}}
 </header>
 
 <div class="layout">
@@ -82,24 +83,77 @@
     });
   });
 
-  // The current section is the last one whose top has passed 35% of the viewport;
-  // sections above it count as read, and the page's end marks them all read.
   var sections = [].slice.call(document.querySelectorAll('.nb-section'));
   var tocLinks = document.querySelectorAll('[data-toc]');
   var progress = document.querySelectorAll('[data-progress]');
-  function update() {
-    var line = window.innerHeight * 0.35, current = 0;
-    sections.forEach(function (s, i) { if (s.getBoundingClientRect().top < line) current = i; });
-    var atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
-    if (atEnd) current = sections.length - 1;
-    tocLinks.forEach(function (a, i) { a.classList.toggle('is-current', i === current); });
-    progress.forEach(function (li, i) {
-      li.classList.toggle('is-done', i < current || atEnd);
-      li.classList.toggle('is-current', i === current && !atEnd);
+  var navButtons = [].slice.call(document.querySelectorAll('[data-goto]'));
+
+  if (navButtons.length) {
+    // One section at a time: the notebook is long, so the navigator swaps sections
+    // instead of asking the reader to scroll past every model.
+    var seen = [];
+    var showSection = function (index, scrollToTop) {
+      sections.forEach(function (s, i) { s.hidden = i !== index; });
+      if (seen.indexOf(index) === -1) seen.push(index);
+      navButtons.forEach(function (b) {
+        var target = Number(b.getAttribute('data-goto'));
+        if (b.classList.contains('nav-tab')) {
+          b.classList.toggle('is-current', target === index);
+          b.setAttribute('aria-current', target === index ? 'true' : 'false');
+        }
+      });
+      tocLinks.forEach(function (a, i) {
+        a.classList.toggle('is-current', i === index);
+        var subs = a.parentElement.querySelector('.toc-sub');
+        if (subs) subs.hidden = i !== index;
+      });
+      progress.forEach(function (li, i) {
+        li.classList.toggle('is-current', i === index);
+        li.classList.toggle('is-done', i !== index && seen.indexOf(i) !== -1);
+      });
+      try { history.replaceState(null, '', '#' + sections[index].id); } catch (e) {}
+      if (scrollToTop) window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+
+    navButtons.forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        showSection(Number(b.getAttribute('data-goto')), true);
+      });
     });
+
+    // A link to a heading inside another section opens that section first.
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a[href^="#"]');
+      if (!link || link.hasAttribute('data-goto')) return;
+      var target = document.getElementById(decodeURIComponent(link.getAttribute('href').slice(1)));
+      if (!target) return;
+      var owner = target.closest('.nb-section');
+      if (owner && owner.hidden) {
+        e.preventDefault();
+        showSection(sections.indexOf(owner), false);
+        target.scrollIntoView();
+      }
+    });
+
+    var fromHash = sections.findIndex(function (s) { return '#' + s.id === location.hash; });
+    showSection(fromHash > -1 ? fromHash : 0, false);
+  } else {
+    // Every section on one page: highlight whichever one the reader has reached.
+    var update = function () {
+      var line = window.innerHeight * 0.35, current = 0;
+      sections.forEach(function (s, i) { if (s.getBoundingClientRect().top < line) current = i; });
+      var atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      if (atEnd) current = sections.length - 1;
+      tocLinks.forEach(function (a, i) { a.classList.toggle('is-current', i === current); });
+      progress.forEach(function (li, i) {
+        li.classList.toggle('is-done', i < current || atEnd);
+        li.classList.toggle('is-current', i === current && !atEnd);
+      });
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    update();
   }
-  window.addEventListener('scroll', update, { passive: true });
-  update();
 })();
 </script>
 

@@ -54,6 +54,24 @@ a { color: var(--accent); }
 .chip svg { width: 0.9rem; height: 0.9rem; fill: none; stroke: var(--teal); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .toolbar-note { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
 
+/* ---------- model navigator (one section at a time) ---------- */
+.nb-nav { display: flex; gap: 0.4rem; padding: 0.45rem 1.25rem 0; overflow-x: auto; background: var(--surface); border-top: 1px solid var(--line); }
+.nav-tab { flex: none; display: flex; flex-direction: column; gap: 0.1rem; min-width: 8.5rem; padding: 0.55rem 0.85rem 0.6rem; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--ink-soft); font: inherit; text-align: left; cursor: pointer; }
+.nav-tab b { font-size: 0.84rem; font-weight: 600; white-space: nowrap; }
+.nav-tab span { font-size: 0.74rem; line-height: 1.3; color: var(--muted); }
+.nav-tab:hover { background: var(--bg); }
+.nav-tab.is-current { border-bottom-color: var(--accent); color: var(--accent); }
+.nav-tab.is-current span { color: var(--accent); }
+.nb-section[hidden] { display: none; }
+.section-nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.6rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.section-nav button { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 40px; padding: 0 1rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink-soft); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+.section-nav button:hover:not(:disabled) { border-color: var(--accent-line); color: var(--accent); }
+.section-nav button:disabled { opacity: 0.45; cursor: default; }
+.section-nav .next { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
+.section-nav .next:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent, #fff); }
+.section-nav .next-label { display: flex; flex-direction: column; align-items: flex-end; font-size: 0.76rem; color: var(--muted); }
+.section-nav .next-label b { font-size: 0.86rem; color: var(--ink); }
+
 /* ---------- three-column layout ---------- */
 .layout { display: grid; grid-template-columns: 230px minmax(0, 1fr) 260px; align-items: start; }
 .toc, .rail { position: sticky; top: 97px; max-height: calc(100vh - 97px); overflow-y: auto; padding: 1.2rem 1rem; }

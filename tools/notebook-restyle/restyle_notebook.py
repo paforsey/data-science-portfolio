@@ -68,6 +68,16 @@ def section_label(config, heading_text):
     raise SystemExit(f"no sidebar label for section heading {heading_text!r}; update SECTION_LABELS")
 
 
+def slug(text, used):
+    """A stable anchor for a heading, since some exports carry no ids."""
+    base = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "section"
+    anchor, n = base, 2
+    while anchor in used:
+        anchor, n = f"{base}-{n}", n + 1
+    used.add(anchor)
+    return anchor
+
+
 def strip_number(heading_text):
     """'2.0 Part 1: A/B Test' -> 'Part 1: A/B Test'; '1 · Knowledge Base' -> 'Knowledge Base'."""
     return re.sub(r"^\d+(?:\.\d+)?\s*(?:·\s*)?", "", heading_text)
@@ -144,6 +154,11 @@ def tidy_blocks(rendered):
     """Markdown as .md blocks, with labelled paragraphs styled and Observations lists as callouts."""
     for rule in rendered.find_all("hr"):
         rule.decompose()
+    # Cells written as raw HTML wrap everything in one <div>; work on its children so the
+    # labelled paragraphs inside are visible to the passes below.
+    children = [c for c in rendered.children if c.name is not None or c.strip()]
+    if len(children) == 1 and children[0].name == "div":
+        children[0].unwrap()
     rejoin_lists(rendered)
     out, pending = [], []
 
@@ -260,6 +275,10 @@ def build(src_html, config):
     notice_html = f'<div class="{notice_class}">{icon(notice["icon"])}<div><b>{html.escape(notice["title"])}</b>{notice_body}</div></div>'
 
     body, sections, pending = [], [], []
+    # Some exports carry no heading ids; anchors are generated and kept unique.
+    used_anchors = set()
+    section_tag = getattr(config, "SECTION_LEVEL", "h2")
+    sub_tag = "h2" if section_tag == "h1" else "h3"
 
     def open_section(anchor, label, number, heading_html):
         if sections:
@@ -291,23 +310,37 @@ def build(src_html, config):
                 target.append(html_cell)
             continue
         rendered = cell.select_one(".jp-RenderedMarkdown")
-        h2 = rendered.find("h2")
-        if h2 is not None:
+        head = rendered.find(section_tag)
+        # A closing cell with no section heading of its own still opens its own section.
+        closing_cfg = getattr(config, "CLOSING_SECTION", None)
+        if head is None and closing_cfg and sections:
+            first = rendered.find(["h1", "h2", "h3", "h4"])
+            if first is not None and heading_text(first).startswith(closing_cfg["starts_with"]):
+                open_section(
+                    slug(closing_cfg["label"], used_anchors),
+                    closing_cfg["label"],
+                    closing_cfg.get("number", f"{len(sections) + 1:02d}"),
+                    html.escape(closing_cfg["label"]),
+                )
+                target = body
+        if head is not None:
             open_overview()
-            text = heading_text(h2)
+            text = heading_text(head)
             if numbered:
                 match = re.match(r"\d+", text)
                 number = f"{int(match.group()):02d}" if match else "00"
             else:
                 number = f"{len(sections) + 1:02d}"
-            anchor = h2.get("id")
-            h2.decompose()
+            anchor = head.get("id") or slug(text, used_anchors)
+            head.decompose()
             open_section(anchor, section_label(config, text), number, html.escape(strip_number(text)))
             target = body
         if sections:
-            for h3 in rendered.find_all("h3"):
-                sections[-1]["subsections"].append((h3.get("id"), heading_text(h3)))
-        if h2 is not None and not tidy:
+            for sub in rendered.find_all(sub_tag):
+                sub_anchor = sub.get("id") or slug(heading_text(sub), used_anchors)
+                sub["id"] = sub_anchor
+                sections[-1]["subsections"].append((sub_anchor, heading_text(sub)))
+        if head is not None and not tidy:
             rest = inner(rendered).strip()
             if rest:
                 body.append(f'<div class="md">{rest}</div>')
@@ -318,6 +351,34 @@ def build(src_html, config):
         if callouts:
             target.append(callouts)
     open_overview()
+
+    # With a navigator, each section ends with a way into the next one.
+    navigator = getattr(config, "SECTION_LEVEL", "h2") == "h1"
+    if navigator and sections:
+        closing = []
+        for i, s in enumerate(sections):
+            prev_btn = (
+                f'<button type="button" data-goto="{i - 1}">&larr; {html.escape(sections[i - 1]["label"])}</button>'
+                if i else '<button type="button" disabled>&larr; Previous</button>'
+            )
+            if i + 1 < len(sections):
+                nxt = sections[i + 1]
+                next_btn = (
+                    '<span class="next-label">Next</span>'
+                    f'<button type="button" class="next" data-goto="{i + 1}">{html.escape(nxt["label"])} &rarr;</button>'
+                )
+            else:
+                next_btn = '<button type="button" disabled>Next &rarr;</button>'
+            closing.append(f'<div class="section-nav">{prev_btn}{next_btn}</div>')
+        # Insert each section's navigation just before the section closes.
+        rebuilt, n = [], 0
+        for piece in body:
+            if piece == "</section>":
+                rebuilt.append(closing[n])
+                n += 1
+            rebuilt.append(piece)
+        body = rebuilt
+        body.append(closing[n] if n < len(closing) else "")
     body.append("</section>")
 
     stats = "".join(
@@ -354,9 +415,18 @@ def build(src_html, config):
         for label, href in config.CRUMBS
     )
 
+    tabs = ""
+    if navigator:
+        tabs = '<nav class="nb-nav" aria-label="Sections">' + "".join(
+            f'<button type="button" class="nav-tab" data-goto="{i}" aria-current="false">'
+            f'<b>{html.escape(s["number"])}</b><span>{html.escape(s["label"])}</span></button>'
+            for i, s in enumerate(sections)
+        ) + "</nav>"
+
     css = (HERE / "notebook.css").read_text()
     template = (HERE / "notebook_template.html").read_text()
     replacements = {
+        "{{NAVIGATOR}}": tabs,
         "{{TITLE}}": html.escape(title),
         "{{SUBTITLE}}": html.escape(subtitle),
         "{{DESCRIPTION}}": html.escape(config.DESCRIPTION, quote=True),
