@@ -91,34 +91,48 @@
   if (navButtons.length) {
     // One section at a time: the notebook is long, so the navigator swaps sections
     // instead of asking the reader to scroll past every model.
+    // A tab owns one section, or a run of them when data-sections lists several.
+    var tabs = [].slice.call(document.querySelectorAll('.nav-tab'));
+    var owned = tabs.map(function (b) {
+      return (b.getAttribute('data-sections') || b.getAttribute('data-goto') || '0')
+        .split(',').map(Number);
+    });
     var seen = [];
-    var showSection = function (index, scrollToTop) {
-      sections.forEach(function (s, i) { s.hidden = i !== index; });
-      if (seen.indexOf(index) === -1) seen.push(index);
-      navButtons.forEach(function (b) {
-        var target = Number(b.getAttribute('data-goto'));
-        if (b.classList.contains('nav-tab')) {
-          b.classList.toggle('is-current', target === index);
-          b.setAttribute('aria-current', target === index ? 'true' : 'false');
-        }
+    var showTab = function (tab, scrollToTop) {
+      var shown = owned[tab] || [tab];
+      sections.forEach(function (s, i) { s.hidden = shown.indexOf(i) === -1; });
+      shown.forEach(function (i) { if (seen.indexOf(i) === -1) seen.push(i); });
+      tabs.forEach(function (b, t) {
+        b.classList.toggle('is-current', t === tab);
+        b.setAttribute('aria-current', t === tab ? 'true' : 'false');
       });
       tocLinks.forEach(function (a, i) {
-        a.classList.toggle('is-current', i === index);
+        a.hidden = shown.indexOf(i) === -1;
+        a.classList.toggle('is-current', i === shown[0]);
         var subs = a.parentElement.querySelector('.toc-sub');
-        if (subs) subs.hidden = i !== index;
+        if (subs) subs.hidden = shown.indexOf(i) === -1;
       });
       progress.forEach(function (li, i) {
-        li.classList.toggle('is-current', i === index);
-        li.classList.toggle('is-done', i !== index && seen.indexOf(i) !== -1);
+        li.classList.toggle('is-current', shown.indexOf(i) !== -1);
+        li.classList.toggle('is-done', shown.indexOf(i) === -1 && seen.indexOf(i) !== -1);
       });
-      try { history.replaceState(null, '', '#' + sections[index].id); } catch (e) {}
+      try { history.replaceState(null, '', '#' + sections[shown[0]].id); } catch (e) {}
       if (scrollToTop) window.scrollTo({ top: 0, behavior: 'instant' });
     };
+    // Prev/next buttons address sections; map one back to the tab that owns it.
+    var tabOf = function (sectionIndex) {
+      for (var t = 0; t < owned.length; t++) if (owned[t].indexOf(sectionIndex) !== -1) return t;
+      return 0;
+    };
+    var showSection = function (index, scrollToTop) { showTab(tabOf(index), scrollToTop); };
 
     navButtons.forEach(function (b) {
       b.addEventListener('click', function (e) {
         e.preventDefault();
-        showSection(Number(b.getAttribute('data-goto')), true);
+        // Tabs address themselves; prev/next buttons address a section.
+        var index = Number(b.getAttribute('data-goto'));
+        if (b.classList.contains('nav-tab')) showTab(index, true);
+        else showSection(index, true);
       });
     });
 

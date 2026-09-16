@@ -47,6 +47,7 @@ ICONS = {
     "layers": '<path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/>',
     "route": '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-4 5-8 6"/>',
     "chat": '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+    "doc": '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
 }
 
 
@@ -54,10 +55,15 @@ def icon(name, cls="icon"):
     return f'<svg class="{cls}" viewBox="0 0 24 24" aria-hidden="true">{ICONS[name]}</svg>'
 
 
+CONFIG_DIR = HERE  # set to the config's own folder, so its relative paths resolve there
+
+
 def load_config(path):
+    global CONFIG_DIR
     spec = importlib.util.spec_from_file_location("notebook_config", path)
     config = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(config)
+    CONFIG_DIR = Path(path).resolve().parent
     return config
 
 
@@ -199,6 +205,59 @@ def tidy_blocks(rendered):
     return "".join(out)
 
 
+def knowledge_file(path, spec, section):
+    """Renders a knowledge base file the way the notebook reads it: metadata from the
+    header, then one chunk per '## ' section. The chunk count is asserted against the
+    notebook's own output so the page cannot drift from the data."""
+    text = Path(path).read_text(encoding="utf-8")
+
+    domain = re.search(r"Domain:\s*(.+)", text)
+    domain = domain.group(1).strip() if domain else "Unknown"
+    tags_match = re.search(r"Tags:\s*(.*?)\n\nContent Type:", text, re.DOTALL)
+    tags = [t.strip() for t in tags_match.group(1).replace("\n", " ").split(",") if t.strip()] if tags_match else []
+    summary = re.search(r"Document Summary:\s*\n+(.+?)\n\n", text, re.DOTALL)
+    summary = " ".join(summary.group(1).split()) if summary else ""
+
+    # The notebook's split: everything before the first "## " is metadata, never a chunk.
+    parts = re.split(r"\n##\s+", text)[1:]
+    expected = spec.get("expected_chunks")
+    if expected is not None and len(parts) != expected:
+        raise SystemExit(f"{Path(path).name}: {len(parts)} chunks, expected {expected}")
+
+    chunks = []
+    for n, part in enumerate(parts, start=1):
+        lines = part.strip().split("\n")
+        topic = lines[0].strip()
+        content = "\n".join(lines[1:]).strip()
+        content = re.sub(r"\n?-{3,}\s*$", "", content).strip()
+        anchor = f'{spec["anchor"]}-{n}'
+        section["subsections"].append((anchor, topic))
+        chunks.append(
+            f'<article class="kb-chunk" id="{html.escape(anchor, quote=True)}">'
+            f'<header><span class="chunk-num">Chunk {n}/{len(parts)}</span>'
+            f"<h3>{html.escape(topic)}</h3></header>"
+            f"<pre>{html.escape(content)}</pre></article>"
+        )
+
+    tag_html = "".join(f"<span>{html.escape(t)}</span>" for t in tags)
+    head = (
+        '<div class="kb-head">'
+        f'<div><b>File</b><span>{html.escape(Path(path).name)}</span></div>'
+        f'<div><b>Domain</b><span>{html.escape(domain)}</span></div>'
+        f'<div><b>Chunks</b><span>{len(parts)}, one per section</span></div>'
+        f'<div style="grid-column: 1 / -1;"><b>Tags</b><div class="tags">{tag_html}</div></div>'
+        "</div>"
+    )
+    note = (
+        f'<p class="kb-note">{icon("info")}<span>The header above is metadata: the loader reads '
+        f'Domain and Tags from it, then splits the file on each <code>##</code> heading. Every '
+        f'chunk below is embedded separately, so a question retrieves the section it is about '
+        f'rather than the whole document.</span></p>'
+    )
+    intro = f'<p class="kb-summary">{html.escape(summary)}</p>' if summary else ""
+    return head + intro + note + "".join(chunks)
+
+
 def code_cell(cell, skip_empty=False, wrap_text=False):
     prompt = cell.select_one(".jp-InputPrompt").get_text(strip=True)
     text_class = "out-text wrap" if wrap_text else "out-text"
@@ -257,19 +316,28 @@ def build(src_html, config):
         assert items, "expected the notice bullets in the second cell"
         notice_body = f"<ul>{items}</ul>"
         first_body_cell = 2
-    elif notice["source"] == "title-paragraph":
+    elif notice["source"] in ("title-paragraph", "next-cell-paragraph"):
+        # The labelled paragraph sits either in the title cell or in the one after it.
+        source_cell = title_cell if notice["source"] == "title-paragraph" else cells[1].select_one(".jp-RenderedMarkdown")
         para = next(
-            (p for p in title_cell.find_all("p", recursive=False)
+            (p for p in source_cell.find_all("p")
              if p.find("strong") and p.find("strong").get_text(strip=True).startswith(notice["label"])),
             None,
         )
         assert para is not None, f"expected a paragraph labelled {notice['label']!r} in the title cell"
         para.find("strong").decompose()
         notice_body = f"<p>{inner(para).strip()}</p>"
-        for tag in (para, h1, subtitle_p):
-            tag.decompose()
-        leftover = title_cell
-        first_body_cell = 1
+        para.decompose()
+        if notice["source"] == "title-paragraph":
+            h1.decompose()
+            subtitle_p.decompose()
+            leftover = title_cell
+            first_body_cell = 1
+        else:
+            # The title cell holds only the header block; the rest of the notice cell
+            # (design notes and the like) still belongs in the overview.
+            leftover = source_cell
+            first_body_cell = 2
     else:
         raise SystemExit(f"unknown NOTICE source {notice['source']!r}")
     notice_html = f'<div class="{notice_class}">{icon(notice["icon"])}<div><b>{html.escape(notice["title"])}</b>{notice_body}</div></div>'
@@ -352,8 +420,24 @@ def build(src_html, config):
             target.append(callouts)
     open_overview()
 
+    # Source files the notebook reads, each shown as its own section.
+    for spec in getattr(config, "KNOWLEDGE_FILES", []):
+        body.append("</section>")
+        sections.append({
+            "anchor": spec["anchor"],
+            "label": spec["label"],
+            "number": spec.get("number", ""),
+            "subsections": [],
+        })
+        body.append(
+            f'<section class="nb-section" id="{html.escape(spec["anchor"], quote=True)}" '
+            f'data-section="{len(sections)}">'
+            f'<h2 class="section-head">{html.escape(spec["label"])}</h2>'
+        )
+        body.append(knowledge_file(CONFIG_DIR / spec["path"], spec, sections[-1]))
+
     # With a navigator, each section ends with a way into the next one.
-    navigator = getattr(config, "SECTION_LEVEL", "h2") == "h1"
+    navigator = bool(getattr(config, "TABS", None)) or getattr(config, "SECTION_LEVEL", "h2") == "h1"
     if navigator and sections:
         closing = []
         for i, s in enumerate(sections):
@@ -417,11 +501,24 @@ def build(src_html, config):
 
     tabs = ""
     if navigator:
-        tabs = '<nav class="nb-nav" aria-label="Sections">' + "".join(
-            f'<button type="button" class="nav-tab" data-goto="{i}" aria-current="false">'
-            f'<b>{html.escape(s["number"])}</b><span>{html.escape(s["label"])}</span></button>'
+        # A tab owns one section by default; TABS lets a tab own a run of them, so a
+        # whole notebook can sit behind one tab beside its source files.
+        groups = getattr(config, "TABS", None) or [
+            {"label": s["label"], "number": s["number"], "sections": [i]}
             for i, s in enumerate(sections)
-        ) + "</nav>"
+        ]
+        buttons = []
+        for t, group in enumerate(groups):
+            caption = (
+                f'<b>{html.escape(group["number"])}</b>' if group.get("number")
+                else f'{icon(group["icon"], cls="icon tab-icon")}' if group.get("icon") else ""
+            )
+            buttons.append(
+                f'<button type="button" class="nav-tab{" is-file" if group.get("icon") else ""}" '
+                f'data-goto="{t}" data-sections="{",".join(str(i) for i in group["sections"])}" '
+                f'aria-current="false">{caption}<span>{html.escape(group["label"])}</span></button>'
+            )
+        tabs = '<nav class="nb-nav" aria-label="Sections">' + "".join(buttons) + "</nav>"
 
     css = (HERE / "notebook.css").read_text()
     template = (HERE / "notebook_template.html").read_text()

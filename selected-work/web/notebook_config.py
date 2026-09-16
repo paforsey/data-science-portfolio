@@ -24,7 +24,8 @@ BACK = ("Back to selected work", "/#selected-work")
 KERNEL = "Python (base) · 3.12"  # the notebook's kernelspec display name and language version
 
 # The title cell's "Context, for anyone starting here." paragraph becomes the notice.
-NOTICE = {"source": "title-paragraph", "label": "Context", "title": "Context", "icon": "info", "variant": "info"}
+# The header block is its own cell now; the Context paragraph opens the cell after it.
+NOTICE = {"source": "next-cell-paragraph", "label": "Context", "title": "Context", "icon": "info", "variant": "info"}
 
 TIDY_MARKDOWN = True
 WRAP_TEXT_OUTPUT = True  # the coach's responses print as prose, one paragraph per line
@@ -57,4 +58,29 @@ DECISIONS = [
 RELATED = [
     ("All selected work", "/#selected-work"),
     ("Featured case studies", "/#case-studies"),
+]
+
+# The knowledge base files the notebook loads, shown as their own views so a reader can
+# see how each file is structured. Rendered from the files themselves, split the same way
+# load_knowledge_document splits them: metadata from the header, one chunk per "## " section.
+KNOWLEDGE_FILES = [
+    {
+        "path": "../knowledge_base/01_emergency_fund.txt",
+        "label": "Emergency Fund",
+        "anchor": "file-emergency-fund",
+        "expected_chunks": 10,
+    },
+    {
+        "path": "../knowledge_base/02_debt_reduction.txt",
+        "label": "Debt Reduction",
+        "anchor": "file-debt-reduction",
+        "expected_chunks": 14,
+    },
+]
+
+# Three views: the notebook, then one per knowledge base file.
+TABS = [
+    {"label": "Notebook", "number": "01", "sections": [0, 1, 2]},
+    {"label": "Emergency Fund", "icon": "doc", "sections": [3]},
+    {"label": "Debt Reduction", "icon": "doc", "sections": [4]},
 ]

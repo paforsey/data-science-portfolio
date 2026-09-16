@@ -63,6 +63,25 @@ a { color: var(--accent); }
 .nav-tab.is-current { border-bottom-color: var(--accent); color: var(--accent); }
 .nav-tab.is-current span { color: var(--accent); }
 .nb-section[hidden] { display: none; }
+.toc a[hidden] { display: none; }
+.nav-tab.is-file { flex-direction: row; align-items: center; gap: 0.5rem; }
+.nav-tab .tab-icon { width: 1.05rem; height: 1.05rem; stroke: currentColor; }
+
+/* ---------- source files shown beside the notebook ---------- */
+.kb-head { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; margin: 0.6rem 0 1.1rem; padding: 0.9rem 1.1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.kb-head div { min-width: 0; }
+.kb-head b { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.kb-head span { font-size: 0.86rem; color: var(--ink); }
+.kb-head .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.15rem; }
+.kb-head .tags span { padding: 0.08rem 0.4rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 0.72rem; }
+.kb-summary { margin: 0 0 1.2rem; padding-left: 0.9rem; border-left: 3px solid var(--accent-line); font-size: 0.9rem; line-height: 1.6; color: var(--ink-soft); }
+.kb-chunk { margin: 0.7rem 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.kb-chunk > header { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.9rem; background: var(--bg); border-bottom: 1px solid var(--line); }
+.kb-chunk .chunk-num { flex: none; padding: 0.1rem 0.5rem; border-radius: 4px; background: var(--accent); color: var(--on-accent, #fff); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; }
+.kb-chunk h3 { margin: 0; font-size: 0.92rem; font-weight: 600; color: var(--ink); }
+.kb-chunk pre { margin: 0; padding: 0.85rem 1rem; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-soft); }
+.kb-note { display: flex; gap: 0.7rem; padding: 0.8rem 1rem; border: 1px solid var(--accent-line); border-radius: 8px; background: var(--accent-soft); font-size: 0.85rem; line-height: 1.5; color: var(--ink-soft); }
+.kb-note .icon { flex: none; width: 1.3rem; height: 1.3rem; stroke: var(--accent); }
 .section-nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.6rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .section-nav button { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 40px; padding: 0 1rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink-soft); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
 .section-nav button:hover:not(:disabled) { border-color: var(--accent-line); color: var(--accent); }
