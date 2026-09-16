@@ -1,10 +1,10 @@
-# International Roaming Price Scenario Tool
+# International Roaming Price Scenario Tool — data
 
-A self-contained, static decision-support tool for the international roaming
-pricing case study. Given a candidate roaming-pass price, it shows the
-expected annual revenue benefit alongside the expected purchaser cost, under
-three economic conditions, with the simulation's uncertainty shown alongside
-each estimate — no BI login required.
+This folder builds the data behind the international roaming pricing scenario
+tool. Given a candidate roaming-pass price, the tool shows the expected annual
+revenue benefit alongside the expected purchaser cost, under three economic
+conditions, with the simulation's uncertainty shown alongside each estimate —
+no BI login required.
 
 Both sides of the trade-off are wired up: revenue and purchasers, at the
 portfolio, economic-scenario, and segment grain. Portfolio and
@@ -19,31 +19,19 @@ difference rather than blurring it.
 
 | File | What it is |
 |---|---|
-| `index.html` | The page. All markup, styles, and behavior; fetches `data.json` at load. |
-| `data.json` | The only data the page reads. Small aggregates only (~5KB) — no account-level data. |
-| `scenario-explorer.zip` | `index.html` + `data.json`, zipped, for easy drag-and-drop or handoff. |
+| `data.json` | The only data the page reads. Small aggregates only — no account-level data. |
 | `build_data.py` | Regenerates `data.json` from the Power BI export tables. Run after re-running the notebook. |
+| `DEPLOY.md` | How the page and this data reach the live site. |
 
-Only `index.html` and `data.json` are actually needed to run the page — the
-other files here are for maintaining/deploying it, not part of the page itself.
+## Where the page lives
 
-## Deploying
-
-`index.html` and `data.json` are fully portable on their own (no dependency
-on the rest of this repo). Copy both, or unzip `scenario-explorer.zip`, to
-wherever you're hosting.
-
-**See `DEPLOY.md` for step-by-step instructions** covering Firebase Hosting,
-Netlify, Vercel, a plain web host via FTP, and S3.
-
-`index.html` must be served over HTTP(S), not opened directly from disk — browsers
-block `fetch()` of a local file under the `file://` protocol. To preview locally:
-
-```bash
-cd web
-python3 -m http.server 8000
-# open http://localhost:8000/index.html
-```
+The page itself is no longer kept here. It is
+`case-studies/international-roaming/scenario-analysis/scenario-analysis.html`
+in the datafxlab site repo, published at
+<https://paforsey.datafxlab.com/case-studies/international-roaming/scenario-analysis/scenario-analysis.html>,
+with its own copy of `data.json` beside it. This folder stays the source of
+that data: regenerate it here, then copy it across and deploy (see
+`DEPLOY.md`).
 
 ## Regenerating the data
 
@@ -61,15 +49,8 @@ purchasers never exceeding `eligible_accounts`, a shared `run_id`, and a
 consistency check between the two independent "Base" simulation runs — and
 fails loudly rather than writing a `data.json` built on a broken assumption.
 
-Then re-zip if you're using `scenario-explorer.zip`:
-
-```bash
-cd web
-zip -j scenario-explorer.zip index.html data.json
-```
-
-`index.html` itself never needs to change for a data refresh — only
-`data.json` does, unless the data contract below changes shape.
+The page itself never needs to change for a data refresh — only `data.json`
+does, unless the data contract below changes shape.
 
 ## Data contract
 
