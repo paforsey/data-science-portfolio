@@ -21,8 +21,8 @@ The notebook's cells are kept as they are; only their presentation changes:
   - a right-hand rail with key decisions, section progress and related links
   - a "Hide code" toggle
   - with KNOWLEDGE_FILES or EXTRA_VIEWS, source files shown as their own sections: knowledge
-    base files split into chunks, a narration script split into slides, or the narration
-    audio with a player per slide
+    base files split into chunks, or a narration script split into slides with each slide's
+    audio player beneath its text
 
 The input must be a fresh nbconvert export; output this script produced is refused.
 """
@@ -300,40 +300,9 @@ def clock(seconds):
     return f"{seconds // 60}:{seconds % 60:02d}"
 
 
-def script_view(spec, section):
-    """The narration script as written, one block per slide, headers included."""
-    path = CONFIG_DIR / spec["path"]
-    slides = narration_slides(path, spec.get("expected_slides"))
-    total = sum(estimate_seconds(s["estimate"]) for s in slides)
-    blocks = []
-    for s in slides:
-        anchor = f'{spec["anchor"]}-{s["number"]}'
-        section["subsections"].append((anchor, f'Slide {s["number"]}'))
-        blocks.append(
-            f'<article class="kb-chunk" id="{html.escape(anchor, quote=True)}">'
-            f'<header><span class="chunk-num">Slide {s["number"]}</span>'
-            f'<h3>Estimated time: {html.escape(s["estimate"])}</h3></header>'
-            f'<pre>{html.escape(s["raw"])}</pre></article>'
-        )
-    head = (
-        '<div class="kb-head">'
-        f'<div><b>File</b><span>{html.escape(path.name)}</span></div>'
-        f'<div><b>Slides</b><span>{len(slides)}</span></div>'
-        f'<div><b>Estimated total</b><span>{clock(total)}</span></div>'
-        "</div>"
-    )
-    note = (
-        f'<p class="kb-note">{icon("info")}<span>Each slide opens with a <code># SLIDE</code> header and an '
-        f'<code>## ESTIMATED TIME</code> line. The notebook reads both as metadata and never speaks them; '
-        f'the paragraphs beneath are what gets narrated.</span></p>'
-    )
-    intro = f'<p class="kb-summary">{html.escape(spec["summary"])}</p>' if spec.get("summary") else ""
-    return head + intro + note + "".join(blocks)
-
-
 AUDIO_STYLE = (
     "<style>"
-    ".kb-chunk .audio-body{padding:.8rem 1rem}"
+    ".kb-chunk .audio-body{padding:.8rem 1rem;border-top:1px solid var(--line)}"
     ".kb-chunk audio{display:block;width:100%}"
     ".kb-chunk details{border-top:1px solid var(--line)}"
     ".kb-chunk summary{padding:.55rem 1rem;cursor:pointer;font-size:.8rem;color:var(--muted)}"
@@ -360,10 +329,12 @@ def m4a_seconds(path):
     return float(match.group(1))
 
 
-def audio_view(spec, section):
-    """One player per slide for the published clips, with the LLM-prepared text that was
-    actually spoken. Durations are read from the clips, so the page cannot drift from them."""
-    slides = narration_slides(CONFIG_DIR / spec["script"], spec.get("expected_slides"))
+def narration_view(spec, section):
+    """The narration script, one block per slide with its headers, and beneath each slide's
+    text the published clip and the LLM-prepared text that was actually spoken. Durations
+    are read from the clips, so the page cannot drift from them."""
+    script = CONFIG_DIR / spec["script"]
+    slides = narration_slides(script, spec.get("expected_slides"))
     audio_dir = CONFIG_DIR / spec["audio_dir"]
     lengths, blocks = [], []
     for s in slides:
@@ -373,7 +344,7 @@ def audio_view(spec, section):
             raise SystemExit(f"missing audio clip {clip}")
         seconds = m4a_seconds(clip)
         lengths.append(seconds)
-        spoken = (audio_dir / f"slide_{n:02d}.txt")
+        spoken = audio_dir / f"slide_{n:02d}.txt"
         spoken_html = (
             f'<details><summary>Spoken text, as prepared by the LLM</summary>'
             f'<pre>{html.escape(spoken.read_text(encoding="utf-8").strip())}</pre></details>'
@@ -385,28 +356,35 @@ def audio_view(spec, section):
         blocks.append(
             f'<article class="kb-chunk" id="{html.escape(anchor, quote=True)}">'
             f'<header><span class="chunk-num">Slide {n}</span>'
-            f'<h3>{clock(seconds)} &middot; estimated {html.escape(s["estimate"])}</h3></header>'
+            f'<h3>Estimated {html.escape(s["estimate"])} &middot; audio {clock(seconds)}</h3></header>'
+            f'<pre>{html.escape(s["raw"])}</pre>'
             f'<div class="audio-body"><audio controls preload="none" src="{html.escape(src, quote=True)}">'
             f'<a href="{html.escape(src, quote=True)}">Download slide {n} audio</a></audio></div>'
             f"{spoken_html}</article>"
         )
+    estimated = sum(estimate_seconds(s["estimate"]) for s in slides)
     head = (
         '<div class="kb-head">'
+        f'<div><b>Script</b><span>{html.escape(script.name)}</span></div>'
         f'<div><b>Voice</b><span>{html.escape(spec["voice"])}</span></div>'
         f'<div><b>Format</b><span>{html.escape(spec["format"])}</span></div>'
-        f'<div><b>Total length</b><span>{clock(sum(lengths))} across {len(slides)} clips</span></div>'
+        f'<div><b>Slides</b><span>{len(slides)}</span></div>'
+        f'<div><b>Estimated total</b><span>{clock(estimated)}</span></div>'
+        f'<div><b>Audio total</b><span>{clock(sum(lengths))}</span></div>'
         "</div>"
     )
     note = (
-        f'<p class="kb-note">{icon("info")}<span>Each clip is the file published with the presentation. '
-        f'The spoken text under each player is the LLM-prepared version of the script, so small wording '
-        f'differences from the Script tab are expected.</span></p>'
+        f'<p class="kb-note">{icon("info")}<span>Each slide shows the script as written: a '
+        f'<code># SLIDE</code> header and an <code>## ESTIMATED TIME</code> line, which the notebook '
+        f'reads as metadata and never speaks, then the narration. The player beneath plays the clip '
+        f'published with the presentation, and the spoken text under it is the LLM-prepared version, '
+        f'so small wording differences are expected.</span></p>'
     )
     intro = f'<p class="kb-summary">{html.escape(spec["summary"])}</p>' if spec.get("summary") else ""
     return AUDIO_STYLE + head + intro + note + "".join(blocks) + AUDIO_SCRIPT
 
 
-VIEW_RENDERERS = {"script": script_view, "audio": audio_view}
+VIEW_RENDERERS = {"narration": narration_view}
 
 
 def code_cell(cell, skip_empty=False, wrap_text=False):

@@ -9,8 +9,8 @@ re-exporting it:
     python3 ../tools/notebook-restyle/restyle_notebook.py web/presentation_narration_config.py \
         presentation_narration_tts.html web/presentation_narration_tts.html
 
-The Script and Audio tabs are rendered from the script file and the published clips, so
-rebuild after either changes. Audio durations are read with macOS afinfo.
+The Narration Script & Audio tab is rendered from the script file and the published clips,
+so rebuild after either changes. Audio durations are read with macOS afinfo.
 """
 
 DESCRIPTION = (
@@ -50,7 +50,7 @@ STATS = [
 ]
 
 # (title, detail, section index) — index into the page's sections:
-# 0 Overview, 1 §1, 2 §2, 3 Script, 4 Audio.
+# 0 Overview, 1 §1, 2 §2, 3 Narration Script & Audio.
 DECISIONS = [
     ("Keep the script as the single source of narration", "Overview · Headers and timing are never spoken", 0),
     ("Prepare text with a local LLM before synthesis", "§1 · Facts, names and negations preserved", 1),
@@ -64,36 +64,27 @@ RELATED = [
     ("Featured case studies", "/#case-studies"),
 ]
 
-# The narration script and the audio produced from it, each shown as its own view.
+# The narration script with each slide's audio beneath its text, shown as one view.
 EXTRA_VIEWS = [
     {
-        "type": "script",
-        "label": "Narration Script",
-        "anchor": "script",
-        "path": "../../../datafxlab/paforsey/tts/international_roaming_script.txt",
-        "expected_slides": 9,
-        "summary": (
-            "The International Roaming Pricing executive presentation script, exactly as the "
-            "notebook reads it."
-        ),
-    },
-    {
-        "type": "audio",
-        "label": "Narration Audio",
-        "anchor": "audio",
+        "type": "narration",
+        "label": "Narration Script & Audio",
+        "anchor": "narration",
         "script": "../../../datafxlab/paforsey/tts/international_roaming_script.txt",
         "audio_dir": "../../../datafxlab/paforsey/public/case-studies/international-roaming/audio",
         "audio_url": "/case-studies/international-roaming/audio/slide_{n:02d}.m4a",
         "expected_slides": 9,
         "voice": "am_michael (Kokoro-82M)",
         "format": "AAC, 64 kbps, .m4a",
-        "summary": "The nine clips the executive presentation plays, one per slide.",
+        "summary": (
+            "The International Roaming Pricing executive presentation script, exactly as the "
+            "notebook reads it, with the clip the presentation plays for each slide."
+        ),
     },
 ]
 
-# Three views: the notebook, the script, and the audio.
+# Two views: the notebook, and the script with its audio.
 TABS = [
     {"label": "Notebook", "number": "01", "sections": [0, 1, 2]},
-    {"label": "Narration Script", "icon": "doc", "sections": [3]},
-    {"label": "Narration Audio", "icon": "audio", "sections": [4]},
+    {"label": "Narration Script & Audio", "icon": "audio", "sections": [3]},
 ]
