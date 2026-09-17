@@ -20,6 +20,9 @@ The notebook's cells are kept as they are; only their presentation changes:
     such as model responses (leave it off where outputs are aligned tables)
   - a right-hand rail with key decisions, section progress and related links
   - a "Hide code" toggle
+  - with KNOWLEDGE_FILES or EXTRA_VIEWS, source files shown as their own sections: knowledge
+    base files split into chunks, a narration script split into slides, or the narration
+    audio with a player per slide
 
 The input must be a fresh nbconvert export; output this script produced is refused.
 """
@@ -27,6 +30,8 @@ The input must be a fresh nbconvert export; output this script produced is refus
 import html
 import importlib.util
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -48,6 +53,8 @@ ICONS = {
     "route": '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-4 5-8 6"/>',
     "chat": '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
     "doc": '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+    "audio": '<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>',
+    "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
 }
 
 
@@ -258,6 +265,150 @@ def knowledge_file(path, spec, section):
     return head + intro + note + "".join(chunks)
 
 
+def narration_slides(path, expected=None):
+    """Splits a narration script the way the TTS notebook reads it: '# SLIDE n', an
+    '## ESTIMATED TIME:' line, blank-line-separated paragraphs, and a closing '---'."""
+    text = Path(path).read_text(encoding="utf-8")
+    parts = re.split(r"^# SLIDE (\d+)[ \t]*$", text, flags=re.M)
+    slides = []
+    for number, body in zip(parts[1::2], parts[2::2]):
+        estimate = re.search(r"^## ESTIMATED TIME:\s*(.+?)\s*$", body, flags=re.M)
+        body = re.sub(r"\n-{3,}\s*$", "", body.rstrip()).rstrip()
+        narration = re.sub(r"^## .*$", "", body, flags=re.M).strip()
+        if not narration:
+            raise SystemExit(f"{Path(path).name}: slide {number} has no narration")
+        slides.append({
+            "number": int(number),
+            "estimate": estimate.group(1) if estimate else "",
+            "raw": f"# SLIDE {number}{body}",
+        })
+    if not slides:
+        raise SystemExit(f"{Path(path).name}: no '# SLIDE n' headers")
+    if expected is not None and len(slides) != expected:
+        raise SystemExit(f"{Path(path).name}: {len(slides)} slides, expected {expected}")
+    return slides
+
+
+def estimate_seconds(estimate):
+    minutes = re.search(r"(\d+)\s*minute", estimate)
+    seconds = re.search(r"(\d+)\s*second", estimate)
+    return (int(minutes.group(1)) * 60 if minutes else 0) + (int(seconds.group(1)) if seconds else 0)
+
+
+def clock(seconds):
+    seconds = round(seconds)
+    return f"{seconds // 60}:{seconds % 60:02d}"
+
+
+def script_view(spec, section):
+    """The narration script as written, one block per slide, headers included."""
+    path = CONFIG_DIR / spec["path"]
+    slides = narration_slides(path, spec.get("expected_slides"))
+    total = sum(estimate_seconds(s["estimate"]) for s in slides)
+    blocks = []
+    for s in slides:
+        anchor = f'{spec["anchor"]}-{s["number"]}'
+        section["subsections"].append((anchor, f'Slide {s["number"]}'))
+        blocks.append(
+            f'<article class="kb-chunk" id="{html.escape(anchor, quote=True)}">'
+            f'<header><span class="chunk-num">Slide {s["number"]}</span>'
+            f'<h3>Estimated time: {html.escape(s["estimate"])}</h3></header>'
+            f'<pre>{html.escape(s["raw"])}</pre></article>'
+        )
+    head = (
+        '<div class="kb-head">'
+        f'<div><b>File</b><span>{html.escape(path.name)}</span></div>'
+        f'<div><b>Slides</b><span>{len(slides)}</span></div>'
+        f'<div><b>Estimated total</b><span>{clock(total)}</span></div>'
+        "</div>"
+    )
+    note = (
+        f'<p class="kb-note">{icon("info")}<span>Each slide opens with a <code># SLIDE</code> header and an '
+        f'<code>## ESTIMATED TIME</code> line. The notebook reads both as metadata and never speaks them; '
+        f'the paragraphs beneath are what gets narrated.</span></p>'
+    )
+    intro = f'<p class="kb-summary">{html.escape(spec["summary"])}</p>' if spec.get("summary") else ""
+    return head + intro + note + "".join(blocks)
+
+
+AUDIO_STYLE = (
+    "<style>"
+    ".kb-chunk .audio-body{padding:.8rem 1rem}"
+    ".kb-chunk audio{display:block;width:100%}"
+    ".kb-chunk details{border-top:1px solid var(--line)}"
+    ".kb-chunk summary{padding:.55rem 1rem;cursor:pointer;font-size:.8rem;color:var(--muted)}"
+    ".kb-chunk details pre{border-top:1px solid var(--line)}"
+    "</style>"
+)
+AUDIO_SCRIPT = (
+    "<script>document.addEventListener('play',function(e){"
+    "if(e.target.tagName!=='AUDIO')return;"
+    "document.querySelectorAll('audio').forEach(function(a){if(a!==e.target)a.pause();});"
+    "},true);</script>"
+)
+
+
+def m4a_seconds(path):
+    """The clip's duration as reported by macOS afinfo."""
+    afinfo = shutil.which("afinfo")
+    if afinfo is None:
+        raise SystemExit("afinfo was not found; reading audio durations requires macOS")
+    result = subprocess.run([afinfo, str(path)], capture_output=True, text=True)
+    match = re.search(r"estimated duration:\s*([\d.]+)", result.stdout)
+    if result.returncode != 0 or not match:
+        raise SystemExit(f"could not read the duration of {path}")
+    return float(match.group(1))
+
+
+def audio_view(spec, section):
+    """One player per slide for the published clips, with the LLM-prepared text that was
+    actually spoken. Durations are read from the clips, so the page cannot drift from them."""
+    slides = narration_slides(CONFIG_DIR / spec["script"], spec.get("expected_slides"))
+    audio_dir = CONFIG_DIR / spec["audio_dir"]
+    lengths, blocks = [], []
+    for s in slides:
+        n = s["number"]
+        clip = audio_dir / f"slide_{n:02d}.m4a"
+        if not clip.exists():
+            raise SystemExit(f"missing audio clip {clip}")
+        seconds = m4a_seconds(clip)
+        lengths.append(seconds)
+        spoken = (audio_dir / f"slide_{n:02d}.txt")
+        spoken_html = (
+            f'<details><summary>Spoken text, as prepared by the LLM</summary>'
+            f'<pre>{html.escape(spoken.read_text(encoding="utf-8").strip())}</pre></details>'
+            if spoken.exists() else ""
+        )
+        anchor = f'{spec["anchor"]}-{n}'
+        section["subsections"].append((anchor, f"Slide {n}"))
+        src = spec["audio_url"].format(n=n)
+        blocks.append(
+            f'<article class="kb-chunk" id="{html.escape(anchor, quote=True)}">'
+            f'<header><span class="chunk-num">Slide {n}</span>'
+            f'<h3>{clock(seconds)} &middot; estimated {html.escape(s["estimate"])}</h3></header>'
+            f'<div class="audio-body"><audio controls preload="none" src="{html.escape(src, quote=True)}">'
+            f'<a href="{html.escape(src, quote=True)}">Download slide {n} audio</a></audio></div>'
+            f"{spoken_html}</article>"
+        )
+    head = (
+        '<div class="kb-head">'
+        f'<div><b>Voice</b><span>{html.escape(spec["voice"])}</span></div>'
+        f'<div><b>Format</b><span>{html.escape(spec["format"])}</span></div>'
+        f'<div><b>Total length</b><span>{clock(sum(lengths))} across {len(slides)} clips</span></div>'
+        "</div>"
+    )
+    note = (
+        f'<p class="kb-note">{icon("info")}<span>Each clip is the file published with the presentation. '
+        f'The spoken text under each player is the LLM-prepared version of the script, so small wording '
+        f'differences from the Script tab are expected.</span></p>'
+    )
+    intro = f'<p class="kb-summary">{html.escape(spec["summary"])}</p>' if spec.get("summary") else ""
+    return AUDIO_STYLE + head + intro + note + "".join(blocks) + AUDIO_SCRIPT
+
+
+VIEW_RENDERERS = {"script": script_view, "audio": audio_view}
+
+
 def code_cell(cell, skip_empty=False, wrap_text=False):
     prompt = cell.select_one(".jp-InputPrompt").get_text(strip=True)
     text_class = "out-text wrap" if wrap_text else "out-text"
@@ -435,6 +586,24 @@ def build(src_html, config):
             f'<h2 class="section-head">{html.escape(spec["label"])}</h2>'
         )
         body.append(knowledge_file(CONFIG_DIR / spec["path"], spec, sections[-1]))
+
+    # Other source views: a narration script, or the audio produced from it.
+    for spec in getattr(config, "EXTRA_VIEWS", []):
+        body.append("</section>")
+        sections.append({
+            "anchor": spec["anchor"],
+            "label": spec["label"],
+            "number": spec.get("number", ""),
+            "subsections": [],
+        })
+        body.append(
+            f'<section class="nb-section" id="{html.escape(spec["anchor"], quote=True)}" '
+            f'data-section="{len(sections)}">'
+            f'<h2 class="section-head">{html.escape(spec["label"])}</h2>'
+        )
+        if spec["type"] not in VIEW_RENDERERS:
+            raise SystemExit(f"unknown EXTRA_VIEWS type {spec['type']!r}")
+        body.append(VIEW_RENDERERS[spec["type"]](spec, sections[-1]))
 
     # With a navigator, each section ends with a way into the next one.
     navigator = bool(getattr(config, "TABS", None)) or getattr(config, "SECTION_LEVEL", "h2") == "h1"
