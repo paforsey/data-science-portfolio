@@ -33,7 +33,8 @@ python3 ../../tools/notebook-restyle/merge_notebooks.py rate_plan_cannibalizatio
 jupyter nbconvert --to html rate_plan_cannibalization.merged.ipynb --output rate_plan_cannibalization.export
 python3 ../../tools/notebook-restyle/restyle_notebook.py web/notebook_config.py \
     rate_plan_cannibalization.export.html web/rate_plan_cannibalization.html
+rm rate_plan_cannibalization.export.html
 ```
 
-The merged notebook, the export, and the built page are build artifacts and are not tracked. Headline
+The merged notebook and the built page are build artifacts and are not tracked; the nbconvert export is only an intermediate step and is deleted after the page is built. Headline
 figures and key decisions on the page live in `web/notebook_config.py`.
