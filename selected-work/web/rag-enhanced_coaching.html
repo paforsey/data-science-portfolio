@@ -1,0 +1,1689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script type="module" src="/firebase-analytics.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research Notebook · RAG-Enhanced Coaching</title>
+<meta name="description" content="Research notebook for a retrieval-augmented financial coach: a Chroma knowledge base, question classification and profile-aware responses.">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --ink: #0f1b2d; --ink-soft: #334155; --muted: #5b6574; --line: #e4e7ec;
+  --accent: #1d4fd8; --accent-hover: #1741b0; --accent-soft: #eaf2fe; --accent-line: #cfe1fb; --band: #eef5fe;
+  --code-bg: #f8fafc; --orange: #c2410c; --amber-soft: #fdf6e7; --amber-line: #f4d9a6; --amber: #b45309;
+  --teal: #0f8a78; --teal-soft: #e6f5f1; --teal-line: #b9e3d9; --red-line: #f2b8b5;
+  --syn-kw: #7c3aed; --syn-name: #1d4fd8; --syn-str: #0f7b3f; --syn-num: #b45309; --syn-com: #6b7280;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 4px 16px rgba(16, 24, 40, 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --surface: #1b2029; --ink: #eef1f7; --ink-soft: #cfd6e2; --muted: #a3abb8; --line: #2e3440;
+    --accent: #6d9ef0; --accent-hover: #93b8f5; --accent-soft: #1a2638; --accent-line: #2a4468; --band: #172334;
+    --code-bg: #161a22; --orange: #ff9b73; --amber-soft: #2e2618; --amber-line: #5c4a26; --amber: #f2bd6b;
+    --teal: #4cc9b5; --teal-soft: #15302c; --teal-line: #245349; --red-line: #6a2e2b;
+    --syn-kw: #c4a7ff; --syn-name: #8fb6f5; --syn-str: #7fd6a4; --syn-num: #f2bd6b; --syn-com: #8b95a5;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151b; --surface: #1b2029; --ink: #eef1f7; --ink-soft: #cfd6e2; --muted: #a3abb8; --line: #2e3440;
+  --accent: #6d9ef0; --accent-hover: #93b8f5; --accent-soft: #1a2638; --accent-line: #2a4468; --band: #172334;
+  --code-bg: #161a22; --orange: #ff9b73; --amber-soft: #2e2618; --amber-line: #5c4a26; --amber: #f2bd6b;
+  --teal: #4cc9b5; --teal-soft: #15302c; --teal-line: #245349; --red-line: #6a2e2b;
+  --syn-kw: #c4a7ff; --syn-name: #8fb6f5; --syn-str: #7fd6a4; --syn-num: #f2bd6b; --syn-com: #8b95a5;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 120px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'IBM Plex Sans', system-ui, sans-serif; font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.icon { flex: none; width: 1.4rem; height: 1.4rem; fill: none; stroke: var(--accent); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.btn { display: inline-flex; align-items: center; min-height: 36px; padding: 0 1rem; border: 1.5px solid var(--accent); border-radius: 5px; font-size: 0.85rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+/* ---------- top bar and toolbar ---------- */
+.nb-top { position: sticky; top: 0; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line); }
+.nb-top-row { display: flex; align-items: center; gap: 1.5rem; min-height: 52px; padding-inline: 1.25rem; border-bottom: 1px solid var(--line); }
+.brand { display: inline-flex; align-items: center; gap: 0.7rem; color: var(--ink); text-decoration: none; }
+.brand-mark { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.75rem; font-weight: 700; }
+.brand-name { font-weight: 600; }
+.crumbs { display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 0; font-size: 0.82rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.crumbs a { text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; }
+.crumbs b { font-weight: 500; color: var(--ink); }
+.nb-toolbar { display: flex; align-items: center; gap: 0.7rem; min-height: 44px; padding-inline: 1.25rem; background: var(--bg); }
+.tool { min-height: 32px; padding: 0 0.8rem; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink-soft); font: inherit; font-size: 0.82rem; cursor: pointer; }
+.tool:hover { border-color: var(--accent-line); color: var(--accent); }
+.tool[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent); }
+.tool-sep { width: 1px; height: 1.3rem; background: var(--line); }
+.chip { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); font-size: 0.78rem; color: var(--ink-soft); }
+.chip svg { width: 0.9rem; height: 0.9rem; fill: none; stroke: var(--teal); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.toolbar-note { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+
+/* ---------- model navigator (one section at a time) ---------- */
+.nb-nav { display: flex; gap: 0.4rem; padding: 0.45rem 1.25rem 0; overflow-x: auto; background: var(--surface); border-top: 1px solid var(--line); }
+.nav-tab { flex: none; display: flex; flex-direction: column; gap: 0.1rem; min-width: 8.5rem; padding: 0.55rem 0.85rem 0.6rem; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--ink-soft); font: inherit; text-align: left; cursor: pointer; }
+.nav-tab b { font-size: 0.84rem; font-weight: 600; white-space: nowrap; }
+.nav-tab span { font-size: 0.74rem; line-height: 1.3; color: var(--muted); }
+.nav-tab:hover { background: var(--bg); }
+.nav-tab.is-current { border-bottom-color: var(--accent); color: var(--accent); }
+.nav-tab.is-current span { color: var(--accent); }
+.nb-section[hidden] { display: none; }
+.toc a[hidden] { display: none; }
+.nav-tab.is-file { flex-direction: row; align-items: center; gap: 0.5rem; }
+.nav-tab .tab-icon { width: 1.05rem; height: 1.05rem; stroke: currentColor; }
+
+/* ---------- source files shown beside the notebook ---------- */
+.kb-head { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.8rem; margin: 0.6rem 0 1.1rem; padding: 0.9rem 1.1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.kb-head div { min-width: 0; }
+.kb-head b { display: block; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.kb-head span { font-size: 0.86rem; color: var(--ink); }
+.kb-head .tags { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.15rem; }
+.kb-head .tags span { padding: 0.08rem 0.4rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 0.72rem; }
+.kb-summary { margin: 0 0 1.2rem; padding-left: 0.9rem; border-left: 3px solid var(--accent-line); font-size: 0.9rem; line-height: 1.6; color: var(--ink-soft); }
+.kb-chunk { margin: 0.7rem 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.kb-chunk > header { display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.9rem; background: var(--bg); border-bottom: 1px solid var(--line); }
+.kb-chunk .chunk-num { flex: none; padding: 0.1rem 0.5rem; border-radius: 4px; background: var(--accent); color: var(--on-accent, #fff); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; }
+.kb-chunk h3 { margin: 0; font-size: 0.92rem; font-weight: 600; color: var(--ink); }
+.kb-chunk pre { margin: 0; padding: 0.85rem 1rem; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink-soft); }
+.kb-note { display: flex; gap: 0.7rem; padding: 0.8rem 1rem; border: 1px solid var(--accent-line); border-radius: 8px; background: var(--accent-soft); font-size: 0.85rem; line-height: 1.5; color: var(--ink-soft); }
+.kb-note .icon { flex: none; width: 1.3rem; height: 1.3rem; stroke: var(--accent); }
+.section-nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.6rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.section-nav button { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 40px; padding: 0 1rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink-soft); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+.section-nav button:hover:not(:disabled) { border-color: var(--accent-line); color: var(--accent); }
+.section-nav button:disabled { opacity: 0.45; cursor: default; }
+.section-nav .next { background: var(--accent); border-color: var(--accent); color: var(--on-accent, #fff); }
+.section-nav .next:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--on-accent, #fff); }
+.section-nav .next-label { display: flex; flex-direction: column; align-items: flex-end; font-size: 0.76rem; color: var(--muted); }
+.section-nav .next-label b { font-size: 0.86rem; color: var(--ink); }
+
+/* ---------- three-column layout ---------- */
+.layout { display: grid; grid-template-columns: 230px minmax(0, 1fr) 260px; align-items: start; }
+.toc, .rail { position: sticky; top: 97px; max-height: calc(100vh - 97px); overflow-y: auto; padding: 1.2rem 1rem; }
+.toc { border-right: 1px solid var(--line); background: var(--surface); min-height: calc(100vh - 97px); }
+.rail { border-left: 1px solid var(--line); background: var(--surface); min-height: calc(100vh - 97px); }
+.rail section + section { margin-top: 1.4rem; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+.rail-title { margin: 0 0 0.7rem; font-size: 0.85rem; font-weight: 700; }
+.toc ol, .rail ol, .rail ul { margin: 0; padding: 0; list-style: none; }
+.toc a { display: flex; gap: 0.6rem; padding: 0.45rem 0.6rem; border-left: 3px solid transparent; border-radius: 0 5px 5px 0; font-size: 0.84rem; line-height: 1.35; color: var(--ink-soft); text-decoration: none; }
+.toc a span { font-variant-numeric: tabular-nums; color: var(--muted); }
+.toc a:hover { background: var(--bg); }
+.toc a.is-current { border-left-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.toc a.is-current span { color: var(--accent); }
+
+.decisions li + li { margin-top: 0.8rem; }
+.decisions a { display: flex; gap: 0.7rem; color: inherit; text-decoration: none; }
+.decisions a:hover b { color: var(--accent); }
+.decision-num { flex: none; display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.78rem; font-weight: 700; }
+.decisions b { display: block; font-size: 0.84rem; font-weight: 600; line-height: 1.3; }
+.decisions small { font-size: 0.76rem; color: var(--muted); }
+.progress li { display: flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0; font-size: 0.82rem; color: var(--muted); }
+.progress-mark { flex: none; display: grid; place-items: center; width: 1.15rem; height: 1.15rem; border: 1.5px solid var(--line); border-radius: 50%; }
+.progress-mark svg { width: 0.7rem; height: 0.7rem; fill: none; stroke: #fff; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
+.progress li.is-done { color: var(--ink-soft); }
+.progress li.is-done .progress-mark { border-color: var(--accent); background: var(--accent); }
+.progress li.is-done .progress-mark svg { opacity: 1; }
+.progress li.is-current { color: var(--accent); font-weight: 600; }
+.progress li.is-current .progress-mark { border-color: var(--accent); }
+.related a { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0; font-size: 0.84rem; text-decoration: none; }
+.related a:hover { text-decoration: underline; }
+.related .icon { width: 1rem; height: 1rem; }
+
+/* ---------- notebook header ---------- */
+.nb-main { min-width: 0; max-width: 980px; width: 100%; margin: 0 auto; padding: 1.4rem 1.6rem 3rem; }
+.nb-header { padding: 1.3rem 1.5rem; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; box-shadow: var(--shadow); }
+.nb-eyebrow { margin: 0 0 0.3rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+.nb-header h1 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+.nb-subtitle { margin: 0.3rem 0 1rem; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; }
+.stat { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.8rem; border-radius: 6px; background: var(--accent-soft); }
+.stat .icon { width: 1.8rem; height: 1.8rem; }
+.stat b { display: block; font-size: 1.15rem; font-weight: 700; line-height: 1.2; color: var(--accent); }
+.stat span { font-size: 0.76rem; color: var(--muted); }
+.disclosure { display: flex; gap: 0.8rem; margin-top: 1rem; padding: 0.8rem 1rem; border: 1px solid var(--red-line); border-radius: 6px; font-size: 0.84rem; color: var(--ink-soft); }
+.disclosure .icon { stroke: var(--orange); }
+.disclosure b { display: block; margin-bottom: 0.2rem; }
+.disclosure ul { margin: 0; padding-left: 1.1rem; }
+.disclosure p { margin: 0; line-height: 1.55; }
+.disclosure.info { border-color: var(--accent-line); background: var(--accent-soft); }
+.disclosure.info .icon { stroke: var(--accent); }
+
+/* ---------- sections and markdown ---------- */
+.nb-section { margin-top: 1.4rem; padding: 0.4rem 1.2rem 1.2rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: var(--shadow); }
+.section-head { display: flex; align-items: center; gap: 0.9rem; margin: 0.8rem 0 0.9rem; padding: 0.6rem 0.9rem; border-left: 4px solid var(--accent); border-radius: 0 6px 6px 0; background: var(--band); font-size: 1.2rem; font-weight: 700; line-height: 1.3; color: var(--accent); }
+.section-num { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.md { margin: 0.6rem 0; padding-left: 5.2rem; color: var(--ink-soft); }
+.md h3 { margin: 1.2rem 0 0.4rem; font-size: 1.02rem; font-weight: 700; color: var(--ink); }
+.md p { margin: 0.4rem 0; }
+.md ul, .md ol { margin: 0.4rem 0; padding-left: 1.2rem; }
+.md li { margin: 0.2rem 0; }
+.md strong { color: var(--ink); }
+.md code { padding: 0.05rem 0.3rem; border-radius: 3px; background: var(--code-bg); font-family: 'IBM Plex Mono', monospace; font-size: 0.85em; }
+.md table { margin: 0.6rem 0; border-collapse: collapse; font-size: 0.85rem; }
+.md th, .md td { padding: 0.35rem 0.7rem; border: 1px solid var(--line); }
+.anchor-link { margin-left: 0.4rem; font-weight: 400; color: var(--muted); text-decoration: none; opacity: 0; }
+h3:hover .anchor-link { opacity: 1; }
+
+/* ---------- code and outputs ---------- */
+.nb-cell { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); margin: 0.6rem 0; }
+.prompt { padding: 0.55rem 0.6rem 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 0.76rem; text-align: right; color: var(--accent); }
+.prompt.out { color: var(--orange); }
+.code-card { position: relative; min-width: 0; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 6px; background: var(--code-bg); }
+.code-card pre { margin: 0; padding: 0.7rem 0.9rem; overflow-x: auto; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; line-height: 1.55; color: var(--ink); }
+.copy { position: absolute; top: 0.45rem; right: 0.45rem; padding: 0.15rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font: inherit; font-size: 0.72rem; cursor: pointer; opacity: 0; transition: opacity 0.15s ease; }
+.code-card:hover .copy, .copy:focus-visible { opacity: 1; }
+.out-html, .out-text, .out-image { min-width: 0; overflow-x: auto; font-size: 0.85rem; }
+.out-text pre { margin: 0; padding: 0.5rem 0.2rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.76rem; line-height: 1.45; color: var(--ink-soft); }
+.out-text.wrap pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+.out-html table { margin: 0.3rem 0; border-collapse: collapse; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.out-html th, .out-html td { padding: 0.35rem 0.7rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+.out-html thead th { border-bottom: 1.5px solid var(--line); background: var(--bg); font-weight: 600; }
+.out-html tbody th { font-weight: 600; color: var(--muted); }
+.out-html tbody tr:nth-child(even) td, .out-html tbody tr:nth-child(even) th { background: color-mix(in srgb, var(--ink) 2.5%, var(--surface)); }
+.out-html span[style*="background-color"] { color: #1f2937; }
+.out-image img { display: block; max-width: 100%; height: auto; border-radius: 6px; background: #fff; }
+.hide-code .code-cell { display: none; }
+
+/* ---------- interpretation and decision callouts ---------- */
+.callouts { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin: 0.8rem 0 0.8rem 5.2rem; }
+.callouts:has(> .callout:only-child) { grid-template-columns: 1fr; }
+.callout { display: flex; gap: 0.8rem; padding: 0.8rem 1rem; border: 1px solid; border-radius: 8px; font-size: 0.86rem; }
+.callout.interp { background: var(--amber-soft); border-color: var(--amber-line); }
+.callout.decision { background: var(--teal-soft); border-color: var(--teal-line); }
+.callout-mark { flex: none; display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--amber); color: #fff; font-weight: 700; }
+.callout-mark.ok { background: var(--teal); }
+.callout-mark svg { width: 0.95rem; height: 0.95rem; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.callout-title { margin: 0 0 0.25rem; font-weight: 700; }
+.callout.interp .callout-title { color: var(--amber); }
+.callout.decision .callout-title { color: var(--teal); }
+.callout p { margin: 0; color: var(--ink-soft); }
+.callout ul { margin: 0; padding-left: 1.1rem; color: var(--ink-soft); }
+.callout ol { margin: 0; padding-left: 1.2rem; color: var(--ink-soft); }
+.callout li + li { margin-top: 0.25rem; }
+
+/* ---------- labelled markdown blocks (TIDY_MARKDOWN) ---------- */
+.md .lead { margin: 0.2rem 0 0.8rem; font-size: 0.95rem; line-height: 1.6; color: var(--ink); }
+.lead-label { display: inline-block; margin-right: 0.2rem; padding: 0.08rem 0.45rem; border-radius: 4px; background: var(--accent-soft); color: var(--accent); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: 0.12em; }
+.md .md-label { margin: 1rem 0 0.25rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.md ol > li > ul { margin: 0.25rem 0 0.45rem; }
+.md ol > li > ul > li { color: var(--muted); }
+.toc .toc-sub { margin: 0.1rem 0 0.35rem 2.35rem; }
+.toc .toc-sub a { padding: 0.25rem 0.6rem; border-left: 0; font-size: 0.8rem; color: var(--muted); }
+.toc .toc-sub a:hover { color: var(--accent); }
+
+/* ---------- syntax colors ---------- */
+.highlight .k, .highlight .kn, .highlight .kc, .highlight .ow { color: var(--syn-kw); font-weight: 500; }
+.highlight .nn, .highlight .nb, .highlight .nf { color: var(--syn-name); }
+.highlight .s1, .highlight .s2, .highlight .sa, .highlight .si, .highlight .sd { color: var(--syn-str); }
+.highlight .mi, .highlight .mf { color: var(--syn-num); }
+.highlight .c1 { color: var(--syn-com); font-style: italic; }
+.highlight .o, .highlight .p { color: var(--ink-soft); }
+
+/* ---------- narrower screens ---------- */
+@media (max-width: 1240px) {
+  .layout { grid-template-columns: 220px minmax(0, 1fr); }
+  .rail { display: none; }
+}
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .toc { display: none; }
+  .crumbs, .toolbar-note { display: none; }
+  .nb-main { padding: 1rem 1rem 2rem; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nb-cell { grid-template-columns: 1fr; }
+  .prompt { padding: 0 0 0.2rem; text-align: left; }
+  .md { padding-left: 0; }
+  .callouts { grid-template-columns: 1fr; margin-left: 0; }
+  .nb-section { padding-inline: 0.8rem; }
+  .nb-top-row { gap: 0.8rem; padding-inline: 1rem; }
+  .brand-name, .chip, .tool { white-space: nowrap; }
+  .nb-toolbar { flex-wrap: wrap; gap: 0.5rem; padding: 0.4rem 1rem; }
+  .tool-sep { display: none; }
+}
+@media (max-width: 520px) {
+  .brand-name { display: none; }
+  .nb-top-row .btn { margin-left: auto; }
+  .stat .icon { display: none; }
+}
+@media print {
+  .nb-top, .toc, .rail, .copy { display: none; }
+  .layout { display: block; }
+}
+
+</style>
+</head>
+<body data-restyled="notebook">
+
+<header class="nb-top">
+  <div class="nb-top-row">
+    <a class="brand" href="/"><span class="brand-mark">PF</span><span class="brand-name">Research Notebook</span></a>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Portfolio</a><span aria-hidden="true">/</span><a href="/#selected-work">Selected Work</a><span aria-hidden="true">/</span><b>Research Notebook</b></nav>
+    <a class="btn btn-primary" href="/#selected-work">Back to selected work</a>
+  </div>
+  <div class="nb-toolbar">
+    <button type="button" class="tool" id="toggleCode" aria-pressed="false">Hide code</button>
+    <span class="tool-sep" aria-hidden="true"></span>
+    <span class="chip ok"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Executed</span>
+    <span class="chip">Python (base) · 3.12</span>
+    <span class="toolbar-note">Read-only export of the notebook</span>
+  </div>
+  <nav class="nb-nav" aria-label="Sections"><button type="button" class="nav-tab" data-goto="0" data-sections="0,1,2" aria-current="false"><b>01</b><span>Notebook</span></button><button type="button" class="nav-tab is-file" data-goto="1" data-sections="3" aria-current="false"><svg class="icon tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Emergency Fund</span></button><button type="button" class="nav-tab is-file" data-goto="2" data-sections="4" aria-current="false"><svg class="icon tab-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Debt Reduction</span></button></nav>
+</header>
+
+<div class="layout">
+  <aside class="toc" aria-label="Notebook sections">
+    <p class="rail-title">Contents</p>
+    <ol><li><a href="#overview" data-toc="1"><span>00</span>Overview</a></li><li><a href="#1-%C2%B7-Knowledge-Base-Processing-&amp;-Vector-Store" data-toc="2"><span>01</span>Knowledge Base &amp; Vector Store</a></li><li><a href="#2-%C2%B7-RAG-Enhanced-Financial-Coaching" data-toc="3"><span>02</span>RAG-Enhanced Coaching</a><ol class="toc-sub"><li><a href="#2.1-Test-Profile">2.1 Test Profile</a></li><li><a href="#2.2-Coaching-Pipeline">2.2 Coaching Pipeline</a></li><li><a href="#2.3-Example-Behaviors">2.3 Example Behaviors</a></li></ol></li><li><a href="#file-emergency-fund" data-toc="4"><span></span>Emergency Fund</a><ol class="toc-sub"><li><a href="#file-emergency-fund-1">1.1 Definition</a></li><li><a href="#file-emergency-fund-2">1.2 Key Characteristics of an Emergency Fund</a></li><li><a href="#file-emergency-fund-3">1.3 What an Emergency Fund Is Not</a></li><li><a href="#file-emergency-fund-4">1.4 Common Uses of an Emergency Fund</a></li><li><a href="#file-emergency-fund-5">1.5 Benefits of an Emergency Fund</a></li><li><a href="#file-emergency-fund-6">1.6 Recommended Emergency Fund Amounts</a></li><li><a href="#file-emergency-fund-7">1.7 Frequently Asked Questions</a></li><li><a href="#file-emergency-fund-8">1.8 Coaching Insights</a></li><li><a href="#file-emergency-fund-9">1.9 Related Concepts</a></li><li><a href="#file-emergency-fund-10">1.10 Common User Questions</a></li></ol></li><li><a href="#file-debt-reduction" data-toc="5"><span></span>Debt Reduction</a><ol class="toc-sub"><li><a href="#file-debt-reduction-1">2.1 Definition</a></li><li><a href="#file-debt-reduction-2">2.2 Why Debt Reduction Matters</a></li><li><a href="#file-debt-reduction-3">2.3 Common Types of Debt</a></li><li><a href="#file-debt-reduction-4">2.4 Debt Repayment Strategies</a></li><li><a href="#file-debt-reduction-5">2.5 Understanding Interest and the Cost of Debt</a></li><li><a href="#file-debt-reduction-6">2.6 Minimum Payments vs Additional Payments</a></li><li><a href="#file-debt-reduction-7">2.7 How to Decide Which Debt to Pay First</a></li><li><a href="#file-debt-reduction-8">2.8 Benefits of Debt Reduction</a></li><li><a href="#file-debt-reduction-9">2.9 Common Mistakes to Avoid</a></li><li><a href="#file-debt-reduction-10">2.10 Debt Reduction and Emergency Savings</a></li><li><a href="#file-debt-reduction-11">2.11 Frequently Asked Questions</a></li><li><a href="#file-debt-reduction-12">2.12 Coaching Insights</a></li><li><a href="#file-debt-reduction-13">2.13 Related Concepts</a></li><li><a href="#file-debt-reduction-14">2.14 Common User Questions</a></li></ol></li></ol>
+  </aside>
+
+  <main class="nb-main">
+    <header class="nb-header">
+      <p class="nb-eyebrow">AI Financial Coaching &middot; Retrieval-Augmented Generation</p>
+      <h1>RAG-Enhanced Coaching</h1>
+      <p class="nb-subtitle">Extends the AI financial coaching system so it can ground its recommendations in a curated collection of financial-education content, not just the user&#x27;s own numbers.</p>
+      <div class="stats"><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg><div><b>2</b><span>knowledge domains seeded</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/></svg><div><b>24</b><span>chunks, one per subsection</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-4 5-8 6"/></svg><div><b>4</b><span>question paths after classification</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><div><b>250</b><span>word cap per response</span></div></div></div>
+      <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Context</b><p>This notebook is one piece of a larger AI financial-coaching system; the profile analytics behind it (persona clustering, behavioral scoring, spending forecasts, benchmarking) are produced upstream and simply consumed here as a profile dict. What this notebook adds is the retrieval layer: a small knowledge base of financial-education articles, embedded into a vector store, that the coach searches before answering a question. Combining that retrieved context with the user's own financial profile lets the coach give advice that is both grounded in source material and specific to the person asking.</p></div></div>
+    </header>
+<section class="nb-section" id="overview" data-section="1"><h2 class="section-head"><span class="section-num">00</span>Overview</h2>
+<div class="md"><p class="md-label">Design Notes</p>
+<ol>
+<li>Two knowledge domains are seeded to start: emergency funds and debt reduction<ul>
+<li>Both are common early-stage coaching topics, and both have a natural progression (starter fund up through one, three, and six months of expenses; smallest-balance-first versus highest-interest-first repayment) that benefits from being grounded in a fixed reference rather than left to the model's general knowledge</li>
+</ul></li>
+<li>Coverage is intentionally partial<ul>
+<li>Questions outside the knowledge base fall back to the model's general financial knowledge rather than being blocked, so the coach still answers, just without a source-grounded citation</li>
+</ul></li><li>The knowledge base and the coaching logic are built as two separable stages (§1, §2), so new domains can be added to the vector store without touching the coaching pipeline</li></ol></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [1]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Standard Libraries</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+<span class="c1"># Data Analysis</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
+
+<span class="c1"># Environment Configuration</span>
+<span class="kn">from</span> <span class="nn">dotenv</span> <span class="kn">import</span> <span class="n">load_dotenv</span>
+
+<span class="c1"># LangChain</span>
+<span class="kn">from</span> <span class="nn">langchain_chroma</span> <span class="kn">import</span> <span class="n">Chroma</span>
+<span class="kn">from</span> <span class="nn">langchain_community.document_loaders</span> <span class="kn">import</span> <span class="n">TextLoader</span>
+<span class="kn">from</span> <span class="nn">langchain_core.documents</span> <span class="kn">import</span> <span class="n">Document</span>
+<span class="kn">from</span> <span class="nn">langchain_core.output_parsers</span> <span class="kn">import</span> <span class="n">StrOutputParser</span>
+<span class="kn">from</span> <span class="nn">langchain_core.prompts</span> <span class="kn">import</span> <span class="n">ChatPromptTemplate</span>
+<span class="kn">from</span> <span class="nn">langchain_openai</span> <span class="kn">import</span> <span class="n">ChatOpenAI</span><span class="p">,</span> <span class="n">OpenAIEmbeddings</span>
+
+<span class="c1"># OPENAI_API_KEY</span>
+<span class="n">load_dotenv</span><span class="p">(</span><span class="n">override</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out">Out[1]:</div><div class="out-text wrap">
+<pre>True</pre>
+</div></div>
+<div class="section-nav"><button type="button" disabled>&larr; Previous</button><span class="next-label">Next</span><button type="button" class="next" data-goto="1">Knowledge Base &amp; Vector Store &rarr;</button></div>
+</section>
+<section class="nb-section" id="1-%C2%B7-Knowledge-Base-Processing-&amp;-Vector-Store" data-section="2"><h2 class="section-head"><span class="section-num">01</span>Knowledge Base Processing &amp; Vector Store</h2>
+<div class="md"><p class="lead"><span class="lead-label">Purpose</span> Turns the knowledge base's source files into searchable embeddings, so the coaching pipeline in §2 can retrieve grounding context instead of relying on the model's unverified general knowledge.</p>
+<p class="md-label">Design Notes</p>
+<ol>
+<li>One unified Chroma collection (financial_coach) rather than one per topic<ul>
+<li>Retrieval stays cross-domain by construction: as more topics are added, a question can pull relevant context from any of them without the pipeline needing to know which collection to search</li>
+</ul></li>
+<li>Each source file carries its own identity in its header: a domain, a set of tags, and ##-delimited subsections<ul>
+<li>Splitting on those subsections turns each file into topic-sized chunks rather than embedding the whole document at once, so retrieval returns the specific concept a question is about, not the entire article</li>
+<li>Every chunk is tagged with its source filename, so a document can be replaced (replace_knowledge_document) by deleting only the chunks with that source and re-adding the updated file, without rebuilding the collection</li>
+</ul></li><li>Coverage today is two files; the pipeline itself is domain-agnostic and expects new files to follow the same header/section convention</li></ol></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [2]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Create Vector Store</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">OpenAIEmbeddings</span><span class="p">()</span>
+
+<span class="n">vectorstore</span> <span class="o">=</span> <span class="n">Chroma</span><span class="p">(</span>
+    <span class="n">collection_name</span> <span class="o">=</span> <span class="s1">'financial_coach'</span><span class="p">,</span>
+    <span class="n">embedding_function</span> <span class="o">=</span> <span class="n">embeddings</span><span class="p">,</span>
+    <span class="n">persist_directory</span> <span class="o">=</span> <span class="s1">'chroma_db'</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [3]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Knowledge Base Processing Pipeline</span>
+<span class="k">def</span> <span class="nf">load_knowledge_document</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+    <span class="c1"># Load Document</span>
+    <span class="n">loader</span> <span class="o">=</span> <span class="n">TextLoader</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">page_content</span>
+
+    <span class="c1"># Domain</span>
+    <span class="n">domain_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">'Domain:\s*(.+)'</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="n">domain</span> <span class="o">=</span> <span class="n">domain_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">if</span> <span class="n">domain_match</span> <span class="k">else</span> <span class="s1">'Unknown'</span>
+
+    <span class="c1"># Tags</span>
+    <span class="n">tags_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s1">'Tags:\s*(.*?)\n\nContent Type:'</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">tags_match</span><span class="p">:</span>
+        <span class="n">tags</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">tag</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">tags_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="s1">' '</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">','</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tag</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="p">]</span>
+
+    <span class="c1"># Source File</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+    <span class="c1"># Split Into Sections</span>
+    <span class="n">sections</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\n##\s+'</span><span class="p">,</span> <span class="n">text</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+
+    <span class="c1"># Build Chunks</span>
+    <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">sections</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">section</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+        <span class="n">topic</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="n">content</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\n?-{3,}\s*$'</span><span class="p">,</span> <span class="s1">''</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+        <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Document</span><span class="p">(</span>
+            <span class="n">page_content</span><span class="o">=</span><span class="n">content</span><span class="p">,</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+                <span class="s1">'domain'</span><span class="p">:</span> <span class="n">domain</span><span class="p">,</span>
+                <span class="s1">'topic'</span><span class="p">:</span> <span class="n">topic</span><span class="p">,</span>
+                <span class="s1">'source'</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
+                <span class="s1">'tags'</span><span class="p">:</span> <span class="n">tags</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">))</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span><span class="si">}</span><span class="s1"> chunks created.'</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">chunks</span>
+
+
+<span class="c1"># Add New Document</span>
+<span class="k">def</span> <span class="nf">add_knowledge_document</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">):</span>
+    <span class="n">chunks</span> <span class="o">=</span> <span class="n">load_knowledge_document</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="n">vectorstore</span><span class="o">.</span><span class="n">add_documents</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span>
+
+    <span class="n">filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span><span class="si">}</span><span class="s1"> chunks added.'</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'Total Chunks: </span><span class="si">{</span><span class="n">vectorstore</span><span class="o">.</span><span class="n">_collection</span><span class="o">.</span><span class="n">count</span><span class="p">()</span><span class="si">}</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+
+
+<span class="c1"># Replace Existing Document</span>
+<span class="k">def</span> <span class="nf">replace_knowledge_document</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">):</span>
+    <span class="n">source</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+
+    <span class="c1"># Remove Existing Chunks, Reload Updated Document</span>
+    <span class="n">vectorstore</span><span class="o">.</span><span class="n">_collection</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'source'</span><span class="p">:</span> <span class="n">source</span><span class="p">})</span>
+    <span class="n">add_knowledge_document</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s1"> replaced.</span><span class="se">\n</span><span class="s1">'</span><span class="p">)</span>
+</pre></div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [4]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Add Documents</span>
+<span class="n">add_knowledge_document</span><span class="p">(</span><span class="s1">'knowledge_base/01_emergency_fund.txt'</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">)</span>
+<span class="n">add_knowledge_document</span><span class="p">(</span><span class="s1">'knowledge_base/02_debt_reduction.txt'</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">)</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>01_emergency_fund.txt: 10 chunks created.
+01_emergency_fund.txt: 10 chunks added.
+Total Chunks: 10
+
+02_debt_reduction.txt: 14 chunks created.
+02_debt_reduction.txt: 14 chunks added.
+Total Chunks: 24
+
+</pre>
+</div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [5]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Validate Vector Store</span>
+<span class="n">all_docs</span> <span class="o">=</span> <span class="n">vectorstore</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<span class="n">metadata_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">all_docs</span><span class="p">[</span><span class="s1">'metadatas'</span><span class="p">])</span>
+
+<span class="n">display</span><span class="p">(</span><span class="n">metadata_df</span><span class="p">[</span><span class="s1">'source'</span><span class="p">]</span><span class="o">.</span><span class="n">value_counts</span><span class="p">())</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>source
+02_debt_reduction.txt    14
+01_emergency_fund.txt    10
+Name: count, dtype: int64</pre>
+</div></div>
+<div class="callouts"><div class="callout interp"><span class="callout-mark" aria-hidden="true">i</span><div><p class="callout-title">Observations</p><ol>
+<li>01_emergency_fund.txt splits into 10 chunks and 02_debt_reduction.txt into 14, one per ## subsection in each source file</li>
+<li>Chunk counts track each file's outline directly: adding or removing a ## subsection changes the chunk count on the next load, nothing else needs to change</li>
+</ol></div></div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [6]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Inspect Sample Chunk</span>
+<span class="n">all_docs</span> <span class="o">=</span> <span class="n">vectorstore</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">doc</span><span class="p">,</span> <span class="n">meta</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">all_docs</span><span class="p">[</span><span class="s1">'documents'</span><span class="p">],</span> <span class="n">all_docs</span><span class="p">[</span><span class="s1">'metadatas'</span><span class="p">]):</span>
+    <span class="k">if</span> <span class="n">meta</span><span class="p">[</span><span class="s1">'source'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'01_emergency_fund.txt'</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'Metadata:'</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'</span><span class="se">\n</span><span class="s1">Content:'</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
+        
+        <span class="k">break</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>Metadata:
+{'domain': 'Emergency Fund', 'source': '01_emergency_fund.txt', 'topic': '1.1 Definition', 'tags': ['Emergency Fund', 'Emergency Savings', 'Financial Stability', 'Financial Resilience', 'Unexpected Expenses', 'Personal Finance']}
+
+Content:
+Summary:
+
+An emergency fund is dedicated savings used to cover unexpected expenses and temporary income disruptions.
+
+Keywords:
+emergency fund, emergency savings, financial safety net,
+unexpected expenses, income disruption, financial resilience
+
+Definition:
+
+An emergency fund is a dedicated pool of savings set aside specifically to cover unexpected financial emergencies or temporary income disruptions without relying on credit cards, loans, investments, or retirement accounts. It serves as a financial safety net that helps individuals and households maintain financial stability during unforeseen events such as job loss, medical emergencies, or essential home and vehicle repairs. Unlike savings intended for planned expenses, an emergency fund is reserved exclusively for situations that are unexpected, necessary, and urgent. By maintaining dedicated emergency savings, individuals can better absorb financial shocks, avoid unnecessary debt, and protect their long-term financial goals and overall financial well-being.
+
+Examples:
+
+- Job loss
+- Unexpected medical expenses
+- Major vehicle repairs
+- Emergency home repairs
+- Temporary income interruptions
+
+Key Takeaway:
+
+An emergency fund provides a financial safety net that helps individuals manage unexpected expenses and income disruptions without relying on debt.
+</pre>
+</div></div>
+<div class="section-nav"><button type="button" data-goto="0">&larr; Overview</button><span class="next-label">Next</span><button type="button" class="next" data-goto="2">RAG-Enhanced Coaching &rarr;</button></div>
+</section>
+<section class="nb-section" id="2-%C2%B7-RAG-Enhanced-Financial-Coaching" data-section="3"><h2 class="section-head"><span class="section-num">02</span>RAG-Enhanced Financial Coaching</h2>
+<div class="md"><p class="lead"><span class="lead-label">Purpose</span> Answers a user's personal-finance question by combining retrieved knowledge-base context (when the topic is covered) with their own financial profile, so the response is both source-grounded and personalized.</p>
+<p class="md-label">Design Notes</p>
+<ol>
+<li>Every question is classified first, into emergency_fund, debt_reduction, other_finance, or not_finance<ul>
+<li>The two knowledge-base topics retrieve grounding context via vector search before generation; other_finance falls back to the model's general knowledge instead of being blocked; not_finance is declined outright, keeping the coach inside personal-finance topic boundaries</li>
+</ul></li>
+<li>The user's financial profile (income, spending, debt, emergency fund status, and forecast) is folded into every response regardless of which path was used, so advice is never generic even when it isn't knowledge-base-grounded</li><li>Grounding responses in curated content for the two covered topics reduces hallucination risk on exactly the questions where a wrong answer, an invented emergency fund target, for example, would be most consequential</li></ol></div>
+<div class="md"><h3 id="2.1-Test-Profile">2.1 Test Profile<a class="anchor-link" href="#2.1-Test-Profile">¶</a></h3><p class="lead"><span class="lead-label">Purpose</span> Stands in for the upstream profile analytics (see context above) with one representative user: a "Near Successful" persona carrying a thin surplus, no emergency fund, and modest debt.</p></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [7]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Test Profile: Near Successful Persona</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">'persona'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'name'</span><span class="p">:</span> <span class="s1">'Near Successful'</span><span class="p">,</span>
+        <span class="s1">'cluster_id'</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s1">'description'</span><span class="p">:</span> <span class="p">(</span>
+            <span class="s1">'Users whose spending patterns closely resemble financially successful.'</span>
+            <span class="s1">'users but who generate insufficient monthly surplus.'</span>
+        <span class="p">),</span>
+    <span class="p">},</span>
+
+    <span class="s1">'behavioral_alignment'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'success_similarity'</span><span class="p">:</span> <span class="mf">0.8259</span><span class="p">,</span>
+        <span class="s1">'score'</span><span class="p">:</span> <span class="mf">82.6</span><span class="p">,</span>
+    <span class="p">},</span>
+
+    <span class="s1">'financial_capacity'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'monthly_income'</span><span class="p">:</span> <span class="mf">4811.00</span><span class="p">,</span>
+        <span class="s1">'avg_monthly_spend'</span><span class="p">:</span> <span class="mf">4731.66</span><span class="p">,</span>
+        <span class="s1">'monthly_surplus'</span><span class="p">:</span> <span class="mf">79.34</span><span class="p">,</span>
+        <span class="s1">'surplus_ratio'</span><span class="p">:</span> <span class="mf">0.0165</span><span class="p">,</span>
+        <span class="s1">'score'</span><span class="p">:</span> <span class="mf">1.6</span><span class="p">,</span>
+    <span class="p">},</span>
+
+    <span class="s1">'financial_stability'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'total_debt'</span><span class="p">:</span> <span class="mf">2262.00</span><span class="p">,</span>
+        <span class="s1">'debt_to_income'</span><span class="p">:</span> <span class="mf">0.0392</span><span class="p">,</span>
+    <span class="p">},</span>
+
+    <span class="s1">'emergency_fund'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'balance'</span><span class="p">:</span> <span class="mf">0.00</span><span class="p">,</span>
+        <span class="s1">'target'</span><span class="p">:</span> <span class="mf">14433.00</span><span class="p">,</span>
+        <span class="s1">'progress'</span><span class="p">:</span> <span class="mf">0.0669</span><span class="p">,</span>
+    <span class="p">},</span>
+
+    <span class="s1">'forecasting'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'predicted_next_month_spending'</span><span class="p">:</span> <span class="mf">4942.56</span><span class="p">,</span>
+        <span class="s1">'forecast_surplus'</span><span class="p">:</span> <span class="o">-</span><span class="mf">131.56</span><span class="p">,</span>
+    <span class="p">},</span>
+
+    <span class="s1">'benchmark'</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">'monthly_savings_opportunity'</span><span class="p">:</span> <span class="mf">381.00</span><span class="p">,</span>
+    <span class="p">},</span>
+
+    <span class="s1">'spending_categories'</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s1">'category'</span><span class="p">:</span> <span class="s1">'Shopping'</span><span class="p">,</span> <span class="s1">'amount'</span><span class="p">:</span> <span class="mf">650.00</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">'category'</span><span class="p">:</span> <span class="s1">'Transportation'</span><span class="p">,</span> <span class="s1">'amount'</span><span class="p">:</span> <span class="mf">525.00</span><span class="p">},</span>
+        <span class="p">{</span><span class="s1">'category'</span><span class="p">:</span> <span class="s1">'Food Discretionary'</span><span class="p">,</span> <span class="s1">'amount'</span><span class="p">:</span> <span class="mf">480.00</span><span class="p">},</span>
+    <span class="p">],</span>
+<span class="p">}</span>
+</pre></div></div>
+<div class="md"><h3 id="2.2-Coaching-Pipeline">2.2 Coaching Pipeline<a class="anchor-link" href="#2.2-Coaching-Pipeline">¶</a></h3><p class="lead"><span class="lead-label">Purpose</span> Classifies the question, retrieves knowledge-base context when the topic is covered, and generates a personalized response grounded in whichever source, knowledge base or general knowledge, applies.</p>
+<p class="md-label">Design Notes</p>
+<ol>
+<li>Classification and generation both run on gpt-4o-mini at a moderate temperature (0.5), favoring consistent, on-topic responses over creative variation</li>
+<li>The generation prompt states explicitly that knowledge-base context, when present, takes priority over the model's own knowledge and must not be contradicted</li>
+<li>Responses are capped at 250 words to keep coaching output actionable rather than exhaustive</li>
+</ol></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [8]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Coaching Pipeline: Classify, Retrieve, Generate</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span><span class="n">model</span> <span class="o">=</span> <span class="s1">'gpt-4o-mini'</span><span class="p">,</span> <span class="n">temperature</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="c1"># Topic Classification</span>
+<span class="k">def</span> <span class="nf">classify_question</span><span class="p">(</span><span class="n">question</span><span class="p">):</span>
+    
+    <span class="n">prompt</span> <span class="o">=</span> <span class="n">ChatPromptTemplate</span><span class="o">.</span><span class="n">from_template</span><span class="p">(</span><span class="s1">'''</span>
+<span class="s1">    </span>
+<span class="s1">        You are a financial topic classifier.</span>
+
+<span class="s1">        Classify the user's question into ONE category:</span>
+<span class="s1">        - emergency_fund</span>
+<span class="s1">        - debt_reduction</span>
+<span class="s1">        - other_finance</span>
+<span class="s1">        - not_finance</span>
+
+<span class="s1">        Return ONLY the category name.</span>
+
+<span class="s1">        User Question: </span><span class="si">{question}</span>
+<span class="s1">        </span>
+<span class="s1">    '''</span><span class="p">)</span>
+
+    <span class="n">chain</span> <span class="o">=</span> <span class="n">prompt</span> <span class="o">|</span> <span class="n">llm</span> <span class="o">|</span> <span class="n">StrOutputParser</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">chain</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s1">'question'</span><span class="p">:</span> <span class="n">question</span><span class="p">})</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+
+<span class="c1"># Retrieve Knowledge Base Context</span>
+<span class="k">def</span> <span class="nf">retrieve_context</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">vectorstore</span><span class="o">.</span><span class="n">similarity_search</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="s1">'</span><span class="se">\n\n</span><span class="s1">'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">page_content</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">results</span><span class="p">)</span>
+    <span class="n">sources</span> <span class="o">=</span> <span class="nb">list</span><span class="p">({</span><span class="n">doc</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'source'</span><span class="p">,</span> <span class="s1">'Unknown'</span><span class="p">)</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">results</span><span class="p">})</span>
+    
+    <span class="k">return</span> <span class="n">context</span><span class="p">,</span> <span class="n">sources</span>
+
+
+<span class="c1"># Profile Summary</span>
+<span class="k">def</span> <span class="nf">profile_summary</span><span class="p">(</span><span class="n">profile</span><span class="p">):</span>
+    
+    <span class="k">return</span> <span class="sa">f</span><span class="s1">'''</span>
+<span class="s1">    </span>
+<span class="s1">        Persona: </span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'persona'</span><span class="p">][</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span>
+
+<span class="s1">        Monthly Income: $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'financial_capacity'</span><span class="p">][</span><span class="s1">'monthly_income'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+<span class="s1">        Monthly Spending: $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'financial_capacity'</span><span class="p">][</span><span class="s1">'avg_monthly_spend'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+<span class="s1">        Monthly Surplus: $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'financial_capacity'</span><span class="p">][</span><span class="s1">'monthly_surplus'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+
+<span class="s1">        Emergency Fund Balance: $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'emergency_fund'</span><span class="p">][</span><span class="s1">'balance'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+<span class="s1">        Emergency Fund Target: $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'emergency_fund'</span><span class="p">][</span><span class="s1">'target'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+
+<span class="s1">        Total Debt: $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'financial_stability'</span><span class="p">][</span><span class="s1">'total_debt'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+<span class="s1">        Debt-to-Income Ratio: </span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'financial_stability'</span><span class="p">][</span><span class="s1">'debt_to_income'</span><span class="p">]</span><span class="si">:</span><span class="s1">.1%</span><span class="si">}</span>
+
+<span class="s1">        Forecast Surplus: $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'forecasting'</span><span class="p">][</span><span class="s1">'forecast_surplus'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+
+<span class="s1">        Potential Monthly Savings Opportunity:</span>
+<span class="s1">        $</span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">'benchmark'</span><span class="p">][</span><span class="s1">'monthly_savings_opportunity'</span><span class="p">]</span><span class="si">:</span><span class="s1">,.0f</span><span class="si">}</span>
+<span class="s1">        </span>
+<span class="s1">    '''</span>
+
+
+<span class="c1"># Financial Coach</span>
+<span class="k">def</span> <span class="nf">ask_financial_coach</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">):</span>
+    
+    <span class="n">category</span> <span class="o">=</span> <span class="n">classify_question</span><span class="p">(</span><span class="n">question</span><span class="p">)</span>
+
+    <span class="c1"># Non-Finance Questions</span>
+    <span class="k">if</span> <span class="n">category</span> <span class="o">==</span> <span class="s1">'not_finance'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'I can only assist with personal finance related questions.'</span>
+
+    <span class="c1"># Knowledge Base Topics</span>
+    <span class="k">if</span> <span class="n">category</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">'emergency_fund'</span><span class="p">,</span> <span class="s1">'debt_reduction'</span><span class="p">):</span>
+        <span class="n">context</span><span class="p">,</span> <span class="n">sources</span> <span class="o">=</span> <span class="n">retrieve_context</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">vectorstore</span><span class="p">)</span>
+        <span class="n">source_type</span> <span class="o">=</span> <span class="s1">'Knowledge Base'</span>
+
+    <span class="c1"># Other Finance Topics</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">context</span><span class="p">,</span> <span class="n">sources</span><span class="p">,</span> <span class="n">source_type</span> <span class="o">=</span> <span class="s1">''</span><span class="p">,</span> <span class="p">[],</span> <span class="s1">'General Financial Knowledge'</span>
+
+    <span class="n">prompt</span> <span class="o">=</span> <span class="n">ChatPromptTemplate</span><span class="o">.</span><span class="n">from_template</span><span class="p">(</span><span class="s1">'''</span>
+<span class="s1">    </span>
+<span class="s1">        You are a professional financial coach.</span>
+
+<span class="s1">        User Financial Profile: </span><span class="si">{profile}</span>
+
+<span class="s1">        Information Source: </span><span class="si">{source_type}</span>
+
+<span class="s1">        Knowledge Base Context: </span><span class="si">{context}</span>
+
+<span class="s1">        User Question: </span><span class="si">{question}</span>
+
+<span class="s1">        Requirements:</span>
+<span class="s1">        - Answer only personal finance questions.</span>
+<span class="s1">        - If Knowledge Base Context is provided,</span>
+<span class="s1">          rely primarily on that information.</span>
+<span class="s1">        - Do not invent facts that contradict</span>
+<span class="s1">          the knowledge base.</span>
+<span class="s1">        - If no knowledge base context is provided,</span>
+<span class="s1">          answer using general financial knowledge.</span>
+<span class="s1">        - Personalize advice using the user's profile.</span>
+<span class="s1">        - Focus on practical, actionable guidance.</span>
+<span class="s1">        - Maintain a professional and supportive tone.</span>
+<span class="s1">        - Limit responses to 250 words or less.</span>
+<span class="s1">        </span>
+<span class="s1">    '''</span><span class="p">)</span>
+
+    <span class="n">chain</span> <span class="o">=</span> <span class="n">prompt</span> <span class="o">|</span> <span class="n">llm</span> <span class="o">|</span> <span class="n">StrOutputParser</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">chain</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span>
+        <span class="s1">'profile'</span><span class="p">:</span> <span class="n">profile_summary</span><span class="p">(</span><span class="n">profile</span><span class="p">),</span>
+        <span class="s1">'source_type'</span><span class="p">:</span> <span class="n">source_type</span><span class="p">,</span>
+        <span class="s1">'context'</span><span class="p">:</span> <span class="n">context</span><span class="p">,</span>
+        <span class="s1">'question'</span><span class="p">:</span> <span class="n">question</span><span class="p">,</span>
+    <span class="p">})</span>
+</pre></div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [9]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Quick Test</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">ask_financial_coach</span><span class="p">(</span>
+    <span class="n">profile</span> <span class="o">=</span> <span class="n">profile</span><span class="p">,</span>
+    <span class="n">question</span> <span class="o">=</span> <span class="s1">'What is the best way to start an emergency fund?'</span><span class="p">,</span>
+    <span class="n">vectorstore</span> <span class="o">=</span> <span class="n">vectorstore</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>To start building your emergency fund, follow these actionable steps tailored to your financial profile:
+
+1. **Set a Target**: Aim for a starter emergency fund of $500 to $1,000. This amount can help cover many common unexpected expenses.
+
+2. **Identify Savings Opportunities**: You have a potential monthly savings opportunity of $381. Consider setting aside a portion of this each month specifically for your emergency fund.
+
+3. **Automate Savings**: Set up an automatic transfer from your checking account to a high-yield savings account dedicated to your emergency fund. This makes saving effortless and ensures you prioritize this goal.
+
+4. **Cut Non-Essential Spending**: Review your monthly spending of $4,732. Identify areas where you can reduce expenses, even slightly, to increase your monthly surplus and contribute more to your emergency fund.
+
+5. **Track Progress**: Monitor your emergency fund balance regularly to stay motivated. Celebrate milestones, such as reaching $500 or $1,000.
+
+6. **Build Gradually**: Once you reach your initial target, continue saving until you cover one month of essential living expenses, which will further enhance your financial resilience.
+
+By following these steps, you'll create a solid foundation for your emergency fund, providing you with a financial safety net for unexpected events.
+</pre>
+</div></div>
+<div class="md"><h3 id="2.3-Example-Behaviors">2.3 Example Behaviors<a class="anchor-link" href="#2.3-Example-Behaviors">¶</a></h3><p class="lead"><span class="lead-label">Purpose</span> Walks through the four classification paths, knowledge-base retrieval (two topics), general financial knowledge, and topic-boundary enforcement, against the same test profile.</p></div><div class="callouts"><div class="callout interp"><span class="callout-mark" aria-hidden="true">i</span><div><p class="callout-title">Observations</p><ol>
+<li>The two knowledge-base topics return specific, source-grounded guidance, a 500 - 1,000 starter emergency fund target and a snowball-versus-avalanche comparison, drawn from the retrieved chunks rather than the model's own knowledge</li>
+<li>The other_finance question (Roth IRA) is still answered and still personalized to the profile, just without knowledge-base grounding or sources</li>
+<li>The not_finance question is declined outright, holding the topic boundary regardless of profile context</li>
+</ol></div></div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [10]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Example: Emergency Fund (Knowledge Base)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">ask_financial_coach</span><span class="p">(</span>
+    <span class="n">profile</span><span class="p">,</span> <span class="s1">'How much should I keep in my emergency fund?'</span><span class="p">,</span> <span class="n">vectorstore</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>Given your financial profile, it's essential to start building an emergency fund, especially since you currently have none. A good initial target would be to establish a starter emergency fund of $500 to $1,000. This amount can help cover many common unexpected expenses, such as car repairs or medical bills.
+
+Since your monthly spending is $4,732, aiming for one month of essential living expenses would be a prudent next step. This would be approximately $4,732, providing a more substantial safety net against temporary income disruptions.
+
+To achieve this, you can utilize the potential monthly savings opportunity of $381. By allocating this amount toward your emergency fund, you could reach your starter fund goal in about 1.5 to 2.5 months, depending on whether you aim for $500 or $1,000.
+
+Once you've established this initial fund, you can gradually work toward a more robust emergency fund of three months' worth of expenses, which would be roughly $14,196. This level of savings is often recommended for greater financial resilience, particularly if you experience income variability or have other financial responsibilities.
+
+Focus on building this financial safety net to help absorb unexpected expenses without relying on debt, thereby improving your overall financial health.
+</pre>
+</div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [11]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Example: Debt Reduction (Knowledge Base)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">ask_financial_coach</span><span class="p">(</span>
+    <span class="n">profile</span><span class="p">,</span> <span class="s1">'Should I use debt snowball or debt avalanche?'</span><span class="p">,</span> <span class="n">vectorstore</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>Given your financial profile, both the debt snowball and debt avalanche methods have their merits, but your choice should align with your personal preferences and financial goals.
+
+**Debt Snowball Method:** This approach focuses on paying off your smallest debt first. Since your total debt is relatively low at $2,262, this method can provide quick wins and motivation as you eliminate each debt. It may help you feel more accomplished and encourage you to stay committed to your repayment plan.
+
+**Debt Avalanche Method:** This strategy prioritizes paying off the debt with the highest interest rate first. If any of your debts carry high interest, this method can save you money on interest payments over time. However, if your debts are similar in interest rates, the snowball method might be more motivating for you.
+
+Given your forecast surplus of -$132, it's crucial to manage your spending closely. You have a potential savings opportunity of $381 monthly, which can be allocated toward debt repayment. 
+
+In summary, if you think you need motivation and quick wins, go for the debt snowball. If you’re more focused on minimizing interest costs and can stay disciplined, the debt avalanche may be better. Whichever method you choose, consider starting with a small emergency fund to provide some financial cushion as you work on your debt.
+</pre>
+</div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [12]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Example: Other Finance (General Knowledge)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">ask_financial_coach</span><span class="p">(</span>
+    <span class="n">profile</span><span class="p">,</span> <span class="s1">'How does a Roth IRA work?'</span><span class="p">,</span> <span class="n">vectorstore</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>A Roth IRA (Individual Retirement Account) is a retirement savings account that allows you to contribute after-tax income, meaning you've already paid taxes on the money you put in. Here’s how it works:
+
+1. **Contributions**: You can contribute up to a certain limit each year ($6,500 for 2023, or $7,500 if you're 50 or older). Since your monthly surplus is currently $79, you may want to consider how you can allocate some of your potential monthly savings opportunity of $381 towards this account.
+
+2. **Tax Benefits**: The key advantage of a Roth IRA is that your investments grow tax-free, and you can withdraw your contributions (not earnings) at any time without penalty. After age 59½, you can withdraw earnings tax-free as long as the account has been open for at least five years.
+
+3. **Eligibility**: Your ability to contribute may be limited based on your income. For 2023, single filers with a modified adjusted gross income (MAGI) of up to $138,000 can contribute the full amount, with phase-outs starting above that.
+
+4. **Investment Choices**: Within a Roth IRA, you can invest in a variety of assets like stocks, bonds, or mutual funds.
+
+Given your current financial situation, starting a Roth IRA could be a great way to prepare for retirement while potentially leveraging your monthly surplus and savings opportunities. Consider setting aside a portion of your surplus for this purpose once you have addressed your emergency fund and debt.
+</pre>
+</div></div>
+<div class="nb-cell code-cell"><div class="prompt in">In [13]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Example: Not Finance (Topic Boundary)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">ask_financial_coach</span><span class="p">(</span>
+    <span class="n">profile</span><span class="p">,</span> <span class="s1">'How do I make lasagna?'</span><span class="p">,</span> <span class="n">vectorstore</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text wrap">
+<pre>I can only assist with personal finance related questions.
+</pre>
+</div></div>
+<div class="section-nav"><button type="button" data-goto="1">&larr; Knowledge Base &amp; Vector Store</button><span class="next-label">Next</span><button type="button" class="next" data-goto="3">Emergency Fund &rarr;</button></div>
+</section>
+<section class="nb-section" id="file-emergency-fund" data-section="4"><h2 class="section-head">Emergency Fund</h2>
+<div class="kb-head"><div><b>File</b><span>01_emergency_fund.txt</span></div><div><b>Domain</b><span>Emergency Fund</span></div><div><b>Chunks</b><span>10, one per section</span></div><div style="grid-column: 1 / -1;"><b>Tags</b><div class="tags"><span>Emergency Fund</span><span>Emergency Savings</span><span>Financial Stability</span><span>Financial Resilience</span><span>Unexpected Expenses</span><span>Personal Finance</span></div></div></div><p class="kb-summary">This section explains what an emergency fund is, its purpose, key characteristics, common uses, benefits, and foundational coaching guidance for building and maintaining emergency savings.</p><p class="kb-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><span>The header above is metadata: the loader reads Domain and Tags from it, then splits the file on each <code>##</code> heading. Every chunk below is embedded separately, so a question retrieves the section it is about rather than the whole document.</span></p><article class="kb-chunk" id="file-emergency-fund-1"><header><span class="chunk-num">Chunk 1/10</span><h3>1.1 Definition</h3></header><pre>Summary:
+
+An emergency fund is dedicated savings used to cover unexpected expenses and temporary income disruptions.
+
+Keywords:
+emergency fund, emergency savings, financial safety net,
+unexpected expenses, income disruption, financial resilience
+
+Definition:
+
+An emergency fund is a dedicated pool of savings set aside specifically to cover unexpected financial emergencies or temporary income disruptions without relying on credit cards, loans, investments, or retirement accounts. It serves as a financial safety net that helps individuals and households maintain financial stability during unforeseen events such as job loss, medical emergencies, or essential home and vehicle repairs. Unlike savings intended for planned expenses, an emergency fund is reserved exclusively for situations that are unexpected, necessary, and urgent. By maintaining dedicated emergency savings, individuals can better absorb financial shocks, avoid unnecessary debt, and protect their long-term financial goals and overall financial well-being.
+
+Examples:
+
+- Job loss
+- Unexpected medical expenses
+- Major vehicle repairs
+- Emergency home repairs
+- Temporary income interruptions
+
+Key Takeaway:
+
+An emergency fund provides a financial safety net that helps individuals manage unexpected expenses and income disruptions without relying on debt.</pre></article><article class="kb-chunk" id="file-emergency-fund-2"><header><span class="chunk-num">Chunk 2/10</span><h3>1.2 Key Characteristics of an Emergency Fund</h3></header><pre>Summary:
+
+An effective emergency fund should be liquid, safe, accessible, and separate from everyday spending.
+
+Keywords:
+liquidity, safety, accessibility, separate savings account,
+emergency reserves
+
+Definition:
+
+An effective emergency fund should be liquid, safe, accessible, and separate from everyday spending accounts. Liquidity ensures that funds can be accessed quickly when an emergency occurs, while safety helps preserve the value of the savings by avoiding unnecessary market risk. Accessibility allows individuals to obtain funds without significant delays, penalties, or restrictions when urgent needs arise. Keeping emergency savings separate from checking accounts and other spending accounts helps prevent accidental use and reinforces the fund&#x27;s purpose as a dedicated financial reserve for unexpected events.
+
+Examples:
+
+- High-yield savings account
+- Money market account
+- Dedicated savings account
+- Separate emergency reserve account
+
+Key Takeaway:
+
+Emergency funds should prioritize safety and accessibility over investment growth or maximizing returns.</pre></article><article class="kb-chunk" id="file-emergency-fund-3"><header><span class="chunk-num">Chunk 3/10</span><h3>1.3 What an Emergency Fund Is Not</h3></header><pre>Summary:
+
+Emergency funds are reserved for true emergencies and should not be used for planned expenses or investments.
+
+Keywords:
+planned expenses, vacation fund, sinking fund,
+discretionary spending, investments
+
+Definition:
+
+An emergency fund is not a general-purpose savings account and should not be used for planned expenses, discretionary purchases, or long-term investments. Expenses such as vacations, holiday gifts, home upgrades, and other foreseeable purchases should be funded through separate savings goals because they can be anticipated and planned for in advance. Likewise, emergency funds should not be invested in assets intended for growth, as their primary purpose is to provide immediate financial protection rather than generate returns.
+
+Examples:
+
+- Vacations
+- Holiday shopping
+- New electronics
+- Planned home improvements
+- Vehicle upgrades
+- Investment opportunities
+
+Key Takeaway:
+
+If an expense can be reasonably anticipated and planned for, it generally should not be paid from an emergency fund.</pre></article><article class="kb-chunk" id="file-emergency-fund-4"><header><span class="chunk-num">Chunk 4/10</span><h3>1.4 Common Uses of an Emergency Fund</h3></header><pre>Summary:
+
+Emergency funds are intended to cover unexpected, necessary, and urgent expenses or income disruptions.
+
+Keywords:
+job loss, medical emergency, vehicle repair,
+home repair, family emergency
+
+Definition:
+
+Emergency funds are intended to help cover unexpected expenses or temporary income disruptions that could otherwise threaten financial stability. Common uses include replacing lost income during unemployment, paying for unexpected medical expenses, covering major vehicle repairs needed for transportation, addressing essential home repairs that affect safety or habitability, and managing urgent family emergencies. These situations are typically unexpected, necessary, and time-sensitive, making them appropriate uses of emergency savings.
+
+Examples:
+
+Income Emergencies
+
+- Job loss
+- Layoffs
+- Reduced work hours
+- Temporary disability
+
+Medical Emergencies
+
+- Emergency room visits
+- Insurance deductibles
+- Urgent procedures
+- Unexpected prescriptions
+
+Transportation Emergencies
+
+- Engine repairs
+- Transmission replacement
+- Brake repairs
+- Essential vehicle repairs
+
+Housing Emergencies
+
+- Roof repairs
+- Plumbing failures
+- HVAC replacement
+- Water damage
+
+Family Emergencies
+
+- Emergency travel
+- Funeral expenses
+- Temporary caregiving costs
+- Crisis-related expenses
+
+Key Takeaway:
+
+Emergency funds should be used for expenses that are unexpected, necessary, and urgent.</pre></article><article class="kb-chunk" id="file-emergency-fund-5"><header><span class="chunk-num">Chunk 5/10</span><h3>1.5 Benefits of an Emergency Fund</h3></header><pre>Summary:
+
+Emergency funds improve financial stability, reduce debt reliance, and increase resilience during financial setbacks.
+
+Keywords:
+financial stability, debt prevention, financial stress,
+financial flexibility, financial goals
+
+Definition:
+
+An emergency fund provides financial stability by helping individuals manage unexpected expenses without disrupting their overall financial situation. By reducing the need to rely on credit cards or loans during emergencies, it can help prevent the accumulation of costly debt. Emergency savings also contribute to lower financial stress by providing confidence that unexpected events can be handled without immediate financial hardship. Additionally, an emergency fund helps protect long-term financial goals, such as retirement savings and debt repayment plans, while providing greater flexibility and resilience when facing life&#x27;s uncertainties.
+
+Examples:
+
+- Financial Stability
+- Debt Prevention
+- Reduced Financial Stress
+- Protection of Long-Term Goals
+- Financial Flexibility
+
+Key Takeaway:
+
+Emergency funds help individuals absorb financial shocks while protecting their financial well-being and long-term goals.</pre></article><article class="kb-chunk" id="file-emergency-fund-6"><header><span class="chunk-num">Chunk 6/10</span><h3>1.6 Recommended Emergency Fund Amounts</h3></header><pre>Summary:
+
+The appropriate emergency fund size depends on an individual&#x27;s expenses, income stability, and financial circumstances.
+
+Keywords:
+starter emergency fund, three months expenses, six months expenses, emergency savings target
+
+Definition:
+
+There is no single emergency fund amount that is appropriate for everyone. Emergency savings targets often depend on monthly expenses, income stability, household responsibilities, and overall financial risk. Many individuals begin with a small starter emergency fund before gradually building larger reserves over time. The goal is to maintain enough savings to absorb unexpected expenses and temporary income disruptions without relying on debt.
+
+Examples:
+
+Starter Emergency Fund
+
+- $500–$1,000
+- Covers many common emergencies
+- Useful first milestone
+
+One Month of Expenses
+
+- Provides short-term financial protection
+- Useful intermediate goal
+
+Three Months of Expenses
+
+- Common recommendation for stable income
+- Helps protect against temporary unemployment and major emergencies
+
+Six Months of Expenses
+
+- Appropriate for individuals with greater income uncertainty
+- May be beneficial for single-income households or self-employed workers
+
+Variable Income Considerations
+
+- Freelancers
+- Commission-based employees
+- Seasonal workers
+- Self-employed individuals
+
+These individuals may benefit from maintaining larger emergency reserves.
+
+Key Takeaway:
+
+Emergency fund targets should reflect an individual&#x27;s financial circumstances, income stability, and overall financial risk.</pre></article><article class="kb-chunk" id="file-emergency-fund-7"><header><span class="chunk-num">Chunk 7/10</span><h3>1.7 Frequently Asked Questions</h3></header><pre>### What is an emergency fund?
+
+An emergency fund is dedicated savings intended to cover unexpected financial emergencies or temporary income disruptions.
+
+### Why do I need an emergency fund?
+
+Emergency funds help prevent debt, reduce financial stress, and protect long-term financial goals when unexpected events occur.
+
+### Is an emergency fund different from a regular savings account?
+
+Yes. An emergency fund is reserved specifically for unexpected, necessary, and urgent expenses, while general savings may be used for planned purchases and financial goals.
+
+### Can I invest my emergency fund?
+
+Generally, emergency funds should prioritize safety and accessibility over investment growth. High-yield savings accounts and money market accounts are often preferred.
+
+### What qualifies as an emergency?
+
+Expenses are generally considered emergencies if they are unexpected, necessary, and urgent.</pre></article><article class="kb-chunk" id="file-emergency-fund-8"><header><span class="chunk-num">Chunk 8/10</span><h3>1.8 Coaching Insights</h3></header><pre>Coaching Objective:
+
+Help users establish and maintain a financial safety net capable of absorbing unexpected expenses and income disruptions.
+
+Condition:
+emergency_fund_stage = none
+
+Recommended Coaching:
+
+Focus on building a starter emergency fund of $500–$1,000 before pursuing more advanced savings goals.
+
+---
+
+Condition:
+emergency_fund_stage = starter
+
+Recommended Coaching:
+
+Prioritize reaching one month of essential living expenses to improve financial resilience.
+
+---
+
+Condition:
+emergency_fund_stage = one_month
+
+Recommended Coaching:
+
+Focus on building toward a three-month emergency fund target to improve protection against income disruptions.
+
+---
+
+Condition:
+emergency_fund_stage = three_months
+
+Recommended Coaching:
+
+Evaluate employment stability, household circumstances, and income variability to determine whether a larger reserve is appropriate.
+
+---
+
+Condition:
+emergency_fund_stage = six_months_plus
+
+Recommended Coaching:
+
+Maintain emergency savings and evaluate other financial priorities such as debt reduction, investing, and long-term wealth building.</pre></article><article class="kb-chunk" id="file-emergency-fund-9"><header><span class="chunk-num">Chunk 9/10</span><h3>1.9 Related Concepts</h3></header><pre>Related Topics:
+
+- Financial Stability
+- Emergency Savings
+- Budgeting
+- Cash Flow Management
+- Debt Management
+- Financial Well-Being
+- Financial Resilience
+- Sinking Funds
+- Goal-Based Saving
+- Personal Finance Fundamentals
+
+Key Takeaway:
+
+Emergency funds are closely connected to broader financial concepts such as budgeting, debt management, financial stability, and overall financial well-being.</pre></article><article class="kb-chunk" id="file-emergency-fund-10"><header><span class="chunk-num">Chunk 10/10</span><h3>1.10 Common User Questions</h3></header><pre>- What is an emergency fund?
+- Why do I need an emergency fund?
+- What expenses qualify as emergencies?
+- What should I not use my emergency fund for?
+- How is an emergency fund different from a savings account?
+- Can I invest my emergency fund?
+- How much emergency savings should I have?
+- Where should I keep my emergency fund?
+- What are the benefits of having an emergency fund?
+- When should I use my emergency fund?</pre></article>
+<div class="section-nav"><button type="button" data-goto="2">&larr; RAG-Enhanced Coaching</button><span class="next-label">Next</span><button type="button" class="next" data-goto="4">Debt Reduction &rarr;</button></div>
+</section>
+<section class="nb-section" id="file-debt-reduction" data-section="5"><h2 class="section-head">Debt Reduction</h2>
+<div class="kb-head"><div><b>File</b><span>02_debt_reduction.txt</span></div><div><b>Domain</b><span>Debt Reduction</span></div><div><b>Chunks</b><span>14, one per section</span></div><div style="grid-column: 1 / -1;"><b>Tags</b><div class="tags"><span>Debt Reduction</span><span>Debt Management</span><span>Debt Repayment</span><span>Financial Stability</span><span>Financial Well-Being</span><span>Personal Finance</span></div></div></div><p class="kb-summary">This section explains what debt reduction is, why reducing debt is important, common types of debt, common debt repayment strategies, how interest affects debt, how to prioritize repayment, common mistakes to avoid, and foundational coaching guidance for improving financial stability through debt reduction.</p><p class="kb-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><span>The header above is metadata: the loader reads Domain and Tags from it, then splits the file on each <code>##</code> heading. Every chunk below is embedded separately, so a question retrieves the section it is about rather than the whole document.</span></p><article class="kb-chunk" id="file-debt-reduction-1"><header><span class="chunk-num">Chunk 1/14</span><h3>2.1 Definition</h3></header><pre>Summary:
+
+Debt reduction is the process of decreasing or eliminating money owed to creditors, lenders, or financial institutions over time.
+
+Keywords:
+debt reduction, debt repayment, debt management, liabilities, financial obligations
+
+Definition:
+
+Debt reduction is the process of systematically paying down outstanding balances owed to creditors, lenders, or financial institutions. Common forms of debt include credit card balances, student loans, auto loans, personal loans, medical debt, and mortgages. The goal of debt reduction is to decrease financial obligations, reduce interest costs, improve cash flow, and strengthen overall financial stability. Debt reduction can involve making regular payments, paying more than the minimum required payment, prioritizing high-interest debt, avoiding new unnecessary debt, and following a structured repayment plan.
+
+Examples:
+
+- Paying down a credit card balance
+- Making additional payments on a student loan
+- Reducing an auto loan balance
+- Eliminating a personal loan
+- Paying off medical debt
+- Reducing total household debt
+
+Key Takeaway:
+
+Debt reduction helps improve financial health by lowering financial obligations, reducing interest costs, and increasing financial flexibility.</pre></article><article class="kb-chunk" id="file-debt-reduction-2"><header><span class="chunk-num">Chunk 2/14</span><h3>2.2 Why Debt Reduction Matters</h3></header><pre>Summary:
+
+Reducing debt can improve cash flow, reduce financial stress, and strengthen long-term financial stability.
+
+Keywords:
+financial stability, debt burden, interest expense, cash flow, financial flexibility
+
+Definition:
+
+Debt can help individuals access important opportunities such as education, transportation, housing, or emergency support. However, when debt becomes too large, too expensive, or difficult to manage, it can weaken financial stability. Monthly debt payments reduce the amount of income available for savings, emergency funds, investing, and other financial goals. High-interest debt can be especially damaging because interest charges increase the total cost of repayment over time. Reducing debt helps lower required payments, decrease interest costs, improve cash flow, and create more room in a budget for future financial progress.
+
+Examples:
+
+- Lower monthly debt payments
+- Reduced interest expenses
+- Increased savings capacity
+- Improved financial flexibility
+- Greater financial security
+- More room for emergency fund contributions
+- Less reliance on borrowing during financial stress
+
+Key Takeaway:
+
+Reducing debt creates more opportunities to save, invest, handle emergencies, and achieve long-term financial goals.</pre></article><article class="kb-chunk" id="file-debt-reduction-3"><header><span class="chunk-num">Chunk 3/14</span><h3>2.3 Common Types of Debt</h3></header><pre>Summary:
+
+Different forms of debt have different purposes, costs, risks, and repayment considerations.
+
+Keywords:
+credit card debt, student loans, auto loans, mortgage, personal loans, medical debt
+
+Definition:
+
+Debt can take many forms, and each type of debt affects financial stability differently. Some debts, such as credit cards or payday loans, often carry high interest rates and can become costly if balances remain unpaid. Other debts, such as mortgages or student loans, may have lower interest rates and longer repayment terms. Understanding the type of debt helps individuals decide how urgent repayment should be, how expensive the debt is, and how it fits into their broader financial plan. Debt can also be classified as secured or unsecured. Secured debt is backed by collateral, such as a home or vehicle, which may be repossessed if payments are not made. Unsecured debt is not tied to a specific asset and often carries higher interest rates because it presents greater risk to lenders.
+
+Examples:
+
+Secured Debt
+
+- Mortgage
+- Auto loan
+- Home equity loan
+- Backed by collateral
+
+Unsecured Debt
+
+- Credit cards
+- Personal loans
+- Medical debt
+- Not backed by collateral
+
+Credit Card Debt
+
+- Revolving debt
+- Often high interest
+- Can become expensive if balances are carried month to month
+- Often a priority for repayment
+
+Student Loans
+
+- Education-related debt
+- May have fixed payments
+- May have lower interest rates than credit cards
+- Repayment options may vary by loan type
+
+Auto Loans
+
+- Vehicle financing
+- Usually paid over a fixed term
+- Often tied to a depreciating asset
+- Missed payments may risk repossession
+
+Personal Loans
+
+- Installment debt
+- Usually repaid over a fixed schedule
+- May be secured or unsecured
+- Interest rates can vary widely
+
+Medical Debt
+
+- Debt from healthcare expenses
+- May be unexpected
+- May offer payment plan options
+- Often requires careful communication with providers or collectors
+
+Mortgages
+
+- Home financing
+- Usually long-term debt
+- Often lower interest than consumer debt
+- Secured by the home
+
+Key Takeaway:
+
+Understanding the type of debt helps determine repayment priorities, risk level, and the best repayment approach.</pre></article><article class="kb-chunk" id="file-debt-reduction-4"><header><span class="chunk-num">Chunk 4/14</span><h3>2.4 Debt Repayment Strategies</h3></header><pre>Summary:
+
+Structured repayment strategies can help individuals reduce debt more effectively and stay motivated.
+
+Keywords:
+debt snowball, debt avalanche, repayment strategy, debt payoff, debt plan
+
+Definition:
+
+Debt repayment strategies provide structured approaches for paying off multiple debts while maintaining minimum payments on all accounts. A repayment strategy helps individuals decide where to direct extra payments after required minimum payments are made. The two most common strategies are the debt snowball method and the debt avalanche method. The debt snowball method focuses on paying off the smallest balances first to build motivation. The debt avalanche method focuses on paying off the highest interest rates first to reduce total interest costs. A hybrid approach may combine both methods by considering both emotional motivation and mathematical efficiency.
+
+Examples:
+
+Debt Snowball Method
+
+- Pay minimum payments on all debts
+- Put extra money toward the smallest balance
+- After the smallest debt is paid off, apply that payment amount to the next-smallest debt
+- Useful for building motivation through quick wins
+
+Debt Avalanche Method
+
+- Pay minimum payments on all debts
+- Put extra money toward the highest-interest debt
+- After that debt is paid off, move to the next-highest interest rate
+- Useful for reducing total interest paid over time
+
+Hybrid Approach
+
+- Prioritizes very high-interest debt first
+- Also considers small balances for motivation
+- Balances financial efficiency with behavioral consistency
+
+Key Takeaway:
+
+The best repayment strategy is often the one that reduces debt while remaining realistic and sustainable for the individual.</pre></article><article class="kb-chunk" id="file-debt-reduction-5"><header><span class="chunk-num">Chunk 5/14</span><h3>2.5 Understanding Interest and the Cost of Debt</h3></header><pre>Summary:
+
+Interest is the cost of borrowing money and is one of the main reasons debt can become difficult to repay.
+
+Keywords:
+interest, APR, borrowing costs, credit card interest, debt growth, cost of debt
+
+Definition:
+
+Interest is the amount charged by a lender for borrowing money. It increases the total amount that must be repaid over time. The interest rate, often shown as an annual percentage rate or APR, helps determine how expensive a debt is. High-interest debt can grow quickly if balances are not paid down, especially when only minimum payments are made. Understanding interest is important because two debts with the same balance can have very different costs depending on their interest rates. For this reason, debts with higher interest rates are often prioritized during repayment.
+
+Examples:
+
+High-Interest Debt
+
+- Credit cards
+- Payday loans
+- Some personal loans
+- Some retail financing accounts
+
+Lower-Interest Debt
+
+- Some student loans
+- Some auto loans
+- Mortgages
+- Certain secured loans
+
+Beginner Example:
+
+A $3,000 credit card balance with a high interest rate will usually cost more over time than a $3,000 student loan balance with a lower interest rate, even though the starting balance is the same.
+
+Key Takeaway:
+
+Higher interest rates increase borrowing costs and often make debt repayment a higher financial priority.</pre></article><article class="kb-chunk" id="file-debt-reduction-6"><header><span class="chunk-num">Chunk 6/14</span><h3>2.6 Minimum Payments vs Additional Payments</h3></header><pre>Summary:
+
+Making only minimum payments can significantly extend the time required to repay debt and increase total interest costs.
+
+Keywords:
+minimum payment, extra payments, debt payoff, repayment timeline, principal reduction
+
+Definition:
+
+Most lenders require a minimum monthly payment to keep an account in good standing. While minimum payments help avoid late fees and negative credit reporting, they often result in slower debt reduction and higher total interest costs. Additional payments beyond the minimum amount reduce the principal balance more quickly, shorten repayment timelines, and decrease the amount paid in interest. Even relatively small extra payments can meaningfully accelerate debt reduction over time.
+
+Examples:
+
+Minimum Payment Approach
+
+- Slower debt reduction
+- Higher total interest costs
+- Longer repayment timeline
+- More money spent on borrowing
+
+Additional Payment Approach
+
+- Faster debt reduction
+- Lower interest costs
+- Shorter repayment timeline
+- More cash flow available sooner
+
+Beginner Example:
+
+If a borrower pays only the minimum required payment on a credit card, repayment may take years. Paying an additional amount each month can significantly shorten the payoff period and reduce total interest costs.
+
+Key Takeaway:
+
+Paying more than the minimum payment whenever possible can substantially reduce both repayment time and total borrowing costs.</pre></article><article class="kb-chunk" id="file-debt-reduction-7"><header><span class="chunk-num">Chunk 7/14</span><h3>2.7 How to Decide Which Debt to Pay First</h3></header><pre>Summary:
+
+Not all debts should receive the same repayment priority.
+
+Keywords:
+debt priorities, repayment strategy, interest rates, credit card debt, debt payoff order
+
+Definition:
+
+When managing multiple debts, individuals often need to decide which balances should receive additional repayment focus. Factors such as interest rates, loan balances, monthly payment obligations, emergency savings, and financial goals can influence repayment priorities. While high-interest debt is often prioritized because it generates greater borrowing costs, behavioral factors such as motivation and momentum may also play an important role. The best repayment order is typically one that balances financial efficiency with long-term consistency.
+
+Examples:
+
+Factors to Consider
+
+- Interest rate
+- Outstanding balance
+- Monthly payment amount
+- Emergency savings status
+- Financial goals
+- Personal motivation
+
+Common Priority Order
+
+- High-interest credit card debt
+- Payday loans
+- Personal loans
+- Auto loans
+- Student loans
+- Mortgages
+
+Key Takeaway:
+
+Debt repayment priorities should balance both mathematical efficiency and behavioral sustainability.</pre></article><article class="kb-chunk" id="file-debt-reduction-8"><header><span class="chunk-num">Chunk 8/14</span><h3>2.8 Benefits of Debt Reduction</h3></header><pre>Summary:
+
+Reducing debt can improve financial stability, increase cash flow, and support long-term financial well-being.
+
+Keywords:
+cash flow, financial freedom, debt burden, financial well-being, financial flexibility
+
+Definition:
+
+As debt balances decline, individuals often experience greater financial flexibility and improved financial security. Lower debt levels reduce required monthly payments, decrease interest expenses, and increase available cash flow. Debt reduction can create additional opportunities to build emergency savings, invest for retirement, pursue financial goals, and manage unexpected expenses. Reducing debt can also lower financial stress and contribute to improved financial confidence and overall well-being.
+
+Examples:
+
+- Improved cash flow
+- Reduced financial stress
+- Lower interest costs
+- Increased savings opportunities
+- Greater financial flexibility
+- Improved financial confidence
+- More progress toward long-term goals
+
+Key Takeaway:
+
+Debt reduction strengthens overall financial health and increases future financial opportunities.</pre></article><article class="kb-chunk" id="file-debt-reduction-9"><header><span class="chunk-num">Chunk 9/14</span><h3>2.9 Common Mistakes to Avoid</h3></header><pre>Summary:
+
+Certain behaviors can slow debt repayment progress and increase the overall cost of debt.
+
+Keywords:
+debt mistakes, debt repayment, financial habits, debt management
+
+Definition:
+
+Successful debt reduction requires consistency and disciplined financial habits. Common mistakes can increase borrowing costs, extend repayment timelines, and create additional financial challenges. Understanding and avoiding these mistakes can help individuals make more efficient progress toward becoming debt-free while strengthening overall financial stability.
+
+Examples:
+
+Making Only Minimum Payments
+
+- Slower debt reduction
+- Higher interest costs
+- Longer repayment timelines
+
+Accumulating New Debt
+
+- Offsets repayment progress
+- Increases financial obligations
+- Makes debt reduction more difficult
+
+Ignoring Interest Rates
+
+- May result in inefficient repayment decisions
+- Can increase total borrowing costs
+
+Missing Payments
+
+- Late fees
+- Credit score damage
+- Additional interest charges
+
+Failing to Build Emergency Savings
+
+- Increased likelihood of future borrowing
+- Greater vulnerability to unexpected expenses
+
+Key Takeaway:
+
+Avoiding common debt repayment mistakes can significantly improve the speed and effectiveness of debt reduction efforts.</pre></article><article class="kb-chunk" id="file-debt-reduction-10"><header><span class="chunk-num">Chunk 10/14</span><h3>2.10 Debt Reduction and Emergency Savings</h3></header><pre>Summary:
+
+Debt reduction and emergency savings often work together to improve financial stability.
+
+Keywords:
+emergency fund, debt repayment, financial stability, savings priorities
+
+Definition:
+
+Many individuals struggle to decide whether they should focus on paying down debt or building savings. In many situations, these goals should be pursued together rather than viewed as competing priorities. A small emergency fund can help cover unexpected expenses and reduce the need for additional borrowing while debt is being repaid. Once basic emergency savings have been established, individuals can often increase their focus on reducing high-interest debt while continuing to maintain financial stability.
+
+Examples:
+
+No Emergency Savings
+
+- Build a starter emergency fund
+- Continue making minimum debt payments
+
+High-Interest Debt
+
+- Establish basic emergency savings
+- Prioritize debt reduction afterward
+
+Moderate Debt and Emergency Savings
+
+- Balance debt repayment and savings contributions
+
+Strong Emergency Fund
+
+- Increase focus on debt reduction and long-term goals
+
+Key Takeaway:
+
+A small emergency fund can help prevent new debt while supporting long-term debt reduction efforts.</pre></article><article class="kb-chunk" id="file-debt-reduction-11"><header><span class="chunk-num">Chunk 11/14</span><h3>2.11 Frequently Asked Questions</h3></header><pre>### What is debt reduction?
+
+Debt reduction is the process of decreasing or eliminating outstanding debt balances through regular repayment, strategic planning, and responsible financial management.
+
+### Why is reducing debt important?
+
+Reducing debt lowers financial obligations, decreases interest expenses, improves cash flow, and increases financial flexibility. It can also reduce financial stress and support long-term financial goals.
+
+### What is the difference between the debt snowball and debt avalanche methods?
+
+The debt snowball method focuses on paying off the smallest balances first to build motivation through quick wins. The debt avalanche method focuses on paying off the highest interest rates first to minimize total interest costs.
+
+### Should I pay off debt or save money?
+
+In many situations, building a small emergency fund while paying down debt provides the best balance between financial stability and debt reduction. The ideal approach depends on interest rates, financial stability, and emergency savings needs.
+
+### What type of debt should I pay off first?
+
+High-interest debt, such as credit card balances and payday loans, is often prioritized because it generates the greatest borrowing costs over time.
+
+### Is all debt bad?
+
+Not necessarily. Some forms of debt, such as mortgages and student loans, may support long-term financial goals. The impact of debt often depends on affordability, interest rates, and repayment management.
+
+### How long does it take to become debt-free?
+
+The timeline depends on debt balances, interest rates, income, expenses, and repayment strategy. Consistent payments and additional contributions can significantly shorten repayment periods.
+
+### What is the difference between secured and unsecured debt?
+
+Secured debt is backed by collateral, such as a home or vehicle. Unsecured debt is not backed by collateral and often carries higher interest rates because it presents greater risk to lenders.</pre></article><article class="kb-chunk" id="file-debt-reduction-12"><header><span class="chunk-num">Chunk 12/14</span><h3>2.12 Coaching Insights</h3></header><pre>Coaching Objective:
+
+Help users reduce financial obligations while improving financial stability, increasing financial flexibility, and supporting long-term financial well-being.
+
+### Condition
+
+debt_to_income_ratio = high
+
+Recommended Coaching:
+
+Focus on reducing high-interest debt, limiting additional borrowing, and identifying opportunities to increase monthly surplus for debt repayment.
+
+---
+
+### Condition
+
+credit_card_balance &gt; 0
+
+Recommended Coaching:
+
+Prioritize reducing high-interest revolving debt while maintaining minimum payments on other obligations.
+
+---
+
+### Condition
+
+emergency_fund_stage = none
+
+Recommended Coaching:
+
+Build a starter emergency fund of $500–$1,000 before aggressively pursuing debt reduction to reduce the likelihood of future borrowing.
+
+---
+
+### Condition
+
+debt_to_income_ratio = moderate
+
+Recommended Coaching:
+
+Balance debt reduction with emergency savings and other financial priorities while maintaining consistent repayment progress.
+
+---
+
+### Condition
+
+debt_to_income_ratio = low
+
+Recommended Coaching:
+
+Continue debt reduction while increasing focus on savings, investing, and long-term financial goals.
+
+---
+
+### Condition
+
+high_interest_debt = true
+
+Recommended Coaching:
+
+Direct available surplus toward high-interest debt to reduce borrowing costs and accelerate financial progress.
+
+---
+
+### Condition
+
+all_high_interest_debt_paid = true
+
+Recommended Coaching:
+
+Shift additional financial resources toward emergency savings, investing, and other long-term financial objectives while continuing scheduled debt repayment.
+
+---
+
+### Condition
+
+multiple_debts = true
+
+Recommended Coaching:
+
+Select a structured repayment strategy such as the debt snowball or debt avalanche method and remain consistent over time.</pre></article><article class="kb-chunk" id="file-debt-reduction-13"><header><span class="chunk-num">Chunk 13/14</span><h3>2.13 Related Concepts</h3></header><pre>Related Topics:
+
+- Emergency Fund
+- Financial Stability
+- Budgeting
+- Cash Flow Management
+- Financial Well-Being
+- Financial Health
+- Goal Setting
+- Spending Discipline
+- Credit Management
+- Financial Resilience
+- Financial Planning
+- Saving and Investing
+
+Key Takeaway:
+
+Debt reduction is closely connected to budgeting, emergency savings, financial stability, spending habits, and overall financial well-being.</pre></article><article class="kb-chunk" id="file-debt-reduction-14"><header><span class="chunk-num">Chunk 14/14</span><h3>2.14 Common User Questions</h3></header><pre>- How do I reduce debt?
+- What debt should I pay off first?
+- What is the debt snowball method?
+- What is the debt avalanche method?
+- Should I save money or pay off debt?
+- How much debt is too much?
+- How does debt affect financial health?
+- How can I pay off debt faster?
+- What are the benefits of reducing debt?
+- How do I stay motivated while paying off debt?
+- Should I build an emergency fund before paying off debt?
+- How do interest rates affect debt repayment?
+- Is it bad to only make minimum payments?
+- How long will it take me to become debt-free?
+- Which debts should be prioritized first?
+- How does debt affect financial well-being?
+- What should I do if I cannot make a payment?
+- Can I pay off multiple debts at the same time?
+- How much extra should I pay each month?
+- What are the signs that I have too much debt?
+- How does debt affect my financial goals?
+- When should I focus on saving instead of debt reduction?</pre></article>
+<div class="section-nav"><button type="button" data-goto="3">&larr; Emergency Fund</button><button type="button" disabled>Next &rarr;</button></div>
+</section>
+  </main>
+
+  <aside class="rail" aria-label="Notebook summary">
+    <section>
+      <p class="rail-title">Key decisions</p>
+      <ol class="decisions"><li><a href="#1-%C2%B7-Knowledge-Base-Processing-&amp;-Vector-Store"><span class="decision-num">1</span><span><b>Use one Chroma collection for every topic</b><small>§1 · Retrieval stays cross-domain</small></span></a></li><li><a href="#1-%C2%B7-Knowledge-Base-Processing-&amp;-Vector-Store"><span class="decision-num">2</span><span><b>Chunk by subsection, tagged by source file</b><small>§1 · 24 chunks from 2 files</small></span></a></li><li><a href="#2-%C2%B7-RAG-Enhanced-Financial-Coaching"><span class="decision-num">3</span><span><b>Classify every question before answering</b><small>§2 · Four paths, retrieval to decline</small></span></a></li><li><a href="#2-%C2%B7-RAG-Enhanced-Financial-Coaching"><span class="decision-num">4</span><span><b>Let knowledge-base context outrank the model</b><small>§2.2 · The prompt forbids contradicting it</small></span></a></li></ol>
+    </section>
+    <section>
+      <p class="rail-title">Sections read</p>
+      <ol class="progress"><li data-progress="1"><span class="progress-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Overview</li><li data-progress="2"><span class="progress-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Knowledge Base &amp; Vector Store</li><li data-progress="3"><span class="progress-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>RAG-Enhanced Coaching</li><li data-progress="4"><span class="progress-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Emergency Fund</li><li data-progress="5"><span class="progress-mark"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Debt Reduction</li></ol>
+    </section>
+    <section>
+      <p class="rail-title">Related</p>
+      <ul class="related"><li><a href="/#selected-work" target="_blank" rel="noopener"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.2 1.2M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.2-1.2"/></svg>All selected work</a></li><li><a href="/#case-studies" target="_blank" rel="noopener"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7.1 0l3-3a5 5 0 0 0-7.1-7.1l-1.2 1.2M14 10a5 5 0 0 0-7.1 0l-3 3a5 5 0 0 0 7.1 7.1l1.2-1.2"/></svg>Featured case studies</a></li></ul>
+    </section>
+  </aside>
+</div>
+
+<script>
+(function () {
+  // Hide code shows only the narrative and outputs.
+  var toggle = document.getElementById('toggleCode');
+  toggle.addEventListener('click', function () {
+    var hidden = document.body.classList.toggle('hide-code');
+    toggle.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+    toggle.textContent = hidden ? 'Show code' : 'Hide code';
+  });
+
+  document.querySelectorAll('.code-card .copy').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var code = button.parentElement.querySelector('pre').innerText;
+      navigator.clipboard.writeText(code).then(function () {
+        button.textContent = 'Copied';
+        setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+      });
+    });
+  });
+
+  var sections = [].slice.call(document.querySelectorAll('.nb-section'));
+  var tocLinks = document.querySelectorAll('[data-toc]');
+  var progress = document.querySelectorAll('[data-progress]');
+  var navButtons = [].slice.call(document.querySelectorAll('[data-goto]'));
+
+  if (navButtons.length) {
+    // One section at a time: the notebook is long, so the navigator swaps sections
+    // instead of asking the reader to scroll past every model.
+    // A tab owns one section, or a run of them when data-sections lists several.
+    var tabs = [].slice.call(document.querySelectorAll('.nav-tab'));
+    var owned = tabs.map(function (b) {
+      return (b.getAttribute('data-sections') || b.getAttribute('data-goto') || '0')
+        .split(',').map(Number);
+    });
+    var seen = [];
+    var showTab = function (tab, scrollToTop) {
+      var shown = owned[tab] || [tab];
+      sections.forEach(function (s, i) { s.hidden = shown.indexOf(i) === -1; });
+      shown.forEach(function (i) { if (seen.indexOf(i) === -1) seen.push(i); });
+      tabs.forEach(function (b, t) {
+        b.classList.toggle('is-current', t === tab);
+        b.setAttribute('aria-current', t === tab ? 'true' : 'false');
+      });
+      tocLinks.forEach(function (a, i) {
+        a.hidden = shown.indexOf(i) === -1;
+        a.classList.toggle('is-current', i === shown[0]);
+        var subs = a.parentElement.querySelector('.toc-sub');
+        if (subs) subs.hidden = shown.indexOf(i) === -1;
+      });
+      progress.forEach(function (li, i) {
+        li.classList.toggle('is-current', shown.indexOf(i) !== -1);
+        li.classList.toggle('is-done', shown.indexOf(i) === -1 && seen.indexOf(i) !== -1);
+      });
+      try { history.replaceState(null, '', '#' + sections[shown[0]].id); } catch (e) {}
+      if (scrollToTop) window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    // Prev/next buttons address sections; map one back to the tab that owns it.
+    var tabOf = function (sectionIndex) {
+      for (var t = 0; t < owned.length; t++) if (owned[t].indexOf(sectionIndex) !== -1) return t;
+      return 0;
+    };
+    var showSection = function (index, scrollToTop) { showTab(tabOf(index), scrollToTop); };
+
+    navButtons.forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.preventDefault();
+        // Tabs address themselves; prev/next buttons address a section.
+        var index = Number(b.getAttribute('data-goto'));
+        if (b.classList.contains('nav-tab')) showTab(index, true);
+        else showSection(index, true);
+      });
+    });
+
+    // A link to a heading inside another section opens that section first.
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a[href^="#"]');
+      if (!link || link.hasAttribute('data-goto')) return;
+      var target = document.getElementById(decodeURIComponent(link.getAttribute('href').slice(1)));
+      if (!target) return;
+      var owner = target.closest('.nb-section');
+      if (owner && owner.hidden) {
+        e.preventDefault();
+        showSection(sections.indexOf(owner), false);
+        target.scrollIntoView();
+      }
+    });
+
+    // The page opens at the top. A section named in the address opens that tab
+    // without the browser jumping down to its heading; a heading inside a section
+    // opens the section and goes to the heading.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    var hashTarget = location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+    var hashOwner = hashTarget && sections.indexOf(hashTarget) === -1 ? hashTarget.closest('.nb-section') : null;
+    showSection(hashOwner ? sections.indexOf(hashOwner) : Math.max(sections.indexOf(hashTarget), 0), false);
+    var land = function () {
+      if (hashOwner) hashTarget.scrollIntoView();
+      else window.scrollTo({ top: 0, behavior: 'instant' });
+    };
+    land();
+    // The browser scrolls to the address fragment again once the page loads;
+    // land again then, unless the reader has already started moving.
+    var moved = false;
+    var markMoved = function () { moved = true; };
+    ['wheel', 'touchstart', 'keydown'].forEach(function (t) { window.addEventListener(t, markMoved, { once: true, passive: true }); });
+    window.addEventListener('load', function () { if (!moved) land(); });
+  } else {
+    // Every section on one page: highlight whichever one the reader has reached.
+    var update = function () {
+      var line = window.innerHeight * 0.35, current = 0;
+      sections.forEach(function (s, i) { if (s.getBoundingClientRect().top < line) current = i; });
+      var atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      if (atEnd) current = sections.length - 1;
+      tocLinks.forEach(function (a, i) { a.classList.toggle('is-current', i === current); });
+      progress.forEach(function (li, i) {
+        li.classList.toggle('is-done', i < current || atEnd);
+        li.classList.toggle('is-current', i === current && !atEnd);
+      });
+    };
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  }
+})();
+</script>
+
+</body>
+</html>
