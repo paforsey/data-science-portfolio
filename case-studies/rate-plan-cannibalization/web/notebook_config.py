@@ -11,7 +11,7 @@ into one page. Execute both notebooks, then build from case-studies/rate-plan-ca
 
 The merged notebook and the export are build artifacts. Models are h1 across both notebooks,
 numbered 01-08 straight through, so SECTION_LEVEL puts all eight in one navigator. The headline
-figures describe the study design; replace them with results once the models are built.
+figures and decisions are quoted from the study; update them if a re-run changes the results.
 """
 
 DESCRIPTION = (
@@ -51,15 +51,21 @@ SECTION_LABELS = [
     ("Summary", "Summary"),
 ]
 
-# (icon, value, label): study design facts until results replace them.
+# (icon, value, label) quoted from the study.
 STATS = [
-    ("layers", "8", "models across two notebooks"),
-    ("bars", "108", "launch configurations scored"),
-    ("flask", "4,000", "conjoint respondents"),
-    ("shield", "1", "withheld answer key"),
+    ("bars", "+20 pts", "cannibalization overstated by a flat logit"),
+    ("layers", "3", "taste segments behind plan choice"),
+    ("dollar", "$52.50", "recommended price per line"),
+    ("flask", "108", "launch configurations scored"),
 ]
 
-# (title, detail, section index): filled in once the recommendation is made.
-DECISIONS = []
+# (title, detail, section index) — index into the page's sections, in notebook order.
+DECISIONS = [
+    ("Nest plans by price tier, not carrier", "§03 · Carrier nests collapse to a flat logit", 3),
+    ("Do not forecast with a flat logit", "§07 · Overstates high-margin draw by about 20 points", 7),
+    ("Launch HD essentials at $52.50, no multi-line discount", "§08 · Best worst-case margin across three models", 8),
+    ("Hold the fence; treat price as the open question", "§08 · Fence stable across scenarios, price $50–$55", 8),
+    ("Read the rollout on plan mix, not margin", "§08 · Margin effect at the limit of detection", 8),
+]
 
 RELATED = []
