@@ -1,4 +1,4 @@
-# Churn Save Desk Agent — Project Plan
+# AI Customer Retention Agent — Project Plan
 
 Case Study 4. Status: planning (no code yet).
 
@@ -18,24 +18,24 @@ Case Study 4. Status: planning (no code yet).
 | ML: causal uplift modeling (offer effect) | `02_offer_uplift` |
 | ML / NLP: embeddings and topic modeling (churn reasons) | `03_churn_reasons_nlp` |
 | Optimization under a budget | `04_offer_optimizer` |
-| AI: LLM drafting, LLM-as-judge, RAG | `05_save_desk_agent` |
-| LangChain: tools, retrievers, structured output | `05_save_desk_agent` |
-| LangGraph: agentic graph, fan-out, human-in-the-loop, checkpointing | `05_save_desk_agent` |
+| AI: LLM drafting, LLM-as-judge, RAG | `05_retention_agent` |
+| LangChain: tools, retrievers, structured output | `05_retention_agent` |
+| LangGraph: agentic graph, fan-out, human-in-the-loop, checkpointing | `05_retention_agent` |
 | Automation: nightly run, drift checks, retraining, regression tests | `06_automation_monitoring` |
 
 ## 2. Folder structure (follows the rate-plan study)
 
 ```
-case-studies/churn-save-desk/
+case-studies/customer-retention-agent/
   README.md
   00_data_generator.ipynb
   01_churn_survival.ipynb
   02_offer_uplift.ipynb
   03_churn_reasons_nlp.ipynb
   04_offer_optimizer.ipynb
-  05_save_desk_agent.ipynb      (LangGraph)
+  05_retention_agent.ipynb      (LangGraph)
   06_automation_monitoring.ipynb
-  src/savedesk/                 (reusable code the agent and nightly job import)
+  src/retention/                (reusable code the agent and nightly job import)
   data/  outputs/  web/
 ```
 
@@ -44,7 +44,7 @@ case-studies/churn-save-desk/
 ## 3. Phases
 
 ### Phase 0: Setup and decisions
-- Branch `churn-save-desk` off `main`.
+- Branch `customer-retention-agent` off `main`.
 - Settle the open decisions in section 5.
 - **Done when:** the folder skeleton exists and the decisions are recorded in this README.
 
@@ -79,7 +79,7 @@ case-studies/churn-save-desk/
 - **Deliverable:** this comparison is the study's main chart.
 - Packaged as a plain function so the agent can call it as a tool.
 
-### Phase 6: LangGraph save desk agent (`05`)
+### Phase 6: LangGraph retention agent (`05`)
 **Graph flow:**
 1. `load_batch`: tonight's scored subscribers.
 2. `select_under_budget`: optimizer tool.
@@ -103,7 +103,7 @@ case-studies/churn-save-desk/
 - cost and response time per run
 
 ### Phase 7: Automation and monitoring (`06`)
-- A nightly entry point (`python -m savedesk.run_nightly`) scheduled with launchd or cron.
+- A nightly entry point (`python -m retention.run_nightly`) scheduled with launchd or cron.
 - **Drift checks:** population stability index (PSI) on model inputs, and tracking of predicted versus actual churn. Drift above a threshold triggers retraining.
 - **Regression tests:** a pytest suite for the agent that runs fixed cases through the graph.
 - **Optional:** LangSmith tracing.
