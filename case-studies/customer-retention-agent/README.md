@@ -1,6 +1,6 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: Phase 1, data generator design ([data/generator_design.md](data/generator_design.md)).
+Case Study 4. Status: Phase 2 done (churn timing); Phase 3 (offer effect) next.
 
 All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
@@ -64,10 +64,12 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - **Offer policy document:** eligibility, discount limits, contact frequency, do-not-contact rules, and fairness rules. This is the source the agent retrieves from.
 - **Done when:** saved tables, notes, and the policy document exist, plus a hidden answer key (true churn rates and true offer effects) used only for evaluation.
 
-### Phase 2: Churn timing model (`01`)
-- Baseline Cox model (lifelines), then a gradient-boosted survival model (scikit-survival, or XGBoost's survival objective).
-- **Output:** probability of leaving within 30, 60, and 90 days.
-- **Metrics:** concordance index (C-index), integrated Brier score, calibration by risk group, and comparison against the true churn rates.
+### Phase 2: Churn timing model (`01`) · done
+- Time-varying Cox model (lifelines), then a gradient-boosted discrete-time hazard (LightGBM on account-months, rolled forward three months). scikit-survival was dropped: it would have forced numpy 2 into the shared base environment.
+- **Output:** probability of leaving within 30, 60, and 90 days, saved to `outputs/churn_scores.parquet` for tonight's batch and `outputs/campaign_1_churn_scores.parquet` for Phase 3.
+- **Metrics:** C-index, AUC, Brier score, and calibration by decile on a month-21 backtest, then against the answer key for tonight's batch.
+- **Result:** the gradient-boosted model reaches a C-index of 0.61 (true probabilities: 0.75; tenure alone: 0.53) and is well calibrated on tonight's batch, but over-predicted by about 15% after the competitor surge in the backtest.
+- Features live in `src/retention/features.py`, shared with every later phase and the nightly run.
 
 ### Phase 3: Offer effect model (`02`)
 - **Methods:** T-learner and X-learner (LightGBM, via EconML or CausalML), one effect estimate per offer type.
@@ -139,7 +141,14 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 | Agent depth | A single graph first | Easier to build, test, and explain. A supervisor with sub-agents can come later |
 | Web demo | Deferred | Notebooks and the case study page come first |
 
-## 6. Environment
+## 6. Environment and notebooks
+
+| Notebook | What it does | Run time |
+|---|---|---|
+| `data/00_generate_and_validate_data.ipynb` | Generates and validates the synthetic data; reuses cached care notes | ~35 s |
+| `01_churn_survival.ipynb` | Section 01: churn timing (Cox and gradient-boosted hazard), backtest, tonight's scores | ~25 s |
+
+Run from this folder. `outputs/` is not tracked; rerunning the notebooks regenerates it.
 
 Notebooks use the Python 3.12 "base" kernel. Already installed there: numpy, pandas, scikit-learn, LightGBM, XGBoost, sentence-transformers, LangChain, LangGraph, Chroma, the OpenAI SDK, and PuLP.
 
@@ -147,6 +156,6 @@ Still to install, each before the phase that needs it:
 
 | Package | Phase |
 |---|---|
-| `lifelines`, `scikit-survival` | 2 (churn timing) |
+| `lifelines` | 2 (churn timing) · installed 2026-09-21 |
 | `econml` | 3 (offer effect) |
 | `bertopic` (brings `umap-learn`, `hdbscan`) | 4 (churn reasons) |
