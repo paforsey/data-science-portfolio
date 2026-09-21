@@ -1,6 +1,6 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: Phase 4 done (churn reasons); Phase 5 (offer optimizer) next.
+Case Study 4. Status: Phase 5 done (offer optimizer); Phase 6 (LangGraph agent) next.
 
 All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
@@ -84,11 +84,12 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - **Targeting:** adjusting Phase 3's uplift by the account's reason lifts the top fifth's share of the true benefit, most with the codes (discount 2.78× to 3.14×). Phase 5 should use the code reason; the agent reads the notes.
 - **Output:** `outputs/note_topics.parquet`, `outputs/account_reasons.parquet`, `outputs/note_embeddings.npy`.
 
-### Phase 5: Offer optimizer (`04`)
-- **Formula:** expected value = P(churn within 90 days) × offer effect × customer lifetime value − offer cost. Solved as a budget-limited selection problem (knapsack with a greedy or integer-programming solver).
-- **Comparisons:** random targeting, highest-risk-first, and uplift-based targeting, evaluated against the hidden answer key.
-- **Deliverable:** this comparison is the study's main chart.
-- Packaged as a plain function so the agent can call it as a tool.
+### Phase 5: Offer optimizer (`04`) · done
+- **Formula:** expected value = uplift × 24-month customer value − acceptance × offer cost, one offer per customer, greedy by value per budget dollar (checked against an exact integer program in PuLP; identical here).
+- **Guardrails:** a plan built straight from the estimates forecast +$65K and really lost $6.5K (the winner's curse: the best of many noisy estimates are the overestimated ones). Three rules grounded in pre-launch evidence fix it: only offers whose test showed an effect (drops the data upgrade), the test's average acceptance for costs, and a budget on exposure rather than expected cost. Each night holds back 10% of the chosen customers to measure the real effect.
+- **Result:** for $40,000, the uplift plan keeps 19.8 customers and earns $6,042; risk-first targeting keeps 2.7 and loses $9,486; the oracle keeps 44.7. Net value peaks at $20–40K of budget.
+- **Code:** `src/retention/policy.py` (the policy's hard rules) and `src/retention/optimizer.py` (`build_candidates`, `select_greedy`, `select_exact`, `plan_tonight`, the agent's tool).
+- **Output:** `outputs/tonight_plan.parquet`: 666 customers, 614 contacted and 52 held out.
 
 ### Phase 6: LangGraph retention agent (`05`)
 **Graph flow:**
@@ -152,6 +153,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 | `01_churn_survival.ipynb` | Section 01: churn timing (Cox and gradient-boosted hazard), backtest, tonight's scores | ~25 s |
 | `02_offer_uplift.ipynb` | Section 02: uplift learners on the randomized test, campaign 2 bias, acceptance, tonight's uplift | ~2.5 min |
 | `03_churn_reasons_nlp.ipynb` | Section 03: note embeddings, BERTopic, LLM topic names (cached), validation, reasons and targeting | ~1.5 min |
+| `04_offer_optimizer.ipynb` | Section 04: eligibility, customer value, guardrails, policy comparison, budget sweep, tonight's plan | ~10 s |
 
 Run from this folder. `outputs/` is not tracked; rerunning the notebooks regenerates it.
 
