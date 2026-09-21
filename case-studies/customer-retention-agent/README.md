@@ -1,6 +1,6 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: Phase 3 done (offer effect); Phase 4 (churn reasons from notes) next.
+Case Study 4. Status: Phase 4 done (churn reasons); Phase 5 (offer optimizer) next.
 
 All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
@@ -78,10 +78,11 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - **Result:** with a 4% outcome, the gradient-boosted learners fit noise (1.2–1.3× in their top fifth); the risk-scaled logit reaches 1.7–1.9× on the test and 1.8–2.8× on tonight's batch, against a ceiling of about 4×, and is used downstream. Observed Qini curves can't separate the models; only the answer key can.
 - **Output:** `outputs/uplift_scores.parquet`: uplift and acceptance probability per offer for tonight's batch.
 
-### Phase 4: Churn reasons from notes (`03`)
-- Sentence embeddings plus BERTopic, then an LLM names each topic.
-- **Validation:** agreement between the topics and the hidden reasons (adjusted Rand index).
-- **Output:** each customer's top reason, which the agent uses when writing messages.
+### Phase 4: Churn reasons from notes (`03`) · done
+- Local sentence embeddings (all-MiniLM-L6-v2), fine-grained BERTopic clusters (34 topics), and gpt-4o-mini naming each topic and mapping it to a retention category with structured output. Names are cached in `cache/topic_labels.json`, so reruns need no API key.
+- **Validation:** 74% of notes get their own topic's category (over 90% for price, device, and moving), but an account's notes point to its real reason only 52% of the time; its rep codes, added up over every contact, 90%.
+- **Targeting:** adjusting Phase 3's uplift by the account's reason lifts the top fifth's share of the true benefit, most with the codes (discount 2.78× to 3.14×). Phase 5 should use the code reason; the agent reads the notes.
+- **Output:** `outputs/note_topics.parquet`, `outputs/account_reasons.parquet`, `outputs/note_embeddings.npy`.
 
 ### Phase 5: Offer optimizer (`04`)
 - **Formula:** expected value = P(churn within 90 days) × offer effect × customer lifetime value − offer cost. Solved as a budget-limited selection problem (knapsack with a greedy or integer-programming solver).
@@ -150,6 +151,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 | `data/00_generate_and_validate_data.ipynb` | Generates and validates the synthetic data; reuses cached care notes | ~35 s |
 | `01_churn_survival.ipynb` | Section 01: churn timing (Cox and gradient-boosted hazard), backtest, tonight's scores | ~25 s |
 | `02_offer_uplift.ipynb` | Section 02: uplift learners on the randomized test, campaign 2 bias, acceptance, tonight's uplift | ~2.5 min |
+| `03_churn_reasons_nlp.ipynb` | Section 03: note embeddings, BERTopic, LLM topic names (cached), validation, reasons and targeting | ~1.5 min |
 
 Run from this folder. `outputs/` is not tracked; rerunning the notebooks regenerates it.
 
@@ -161,4 +163,4 @@ Still to install, each before the phase that needs it:
 |---|---|
 | `lifelines` | 2 (churn timing) · installed 2026-09-21 |
 | `scikit-uplift` | 3 (offer effect, metrics only) · installed 2026-09-21; `econml` skipped (needs numpy 2) |
-| `bertopic` (brings `umap-learn`, `hdbscan`) | 4 (churn reasons) |
+| `bertopic` (brings `umap-learn`, `hdbscan`) | 4 (churn reasons) · installed 2026-09-21. The base environment's TensorFlow is broken (protobuf 6), so `03` marks it unavailable before importing umap |
