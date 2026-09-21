@@ -1,6 +1,6 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: Phase 2 done (churn timing); Phase 3 (offer effect) next.
+Case Study 4. Status: Phase 3 done (offer effect); Phase 4 (churn reasons from notes) next.
 
 All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
@@ -71,10 +71,12 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - **Result:** the gradient-boosted model reaches a C-index of 0.61 (true probabilities: 0.75; tenure alone: 0.53) and is well calibrated on tonight's batch, but over-predicted by about 15% after the competitor surge in the backtest.
 - Features live in `src/retention/features.py`, shared with every later phase and the nightly run.
 
-### Phase 3: Offer effect model (`02`)
-- **Methods:** T-learner and X-learner (LightGBM, via EconML or CausalML), one effect estimate per offer type.
-- **Metrics:** Qini curve, area under the uplift curve, and error against the true effects.
-- **Side experiment:** the same model trained on the confounded campaign, to show the bias.
+### Phase 3: Offer effect model (`02`) · done
+- **Methods:** five uplift learners, written in `src/retention/uplift.py` rather than taken from EconML or CausalML (both would have forced numpy 2 or a source build): T-, X-, and DR-learners on LightGBM, a DR-learner with a ridge effect model on 16 situation flags, and a risk-scaled logit (churn risk, flags, offer, and offer-by-flag terms). Plus an acceptance model per offer.
+- **Metrics:** Qini curves on observed outcomes (scikit-uplift), then the true uplift held by each model's top fifth, from the answer key.
+- **Side experiment:** campaign 2's naive discount estimate (0.39 points) against its true effect on the recipients (0.89 points).
+- **Result:** with a 4% outcome, the gradient-boosted learners fit noise (1.2–1.3× in their top fifth); the risk-scaled logit reaches 1.7–1.9× on the test and 1.8–2.8× on tonight's batch, against a ceiling of about 4×, and is used downstream. Observed Qini curves can't separate the models; only the answer key can.
+- **Output:** `outputs/uplift_scores.parquet`: uplift and acceptance probability per offer for tonight's batch.
 
 ### Phase 4: Churn reasons from notes (`03`)
 - Sentence embeddings plus BERTopic, then an LLM names each topic.
@@ -147,6 +149,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 |---|---|---|
 | `data/00_generate_and_validate_data.ipynb` | Generates and validates the synthetic data; reuses cached care notes | ~35 s |
 | `01_churn_survival.ipynb` | Section 01: churn timing (Cox and gradient-boosted hazard), backtest, tonight's scores | ~25 s |
+| `02_offer_uplift.ipynb` | Section 02: uplift learners on the randomized test, campaign 2 bias, acceptance, tonight's uplift | ~2.5 min |
 
 Run from this folder. `outputs/` is not tracked; rerunning the notebooks regenerates it.
 
@@ -157,5 +160,5 @@ Still to install, each before the phase that needs it:
 | Package | Phase |
 |---|---|
 | `lifelines` | 2 (churn timing) · installed 2026-09-21 |
-| `econml` | 3 (offer effect) |
+| `scikit-uplift` | 3 (offer effect, metrics only) · installed 2026-09-21; `econml` skipped (needs numpy 2) |
 | `bertopic` (brings `umap-learn`, `hdbscan`) | 4 (churn reasons) |
