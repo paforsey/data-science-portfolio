@@ -13,3 +13,7 @@ case-studies/rate-plan-cannibalization/web/rate_plan_cannibalization.html
 
 # nbconvert intermediates used only to build web pages
 *.export.html
+
+# Customer retention agent: regenerated handoff tables and page build artifacts
+case-studies/customer-retention-agent/outputs/
+case-studies/customer-retention-agent/*.merged.ipynb

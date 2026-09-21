@@ -1,6 +1,8 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: planning (no code yet).
+Case Study 4. Status: Phase 1, data generator design ([data/generator_design.md](data/generator_design.md)).
+
+All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
 ## 1. The story
 
@@ -28,7 +30,9 @@ Case Study 4. Status: planning (no code yet).
 ```
 case-studies/customer-retention-agent/
   README.md
-  00_data_generator.ipynb
+  data/00_generate_and_validate_data.ipynb
+  data/generator_design.md
+  data/synthetic/               (generated tables, offer policy, cached care notes)
   01_churn_survival.ipynb
   02_offer_uplift.ipynb
   03_churn_reasons_nlp.ipynb
@@ -36,25 +40,27 @@ case-studies/customer-retention-agent/
   05_retention_agent.ipynb      (LangGraph)
   06_automation_monitoring.ipynb
   src/retention/                (reusable code the agent and nightly job import)
-  data/  outputs/  web/
+  outputs/                      (handoff tables between notebooks; not tracked)
+  web/
 ```
 
 **New for this study:** a small `src/` package. The agent and the nightly job need to import the models and tools, which notebooks alone can't provide.
+
+As in the rate-plan study, modeling notebooks load data through `load()`, which refuses the answer-key tables. Those load only through `load_answer_key()`, and only in cells that score a finished model or policy.
 
 ## 3. Phases
 
 ### Phase 0: Setup and decisions
 - Branch `customer-retention-agent` off `main`.
 - Settle the open decisions in section 5.
-- **Done when:** the folder skeleton exists and the decisions are recorded in this README.
+- **Done when:** the folder skeleton exists and the decisions are recorded in this README. *Done 2026-09-21.*
 
-### Phase 1: Synthetic data generator (`00`)
-- **Subscribers:** about 100k, with 24 months of monthly history. Fields include tenure, plan, monthly revenue per subscriber, data use, dropped calls, care contacts, contract end date, device age, bill shock, and exposure to competitor promotions.
+### Phase 1: Synthetic data generator (`data/00`)
+- **Design:** [data/generator_design.md](data/generator_design.md), reviewed before any code is written.
+- **Subscribers:** about 50k, with 24 months of monthly history. Fields include tenure, plan, monthly revenue per subscriber, data use, dropped calls, care contacts, contract end date, device age, bill shock, and exposure to competitor promotions.
 - **Hidden churn process:** a known formula that sets each subscriber's churn rate over time. It includes a hidden reason for leaving (price, network, device, service, relocation).
 - **Past retention campaign with random offer assignment:** needed to train the uplift model. Offers are none, discount, device upgrade, and data add-on. Effects vary by customer and include "sleeping dogs," customers the offer pushes toward leaving. A second campaign with non-random targeting gives a confounded dataset, which lets the study show why randomization matters.
-- **Care notes:** text written from each subscriber's hidden reason. Two options:
-  - LLM-written for a subset of about 5–10k notes.
-  - Templates plus LLM paraphrasing for the full set.
+- **Care notes:** gpt-4o-mini writes about 6,000 notes from each subscriber's hidden reason. The notes are cached in `data/synthetic/`, so the notebook reruns without an API key.
 - **Offer policy document:** eligibility, discount limits, contact frequency, do-not-contact rules, and fairness rules. This is the source the agent retrieves from.
 - **Done when:** saved tables, notes, and the policy document exist, plus a hidden answer key (true churn rates and true offer effects) used only for evaluation.
 
@@ -123,10 +129,24 @@ case-studies/customer-retention-agent/
 | Scope creep (multi-agent, web demo) | Build a single graph first. The web demo is a stretch goal |
 | Figures quoted as real | Label all results synthetic, as in the other studies |
 
-## 5. Decisions needed before Phase 1
+## 5. Decisions (settled 2026-09-21)
 
-1. **LLM provider.** Use gpt-4o-mini to match the site chat, or show a second provider?
-2. **Care notes.** LLM-written subset, or templates plus paraphrasing for everything?
-3. **Scale.** Is 100k subscribers over 24 months right, or smaller so notebooks run faster?
-4. **Agent depth.** A single graph (recommended first), with a supervisor and sub-agents as a later step?
-5. **Web demo.** Notebooks and case study page only, or also a static walkthrough of a nightly run with the approval screen?
+| Decision | Choice | Why |
+|---|---|---|
+| LLM provider | OpenAI gpt-4o-mini | Matches the site chat, and it's cheap enough for thousands of notes and drafts |
+| Care notes | LLM-written for a subset (about 6,000), cached | Realistic text for topic modeling at low cost; reruns need no API key |
+| Scale | About 50k subscribers over 24 months | Notebooks run in minutes, with enough events for survival and uplift models |
+| Agent depth | A single graph first | Easier to build, test, and explain. A supervisor with sub-agents can come later |
+| Web demo | Deferred | Notebooks and the case study page come first |
+
+## 6. Environment
+
+Notebooks use the Python 3.12 "base" kernel. Already installed there: numpy, pandas, scikit-learn, LightGBM, XGBoost, sentence-transformers, LangChain, LangGraph, Chroma, the OpenAI SDK, and PuLP.
+
+Still to install, each before the phase that needs it:
+
+| Package | Phase |
+|---|---|
+| `lifelines`, `scikit-survival` | 2 (churn timing) |
+| `econml` | 3 (offer effect) |
+| `bertopic` (brings `umap-learn`, `hdbscan`) | 4 (churn reasons) |
