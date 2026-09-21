@@ -1,6 +1,6 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: Phase 5 done (offer optimizer); Phase 6 (LangGraph agent) next.
+Case Study 4. Status: Phase 6 done (retention agent); Phase 7 (automation and monitoring) next.
 
 All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
@@ -91,7 +91,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - **Code:** `src/retention/policy.py` (the policy's hard rules) and `src/retention/optimizer.py` (`build_candidates`, `select_greedy`, `select_exact`, `plan_tonight`, the agent's tool).
 - **Output:** `outputs/tonight_plan.parquet`: 666 customers, 614 contacted and 52 held out.
 
-### Phase 6: LangGraph retention agent (`05`)
+### Phase 6: LangGraph retention agent (`05`) · done
 **Graph flow:**
 1. `load_batch`: tonight's scored subscribers.
 2. `select_under_budget`: optimizer tool.
@@ -113,6 +113,13 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - LLM judge scores
 - a hand-rated sample
 - cost and response time per run
+
+**As built** (`src/retention/agent.py`, `05_retention_agent.ipynb`):
+- Routing moved to code: an open support ticket goes to care follow-up (`route_customer` tool); the model only writes the message and the rationale. The first version let the model route from the notes and it withheld offers from 13 price-sensitive customers of 16 it escalated.
+- The opt-out line is appended in code: first-draft pass rate went from 46% to 97%.
+- Drafter and judge share one reading of the policy; the judge scores terms, tone, pressure, and privacy.
+- Result on a 40-customer batch: 37 offers, all passing (36 on the first draft), 3 routed to care; every planted violation caught; the careless edit held back at dispatch. $0.27 per 1,000 customers, about 4 minutes for a full night.
+- LLM responses are cached in `cache/llm_cache.sqlite` (thread-safe wrapper for the parallel branches), so reruns are free and reproducible; `cache/agent_run_log.json` keeps the live run's cost and time.
 
 ### Phase 7: Automation and monitoring (`06`)
 - A nightly entry point (`python -m retention.run_nightly`) scheduled with launchd or cron.
@@ -154,6 +161,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 | `02_offer_uplift.ipynb` | Section 02: uplift learners on the randomized test, campaign 2 bias, acceptance, tonight's uplift | ~2.5 min |
 | `03_churn_reasons_nlp.ipynb` | Section 03: note embeddings, BERTopic, LLM topic names (cached), validation, reasons and targeting | ~1.5 min |
 | `04_offer_optimizer.ipynb` | Section 04: eligibility, customer value, guardrails, policy comparison, budget sweep, tonight's plan | ~10 s |
+| `05_retention_agent.ipynb` | Section 05: LangGraph agent on a 40-customer batch, checks, stress test, human approval, cost | ~30 s cached; ~15 s of API calls live |
 
 Run from this folder. `outputs/` is not tracked; rerunning the notebooks regenerates it.
 
@@ -164,5 +172,6 @@ Still to install, each before the phase that needs it:
 | Package | Phase |
 |---|---|
 | `lifelines` | 2 (churn timing) · installed 2026-09-21 |
+| `langgraph-checkpoint-sqlite` | 6 (agent) · installed 2026-09-21 |
 | `scikit-uplift` | 3 (offer effect, metrics only) · installed 2026-09-21; `econml` skipped (needs numpy 2) |
 | `bertopic` (brings `umap-learn`, `hdbscan`) | 4 (churn reasons) · installed 2026-09-21. The base environment's TensorFlow is broken (protobuf 6), so `03` marks it unavailable before importing umap |

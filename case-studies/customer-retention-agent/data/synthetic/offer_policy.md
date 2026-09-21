@@ -34,6 +34,7 @@ Describe an offer only with these terms. Never add, round, or combine offers.
 - Never name a competitor.
 - Don't reference details the customer didn't share with us, such as usage patterns, unless they're on the bill.
 
-## Escalation
-- If the customer's notes show an unresolved service problem, route the account to a care follow-up instead of sending an offer.
-- If the notes show the customer is moving out of the coverage area, don't send an offer.
+## Escalation (hard)
+- If the account has an unresolved support ticket, route it to a care follow-up instead of sending an offer.
+- If the customer's contacts show a move out of the coverage area, don't send an offer.
+- A complaint about the bill or price is not a reason to withhold an offer: it is what the offers are for.

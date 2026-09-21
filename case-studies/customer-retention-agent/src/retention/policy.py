@@ -42,6 +42,18 @@ def eligible(rows, month):
     }, index = rows.index)
 
 
+OFFER_FACTS = {
+    'discount': ['$10', '6 months'],
+    'device': ['$200', '24-month'],
+    'data': ['unlimited data', '6 months'],
+}
+BANNED = {
+    'mentions churn or prediction': r'\b(churn|leave us|leaving us|thinking of leaving|might leave|at risk|risk score|predict)',
+    'pressure or deadline': r'\b(act now|hurry|today only|limited time|last chance|expires?|before it\'s gone|don\'t miss)\b',
+    'names a competitor': r'\b(verizon|at&t|t-mobile|sprint|us cellular|mint|visible|cricket)\b',
+}
+
+
 def check_message(text, channel = 'sms'):
     """Hard message rules: length and opt-out for SMS. Returns a list of problems, empty if none."""
 
@@ -51,5 +63,21 @@ def check_message(text, channel = 'sms'):
             problems.append(f'SMS is {len(text)} characters; the limit is {SMS_MAX_CHARACTERS}')
         if not text.rstrip().endswith(OPT_OUT):
             problems.append(f'SMS must end with "{OPT_OUT}"')
+
+    return problems
+
+
+def check_draft(text, offer, channel = 'sms'):
+    """Every hard rule a draft must meet: message rules, the offer's exact terms, and banned content."""
+
+    import re
+
+    problems = check_message(text, channel)
+    missing = [fact for fact in OFFER_FACTS[offer] if fact.lower() not in text.lower()]
+    if missing:
+        problems.append(f'offer terms missing: {", ".join(missing)}')
+    for rule, pattern in BANNED.items():
+        if re.search(pattern, text, flags = re.IGNORECASE):
+            problems.append(rule)
 
     return problems

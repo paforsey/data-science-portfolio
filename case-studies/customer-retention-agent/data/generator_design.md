@@ -184,8 +184,10 @@ are also checked in code by the agent's compliance step.
   "Reply STOP to opt out."
 - **Message standards:** state the offer terms exactly; no deadlines or pressure; never mention
   churn, risk scores, or predictions; no competitor names; nothing the customer didn't share.
-- **Escalation:** an unresolved service problem goes to a care follow-up, not an offer; a customer
-  moving out of the coverage area gets no offer.
+- **Escalation (hard):** an account with an unresolved support ticket goes to a care follow-up, not an
+  offer; a customer whose contacts show a move gets no offer; a bill or price complaint is not a reason
+  to withhold an offer. (Tightened in Phase 6: the first wording, "notes show an unresolved service
+  problem", led the agent to withhold offers from price-sensitive customers.)
 
 The nightly budget is set in Phase 5, not in the generator.
 
