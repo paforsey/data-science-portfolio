@@ -57,7 +57,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 
 ### Phase 1: Synthetic data generator (`data/00`)
 - **Design:** [data/generator_design.md](data/generator_design.md), reviewed before any code is written.
-- **Subscribers:** about 50k, with 24 months of monthly history. Fields include tenure, plan, monthly revenue per subscriber, data use, dropped calls, care contacts, contract end date, device age, bill shock, and exposure to competitor promotions.
+- **Accounts:** about 105k, with 24 months of monthly history. Fields include tenure, plan, monthly revenue per subscriber, data use, dropped calls, care contacts, contract end date, device age, bill shock, and exposure to competitor promotions.
 - **Hidden churn process:** a known formula that sets each subscriber's churn rate over time. It includes a hidden reason for leaving (price, network, device, service, relocation).
 - **Past retention campaign with random offer assignment:** needed to train the uplift model. Offers are none, discount, device upgrade, and data add-on. Effects vary by customer and include "sleeping dogs," customers the offer pushes toward leaving. A second campaign with non-random targeting gives a confounded dataset, which lets the study show why randomization matters.
 - **Care notes:** gpt-4o-mini writes about 6,000 notes from each subscriber's hidden reason. The notes are cached in `data/synthetic/`, so the notebook reruns without an API key.
@@ -135,7 +135,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 |---|---|---|
 | LLM provider | OpenAI gpt-4o-mini | Matches the site chat, and it's cheap enough for thousands of notes and drafts |
 | Care notes | LLM-written for a subset (about 6,000), cached | Realistic text for topic modeling at low cost; reruns need no API key |
-| Scale | About 50k subscribers over 24 months | Notebooks run in minutes, with enough events for survival and uplift models |
+| Scale | About 105k accounts over 24 months (first set at 50k) | Raised during generator tuning: at 50k the randomized test held too little signal to learn who responds. The generator still runs in about 10 seconds |
 | Agent depth | A single graph first | Easier to build, test, and explain. A supervisor with sub-agents can come later |
 | Web demo | Deferred | Notebooks and the case study page come first |
 
