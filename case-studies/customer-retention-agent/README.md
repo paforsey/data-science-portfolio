@@ -1,6 +1,6 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: Phase 7 done (automation and monitoring); Phase 8 (write-up and publishing) next.
+Case Study 4. Status: Phase 8 in progress (research notebook page built; homepage card and knowledge base doc next).
 
 All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
@@ -40,8 +40,13 @@ case-studies/customer-retention-agent/
   05_retention_agent.ipynb      (LangGraph)
   06_automation_monitoring.ipynb
   src/retention/                (reusable code the agent and nightly job import)
+  tests/                        (offline pytest suite; no data files, no API calls)
+  ops/                          (launchd schedule; provided, not installed)
+  cache/                        (LLM response cache and topic-name cache; tracked)
   outputs/                      (handoff tables between notebooks; not tracked)
   web/
+    notebook_config.py          (research-notebook page settings)
+    customer_retention_agent.html   (built page; not tracked)
 ```
 
 **New for this study:** a small `src/` package. The agent and the nightly job need to import the models and tools, which notebooks alone can't provide.
@@ -129,9 +134,11 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - **Regression tests:** `tests/`, 16 offline tests with stub language models (`python -m pytest tests`).
 - **Not done:** LangSmith tracing (optional).
 
-### Phase 8: Write-up and publishing
-- This README, case study page in `web/`, and a built notebook page (same process as the rate-plan study).
-- Later: a knowledge base document for the site chat, once the figures are final.
+### Phase 8: Write-up and publishing · in progress
+- **Research notebook page:** `web/customer_retention_agent.html`, built from notebooks 01–06 the same way as the rate-plan study (section 7). Not tracked; rerun the build steps to regenerate it.
+- **Homepage card:** still to do — replace the lorem ipsum placeholder on paforsey.datafxlab.com with real copy and the headline number (7x customers kept, uplift vs. risk-first).
+- **Not done:** a business-facing case study page, executive presentation, and analytical plan, matching the other three studies. Scoped out for now; the case study's own README only commits to the research notebook page and the homepage card.
+- **Later:** a knowledge base document for the site chat, once the homepage card is live.
 
 ## 4. Risks and mitigations
 
@@ -167,6 +174,29 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 | `06_automation_monitoring.ipynb` | Section 06: nightly job and resume, tests, drift, calibration and retraining, holdout, schedule | ~2.5 min |
 
 Run from this folder. `outputs/` is not tracked; rerunning the notebooks regenerates it.
+
+## 7. Web page
+
+Notebooks 01–06 build into one research-notebook page with a tab per section (the data generator,
+00, is not part of the merge, same as the rate-plan study). Execute all six, then from this folder:
+
+```bash
+python3 ../../tools/notebook-restyle/merge_notebooks.py customer_retention_agent.merged.ipynb \
+    01_churn_survival.ipynb 02_offer_uplift.ipynb 03_churn_reasons_nlp.ipynb \
+    04_offer_optimizer.ipynb 05_retention_agent.ipynb 06_automation_monitoring.ipynb
+jupyter nbconvert --to html customer_retention_agent.merged.ipynb --output customer_retention_agent.export
+python3 ../../tools/notebook-restyle/restyle_notebook.py web/notebook_config.py \
+    customer_retention_agent.export.html web/customer_retention_agent.html
+rm customer_retention_agent.export.html
+```
+
+The merged notebook and the built page are build artifacts and are not tracked; the nbconvert
+export is only an intermediate step and is deleted after the page is built. Headline figures and
+key decisions on the page live in `web/notebook_config.py`.
+
+`retention.agent.SentenceEmbeddings` (used by sections 03 and 05) quiets the sentence-transformers
+and transformers loggers before loading the local embedding model; without it, the model's load
+report leaks into the notebook's saved output.
 
 Notebooks use the Python 3.12 "base" kernel. Already installed there: numpy, pandas, scikit-learn, LightGBM, XGBoost, sentence-transformers, LangChain, LangGraph, Chroma, the OpenAI SDK, and PuLP.
 
