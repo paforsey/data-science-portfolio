@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs the retention agent's nightly job at 2:00 a.m. Not installed by the study. To install:
+    cp ops/com.datafxlab.retention-nightly.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.datafxlab.retention-nightly.plist
+  WorkingDirectory must point at the case study folder; the log goes to outputs/nightly/launchd.log.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.datafxlab.retention-nightly</string>
+    <key>WorkingDirectory</key>
+    <string>/Users/paforsey/Inbox/Projects/data-science-portfolio/case-studies/customer-retention-agent</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/anaconda3/bin/python</string>
+        <string>-m</string>
+        <string>retention.run_nightly</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONPATH</key>
+        <string>src</string>
+    </dict>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>2</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>outputs/nightly/launchd.log</string>
+    <key>StandardErrorPath</key>
+    <string>outputs/nightly/launchd.log</string>
+</dict>
+</plist>

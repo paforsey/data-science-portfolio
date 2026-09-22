@@ -312,6 +312,19 @@ def build_graph(drafter, judge, tools, checkpointer, outbox_path):
 
 # ---------------------------------------------------------------- tools
 
+OFFER_NAMES = {'discount': 'discount', 'device': 'device credit', 'data': 'data upgrade'}
+
+
+def customer_brief(row):
+    """What the drafter is told about one planned customer: the offer, its exact terms, and why they were chosen."""
+
+    reason = row.reason if isinstance(row.reason, str) else 'no clear reason'
+    return {'account_id': int(row.account_id), 'offer': row.offer, 'offer_name': OFFER_NAMES[row.offer],
+            'offer_terms': policy.OFFER_TERMS[row.offer],
+            'why': (f'estimated 90-day churn risk {row.p_churn_90:.1%}; this offer is estimated to lower it by {row.uplift * 100:.1f} points; '
+                    f'rep codes point to {reason}; 24-month value about ${row.value:,.0f}')}
+
+
 def make_tools(plan_customers, plan_summary, note_store, policy_store, snapshot, month):
     """LangChain tools the graph calls. Every number and rule comes from here, not from the model."""
 

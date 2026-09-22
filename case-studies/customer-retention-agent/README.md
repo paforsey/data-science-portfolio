@@ -1,6 +1,6 @@
 # AI Customer Retention Agent — Project Plan
 
-Case Study 4. Status: Phase 6 done (retention agent); Phase 7 (automation and monitoring) next.
+Case Study 4. Status: Phase 7 done (automation and monitoring); Phase 8 (write-up and publishing) next.
 
 All data is synthetic. Plan names, prices, offers, and results are illustrative.
 
@@ -121,11 +121,13 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - Result on a 40-customer batch: 37 offers, all passing (36 on the first draft), 3 routed to care; every planted violation caught; the careless edit held back at dispatch. $0.27 per 1,000 customers, about 4 minutes for a full night.
 - LLM responses are cached in `cache/llm_cache.sqlite` (thread-safe wrapper for the parallel branches), so reruns are free and reproducible; `cache/agent_run_log.json` keeps the live run's cost and time.
 
-### Phase 7: Automation and monitoring (`06`)
-- A nightly entry point (`python -m retention.run_nightly`) scheduled with launchd or cron.
-- **Drift checks:** population stability index (PSI) on model inputs, and tracking of predicted versus actual churn. Drift above a threshold triggers retraining.
-- **Regression tests:** a pytest suite for the agent that runs fixed cases through the graph.
-- **Optional:** LangSmith tracing.
+### Phase 7: Automation and monitoring (`06`) · done
+- **Nightly job:** `PYTHONPATH=src python -m retention.run_nightly --month 24` checks drift and calibration, retrains if needed, plans the night (`src/retention/pipeline.py`, sections 01–04 as functions), and runs the agent to human approval; `--resume decisions.json` finishes it. Output in `outputs/nightly/month-<N>/`.
+- **Schedule:** `ops/com.datafxlab.retention-nightly.plist` (launchd, 2:00 a.m.) and a cron line in the notebook; provided, not installed.
+- **Drift checks:** PSI on the churn model's inputs (`src/retention/monitoring.py`). Against the training window it alarms every month (the window held a price increase and a promotion); month over month it caught only the real change, the month-27 promotion (PSI 6.6), and retrained once. Retraining added little: the model had already seen a promotion surge.
+- **Holdout:** one night's 10% holdout measures the plan's effect as +2.2 points (−2.8 to +7.3) against a true +3.0 and a forecast +3.9; 8 nights give 80% power.
+- **Regression tests:** `tests/`, 16 offline tests with stub language models (`python -m pytest tests`).
+- **Not done:** LangSmith tracing (optional).
 
 ### Phase 8: Write-up and publishing
 - This README, case study page in `web/`, and a built notebook page (same process as the rate-plan study).
@@ -162,6 +164,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 | `03_churn_reasons_nlp.ipynb` | Section 03: note embeddings, BERTopic, LLM topic names (cached), validation, reasons and targeting | ~1.5 min |
 | `04_offer_optimizer.ipynb` | Section 04: eligibility, customer value, guardrails, policy comparison, budget sweep, tonight's plan | ~10 s |
 | `05_retention_agent.ipynb` | Section 05: LangGraph agent on a 40-customer batch, checks, stress test, human approval, cost | ~30 s cached; ~15 s of API calls live |
+| `06_automation_monitoring.ipynb` | Section 06: nightly job and resume, tests, drift, calibration and retraining, holdout, schedule | ~2.5 min |
 
 Run from this folder. `outputs/` is not tracked; rerunning the notebooks regenerates it.
 
