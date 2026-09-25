@@ -55,7 +55,7 @@ STATS = [
     ("route", "7×", "more customers kept, uplift vs risk-first targeting"),
     ("layers", "5", "uplift learners compared against a withheld answer key"),
     ("chat", "97%", "agent drafts passing every check on the first try"),
-    ("dollar", "$6,042", "net value from a $40,000 nightly budget"),
+    ("banknote", "$6,042", "net value from a $40,000 nightly budget"),
 ]
 
 # (title, detail, section index) — index into the page's sections, in notebook order.

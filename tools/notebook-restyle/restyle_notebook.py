@@ -42,6 +42,7 @@ HERE = Path(__file__).resolve().parent
 ICONS = {
     "mail": '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
     "dollar": '<path d="M12 2v20M17 6.5c-.8-1.5-2.7-2.5-5-2.5-2.8 0-5 1.6-5 3.8 0 5.2 10 2.7 10 8.2 0 2.3-2.2 4-5 4-2.4 0-4.4-1.1-5.2-2.8"/>',
+    "banknote": '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
     "bars": '<path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/>',
     "flask": '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.3 14h9.4"/>',
     "check": '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
