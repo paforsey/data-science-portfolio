@@ -22,3 +22,6 @@ case-studies/customer-retention-agent/web/customer_retention_agent.html
 # International roaming: page build artifact
 case-studies/international-roaming/*.merged.ipynb
 .pytest_cache/
+
+# Subscription retraining agent: run folders (model files, run logs)
+selected-work/outputs/subscription_agent/
