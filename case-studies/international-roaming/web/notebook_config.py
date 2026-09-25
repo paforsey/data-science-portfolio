@@ -1,12 +1,16 @@
-"""Research-notebook page settings for international_roaming.ipynb.
+"""Research-notebook page settings for the four international roaming notebooks.
 
-Build from case-studies/international-roaming after re-exporting the notebook:
+The study is split across 01_state_model.ipynb through 04_segmentation.ipynb, merged into one
+page (the data generator, data/00, is not part of the merge). Execute all four notebooks, then
+build from case-studies/international-roaming:
 
-    jupyter nbconvert --to html international_roaming.ipynb --output international_roaming.export
+    python3 ../../tools/notebook-restyle/merge_notebooks.py international_roaming.merged.ipynb \
+        01_state_model.ipynb 02_magnitude_model.ipynb 03_simulation.ipynb 04_segmentation.ipynb
+    jupyter nbconvert --to html international_roaming.merged.ipynb --output international_roaming.export
     python3 ../../tools/notebook-restyle/restyle_notebook.py web/notebook_config.py \
         international_roaming.export.html web/international_roaming.html
 
-This notebook nests four models as h1 with their steps as h2, so SECTION_LEVEL puts the
+The merged notebook nests four models as h1 with their steps as h2, so SECTION_LEVEL puts the
 models in the navigator and their steps in the contents. The headline figures are quoted
 from the study; update them if a re-run changes the results.
 """
