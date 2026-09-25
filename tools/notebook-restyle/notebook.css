@@ -139,6 +139,7 @@ a { color: var(--accent); }
 .disclosure b { display: block; margin-bottom: 0.2rem; }
 .disclosure ul { margin: 0; padding-left: 1.1rem; }
 .disclosure p { margin: 0; line-height: 1.55; }
+.disclosure ul + p { margin-top: 0.6rem; }
 .disclosure.info { border-color: var(--accent-line); background: var(--accent-soft); }
 .disclosure.info .icon { stroke: var(--accent); }
 

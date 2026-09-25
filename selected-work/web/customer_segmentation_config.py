@@ -20,7 +20,7 @@ CRUMBS = [
     ("Selected Work", "/#selected-work"),
     ("Research Notebook", None),
 ]
-BACK = ("Back to selected work", "/#selected-work")
+BACK = None
 KERNEL = "Python (base) · 3.12"  # the notebook's kernelspec display name and language version
 
 # The Abstract cell's bullets become the summary notice under the header, so the page opens

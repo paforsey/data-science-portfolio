@@ -23,7 +23,7 @@ CRUMBS = [
     ("Selected Work", "/#selected-work"),
     ("Research Notebook", None),
 ]
-BACK = ("Back to selected work", "/#selected-work")
+BACK = None
 KERNEL = "Python (TTS Research) · 3.11"  # the notebook's kernelspec display name and language version
 
 # The "Context, for anyone starting here." paragraph becomes the notice.

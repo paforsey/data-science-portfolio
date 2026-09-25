@@ -442,9 +442,15 @@ def build(src_html, config):
     notice_class = "disclosure" + (f' {notice["variant"]}' if notice.get("variant") else "")
     leftover = None
     if notice["source"] == "next-cell-list":
-        items = "".join(str(li) for li in cells[1].select_one(".jp-RenderedMarkdown").find_all("li"))
-        assert items, "expected the notice bullets in the second cell"
-        notice_body = f"<ul>{items}</ul>"
+        notice_cell = cells[1].select_one(".jp-RenderedMarkdown")
+        if len(notice_cell.find_all(["ul", "ol"], recursive=False)) > 1:
+            # Several lists under their own labels: keep the labels, drop the heading.
+            notice_cell.find(["h1", "h2"]).decompose()
+            notice_body = inner(notice_cell).strip()
+        else:
+            items = "".join(str(li) for li in notice_cell.find_all("li"))
+            assert items, "expected the notice bullets in the second cell"
+            notice_body = f"<ul>{items}</ul>"
         first_body_cell = 2
     elif notice["source"] in ("title-paragraph", "next-cell-paragraph"):
         # The labelled paragraph sits either in the title cell or in the one after it.
@@ -668,6 +674,13 @@ def build(src_html, config):
             )
         tabs = '<nav class="nb-nav" aria-label="Sections">' + "".join(buttons) + "</nav>"
 
+    # BACK = None leaves the top bar without a back button.
+    back_cfg = getattr(config, "BACK", None)
+    back = (
+        f'<a class="btn btn-primary" href="{html.escape(back_cfg[1], quote=True)}">{html.escape(back_cfg[0])}</a>'
+        if back_cfg else ""
+    )
+
     css = (HERE / "notebook.css").read_text()
     template = (HERE / "notebook_template.html").read_text()
     replacements = {
@@ -677,8 +690,7 @@ def build(src_html, config):
         "{{DESCRIPTION}}": html.escape(config.DESCRIPTION, quote=True),
         "{{CSS}}": css,
         "{{CRUMBS}}": crumbs,
-        "{{BACK_HREF}}": html.escape(config.BACK[1], quote=True),
-        "{{BACK_LABEL}}": html.escape(config.BACK[0]),
+        "{{BACK}}": back,
         "{{KERNEL}}": html.escape(config.KERNEL),
         "{{EYEBROW}}": config.EYEBROW,
         "{{STATS}}": stats,
