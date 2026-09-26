@@ -19,8 +19,8 @@ DESCRIPTION = (
 )
 EYEBROW = "AI Narration &middot; Text-to-Speech"
 CRUMBS = [
-    ("Portfolio", "/"),
     ("Selected Work", "/#selected-work"),
+    ("Presentation Narration", None),
     ("Research Notebook", None),
 ]
 BACK = None

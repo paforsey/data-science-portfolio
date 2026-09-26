@@ -7,7 +7,7 @@
 <title>Research Notebook · RAG-Enhanced Coaching</title>
 <meta name="description" content="Research notebook for a retrieval-augmented financial coach: a Chroma knowledge base, question classification and profile-aware responses.">
 <link rel="icon" href="/favicon.ico">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@600&display=swap">
 <style>
 :root {
   --bg: #f6f7f9; --surface: #ffffff; --ink: #0f1b2d; --ink-soft: #334155; --muted: #5b6574; --line: #e4e7ec;
@@ -50,12 +50,12 @@ a { color: var(--accent); }
 .nb-top { position: sticky; top: 0; z-index: 30; background: var(--surface); border-bottom: 1px solid var(--line); }
 .nb-top-row { display: flex; align-items: center; gap: 1.5rem; min-height: 52px; padding-inline: 1.25rem; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; align-items: center; gap: 0.7rem; color: var(--ink); text-decoration: none; }
-.brand-mark { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.75rem; font-weight: 700; }
+.brand-mark { display: grid; place-items: center; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); font-family: 'IBM Plex Serif', Georgia, serif; font-weight: 600; color: var(--accent); font-size: 0.78rem; text-decoration: none; flex: none; }
 .brand-name { font-weight: 600; }
-.crumbs { display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 0; font-size: 0.82rem; color: var(--muted); white-space: nowrap; overflow: hidden; }
-.crumbs a { text-decoration: none; }
-.crumbs a:hover { text-decoration: underline; }
-.crumbs b { font-weight: 500; color: var(--ink); }
+.crumbs { display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 0; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.crumbs a { color: inherit; text-decoration: none; }
+.crumbs a:hover { color: var(--accent); }
+.crumbs b { font-weight: 700; color: var(--accent); }
 .nb-toolbar { display: flex; align-items: center; gap: 0.7rem; min-height: 44px; padding-inline: 1.25rem; background: var(--bg); }
 .tool { min-height: 32px; padding: 0 0.8rem; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); color: var(--ink-soft); font: inherit; font-size: 0.82rem; cursor: pointer; }
 .tool:hover { border-color: var(--accent-line); color: var(--accent); }
@@ -148,6 +148,7 @@ a { color: var(--accent); }
 .disclosure { display: flex; gap: 0.8rem; margin-top: 1rem; padding: 0.8rem 1rem; border: 1px solid var(--red-line); border-radius: 6px; font-size: 0.84rem; color: var(--ink-soft); }
 .disclosure .icon { stroke: var(--orange); }
 .disclosure b { display: block; margin-bottom: 0.2rem; }
+.disclosure li b { display: inline; margin: 0; }
 .disclosure ul { margin: 0; padding-left: 1.1rem; }
 .disclosure p { margin: 0; line-height: 1.55; }
 .disclosure ul + p { margin-top: 0.6rem; }
@@ -262,8 +263,8 @@ h3:hover .anchor-link { opacity: 1; }
 
 <header class="nb-top">
   <div class="nb-top-row">
-    <a class="brand" href="/"><span class="brand-mark">PF</span><span class="brand-name">Research Notebook</span></a>
-    <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Portfolio</a><span aria-hidden="true">/</span><a href="/#selected-work">Selected Work</a><span aria-hidden="true">/</span><b>Research Notebook</b></nav>
+    <a class="brand-mark" href="/" aria-label="Philip Forsey home">PF</a>
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="/#selected-work">Selected Work</a><span aria-hidden="true">/</span><span>RAG Coaching</span><span aria-hidden="true">/</span><b>Research Notebook</b></nav>
     
   </div>
   <div class="nb-toolbar">

@@ -16,8 +16,8 @@ DESCRIPTION = (
 )
 EYEBROW = "Clustering &middot; Customer Segmentation"
 CRUMBS = [
-    ("Portfolio", "/"),
     ("Selected Work", "/#selected-work"),
+    ("Customer Segmentation", None),
     ("Research Notebook", None),
 ]
 BACK = None

@@ -16,8 +16,8 @@ DESCRIPTION = (
 )
 EYEBROW = "AI Financial Coaching &middot; Retrieval-Augmented Generation"
 CRUMBS = [
-    ("Portfolio", "/"),
     ("Selected Work", "/#selected-work"),
+    ("RAG Coaching", None),
     ("Research Notebook", None),
 ]
 BACK = None

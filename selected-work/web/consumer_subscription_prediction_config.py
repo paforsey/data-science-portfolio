@@ -16,8 +16,8 @@ DESCRIPTION = (
 )
 EYEBROW = "Classification &middot; Agentic Retraining"
 CRUMBS = [
-    ("Portfolio", "/"),
     ("Selected Work", "/#selected-work"),
+    ("Subscription Prediction", None),
     ("Research Notebook", None),
 ]
 BACK = None

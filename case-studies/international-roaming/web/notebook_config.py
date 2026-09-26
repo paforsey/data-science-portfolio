@@ -21,11 +21,11 @@ DESCRIPTION = (
 )
 EYEBROW = "ML Research &middot; International Roaming Pricing"
 CRUMBS = [
-    ("Portfolio", "/"),
+    ("Case Studies", "/#case-studies"),
     ("International Roaming", "data-science-lifecycle.html"),
     ("Research Notebook", None),
 ]
-BACK = ("Back to case study", "data-science-lifecycle.html")
+BACK = None
 KERNEL = "Python 3 (ipykernel) · 3.9"  # the notebook's kernelspec display name and language version
 
 # The second cell's bullets are the disclosure.

@@ -17,11 +17,11 @@ DESCRIPTION = (
 )
 EYEBROW = "Experimental Design &middot; Direct Mail Testing"
 CRUMBS = [
-    ("Portfolio", "/"),
+    ("Case Studies", "/#case-studies"),
     ("Direct Mail Acquisition", "data-science-lifecycle.html"),
     ("Research Notebook", None),
 ]
-BACK = ("Back to case study", "data-science-lifecycle.html")
+BACK = None
 KERNEL = "Python (base) · 3.12"  # the notebook's kernelspec display name and language version
 
 # The second cell's bullets are the data disclosure.

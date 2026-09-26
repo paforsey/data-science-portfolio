@@ -16,8 +16,8 @@ DESCRIPTION = (
 )
 EYEBROW = "Model Comparison &middot; Credit Risk"
 CRUMBS = [
-    ("Portfolio", "/"),
     ("Selected Work", "/#selected-work"),
+    ("Credit Risk", None),
     ("Research Notebook", None),
 ]
 BACK = None

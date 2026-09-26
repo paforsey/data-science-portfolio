@@ -16,8 +16,8 @@ DESCRIPTION = (
 )
 EYEBROW = "Regression &middot; Regularization Methods"
 CRUMBS = [
-    ("Portfolio", "/"),
     ("Selected Work", "/#selected-work"),
+    ("Regularized Regression", None),
     ("Research Notebook", None),
 ]
 BACK = None

@@ -23,11 +23,11 @@ DESCRIPTION = (
 )
 EYEBROW = "ML Research &middot; Customer Retention"
 CRUMBS = [
-    ("Portfolio", "/"),
-    ("AI Customer Retention Agent", None),
+    ("Case Studies", "/#case-studies"),
+    ("Retention Agent", "data-science-lifecycle.html"),
     ("Research Notebook", None),
 ]
-BACK = ("Back to portfolio", "/")
+BACK = None
 KERNEL = "Python 3 (ipykernel) · 3.12"
 
 # The second cell's bullets are the disclosure.

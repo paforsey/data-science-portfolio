@@ -648,9 +648,12 @@ def build(src_html, config):
         f'<li><a href="{href}" target="_blank" rel="noopener">{icon("link")}{html.escape(name)}</a></li>'
         for name, href in config.RELATED
     )
+    # The last crumb is the current page; an earlier crumb without a link is plain text.
     crumbs = '<span aria-hidden="true">/</span>'.join(
-        f'<a href="{html.escape(href, quote=True)}">{html.escape(label)}</a>' if href else f"<b>{html.escape(label)}</b>"
-        for label, href in config.CRUMBS
+        f'<a href="{html.escape(href, quote=True)}">{html.escape(label)}</a>' if href
+        else f"<b>{html.escape(label)}</b>" if i == len(config.CRUMBS) - 1
+        else f"<span>{html.escape(label)}</span>"
+        for i, (label, href) in enumerate(config.CRUMBS)
     )
 
     tabs = ""
