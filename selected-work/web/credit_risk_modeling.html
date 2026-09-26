@@ -288,35 +288,7 @@ h3:hover .anchor-link { opacity: 1; }
       <h1>Credit Risk Modeling</h1>
       <p class="nb-subtitle">An empirical evaluation of logistic regression, random forest, SVM, and XGBoost models</p>
       <div class="stats"><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/></svg><div><b>150,000</b><span>LendingClub loans, split by date</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/></svg><div><b>3</b><span>complex models against one baseline</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.3 14h9.4"/></svg><div><b>p &gt; 0.45</b><span>no model beats the baseline</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div><b>0.1667</b><span>baseline Brier after recalibration</span></div></div></div>
-      <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Abstract</b><p><strong>Study Design &amp; Methodology</strong></p>
-<ul>
-<li>Developed predictive models for loan default using LendingClub data</li>
-<li>Compared simple vs complex modeling approaches</li>
-<li>Models evaluated Baseline Logistic Regression, XGBoost, Random Forest, Support Vector Machine (SVM)</li>
-<li>Goal to determine if added complexity materially improves discrimination and/or calibration</li>
-<li>Applied time-based training/test split to reflect real-world deployment</li>
-<li>Trained on historical loans, tested on newer loans</li>
-<li>Evaluation metrics AUC (model discrimination), KS Statistic (class separation strength), Decile Default Rates (risk ranking effectiveness), Brier Score/Calibration Curves (probability accuracy)</li>
-<li>AUC provides a threshold-independent measure of model discrimination and evaluates ranking performance without distortion from class imbalance</li>
-<li>Differences in model performance evaluated using the DeLong test for statistical significance of AUC</li>
-<li>Tested whether calibration differences were a genuine model property or a fixable modeling-choice artifact, via post-hoc recalibration (Platt scaling)</li>
-</ul>
-<p><strong>Key Results</strong></p>
-<ul>
-<li>Increasing model complexity did not improve discrimination: Random Forest, XGBoost, and SVM all track the baseline closely in AUC/KS, with none reaching statistical significance over the baseline (DeLong test, p &gt; 0.45)</li>
-<li>The baseline initially appears worse calibrated than XGBoost/Random Forest (Brier 0.2309 vs 0.1664/0.1672), but this gap is entirely an artifact of <code>class_weight='balanced'</code>, not a limitation of the linear model</li>
-<li>A simple post-hoc recalibration (Platt scaling) closes the gap completely (Brier 0.2309 to 0.1667) with no change to AUC, putting the baseline on par with XGBoost and Random Forest on both criteria</li>
-<li>LendingClub grade system outperformed all models on discrimination, and is the only statistically significant comparison</li>
-<li>The grade advantage is more plausibly explained by access to third-party/non-traditional credit data used in their proprietary underwriting than by superior modeling technique</li>
-</ul>
-<p><strong>Interpretation &amp; Implications</strong></p>
-<ul>
-<li>Complexity delivered no genuine advantage in this study, on discrimination or on calibration, once the baseline is properly recalibrated</li>
-<li>Apparent calibration differences between models can reflect a fixable modeling choice rather than an inherent property of model complexity; recalibration should be tested before concluding otherwise</li>
-<li>Feature quality drives discrimination more than model choice does; a cheap post-hoc step, not added complexity, drives calibration</li>
-<li>A recalibrated logistic baseline is competitive on both ranking-based and probability-dependent decisions, removing the need to trade interpretability for calibration</li>
-<li>LendingClub's own grade outperforming every model built here points to feature access, not model sophistication, as the more promising lever for closing the remaining gap</li>
-</ul></div></div>
+      <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Abstract</b><ul><li>Predicts loan default on 150,000 LendingClub loans, training on loans issued before 2016 and testing on loans from 2016 on</li><li>Benchmarks XGBoost, random forest and SVM against a regularized logistic regression baseline</li><li>Judges the models on discrimination (AUC, KS, decile default rates) and on calibration (Brier score, calibration curves)</li><li>No complex model beat the baseline on discrimination: test AUCs of 0.6521 to 0.6537 against 0.6509, none significant (DeLong test, p &gt; 0.45)</li><li>The baseline first looked worse calibrated (Brier 0.2309 against 0.1664 for XGBoost), an artifact of <code>class_weight='balanced'</code></li><li>Platt scaling closed that gap (Brier 0.1667) without changing AUC</li><li>LendingClub's own grades beat every model (AUC 0.674), the only significant difference, most plausibly because of third-party credit data used in its underwriting</li><li><b><u>Recalibrated logistic regression selected</u></b>: as accurate as the complex models on ranking and calibration, and interpretable</li></ul></div></div>
     </header>
 <section class="nb-section" id="1.0-Introduction" data-section="1"><h2 class="section-head"><span class="section-num">01</span>Introduction</h2>
 <div class="md"><p><strong>Why does this study matter?</strong></p>

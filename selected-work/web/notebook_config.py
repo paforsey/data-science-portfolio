@@ -23,9 +23,9 @@ CRUMBS = [
 BACK = None
 KERNEL = "Python (base) · 3.12"  # the notebook's kernelspec display name and language version
 
-# The title cell's "Context, for anyone starting here." paragraph becomes the notice.
-# The header block is its own cell now; the Context paragraph opens the cell after it.
-NOTICE = {"source": "next-cell-paragraph", "label": "Context", "title": "Context", "icon": "info", "variant": "info"}
+# The Abstract cell's bullets become the summary notice under the header. The Context
+# paragraph and design notes that follow it open the Overview section.
+NOTICE = {"source": "next-cell-list", "title": "Abstract", "icon": "info", "variant": "info"}
 
 TIDY_MARKDOWN = True
 WRAP_TEXT_OUTPUT = True  # the coach's responses print as prose, one paragraph per line

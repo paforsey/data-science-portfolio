@@ -150,6 +150,7 @@ a { color: var(--accent); }
 .disclosure b { display: block; margin-bottom: 0.2rem; }
 .disclosure ul { margin: 0; padding-left: 1.1rem; }
 .disclosure p { margin: 0; line-height: 1.55; }
+.disclosure ul + p { margin-top: 0.6rem; }
 .disclosure.info { border-color: var(--accent-line); background: var(--accent-soft); }
 .disclosure.info .icon { stroke: var(--accent); }
 
@@ -263,7 +264,7 @@ h3:hover .anchor-link { opacity: 1; }
   <div class="nb-top-row">
     <a class="brand" href="/"><span class="brand-mark">PF</span><span class="brand-name">Research Notebook</span></a>
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Portfolio</a><span aria-hidden="true">/</span><a href="/#selected-work">Selected Work</a><span aria-hidden="true">/</span><b>Research Notebook</b></nav>
-
+    
   </div>
   <div class="nb-toolbar">
     <button type="button" class="tool" id="toggleCode" aria-pressed="false">Hide code</button>
@@ -287,10 +288,11 @@ h3:hover .anchor-link { opacity: 1; }
       <h1>RAG-Enhanced Coaching</h1>
       <p class="nb-subtitle">Extends the AI financial coaching system so it can ground its recommendations in a curated collection of financial-education content, not just the user&#x27;s own numbers.</p>
       <div class="stats"><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg><div><b>2</b><span>knowledge domains seeded</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/></svg><div><b>24</b><span>chunks, one per subsection</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-4 5-8 6"/></svg><div><b>4</b><span>question paths after classification</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><div><b>250</b><span>word cap per response</span></div></div></div>
-      <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Context</b><p>This notebook is one piece of a larger AI financial-coaching system; the profile analytics behind it (persona clustering, behavioral scoring, spending forecasts, benchmarking) are produced upstream and simply consumed here as a profile dict. What this notebook adds is the retrieval layer: a small knowledge base of financial-education articles, embedded into a vector store, that the coach searches before answering a question. Combining that retrieved context with the user's own financial profile lets the coach give advice that is both grounded in source material and specific to the person asking.</p></div></div>
+      <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Abstract</b><ul><li>Adds a retrieval layer to an AI financial coach, so its answers draw on curated financial-education content as well as the user's own profile</li><li>The knowledge base covers two topics, emergency funds and debt reduction, split into 24 chunks (one per subsection) in a single Chroma collection</li><li>Every question is first classified into one of four paths: two knowledge-base topics, other finance, or not finance</li><li>Knowledge-base questions retrieve context before the answer is written; other finance questions fall back to the model's general knowledge; non-finance questions are declined</li><li>The user's financial profile shapes every answer, whichever path is taken</li><li>In the worked examples, grounded answers quote the knowledge base's specifics (a $500 to $1,000 starter emergency fund; snowball versus avalanche repayment), and the off-topic question is declined</li></ul></div></div>
     </header>
 <section class="nb-section" id="overview" data-section="1"><h2 class="section-head"><span class="section-num">00</span>Overview</h2>
-<div class="md"><p class="md-label">Design Notes</p>
+<div class="md"><p><strong>Context, for anyone starting here.</strong> This notebook is one piece of a larger AI financial-coaching system; the profile analytics behind it (persona clustering, behavioral scoring, spending forecasts, benchmarking) are produced upstream and simply consumed here as a profile dict. What this notebook adds is the retrieval layer: a small knowledge base of financial-education articles, embedded into a vector store, that the coach searches before answering a question. Combining that retrieved context with the user's own financial profile lets the coach give advice that is both grounded in source material and specific to the person asking.</p>
+<p class="md-label">Design Notes</p>
 <ol>
 <li>Two knowledge domains are seeded to start: emergency funds and debt reduction<ul>
 <li>Both are common early-stage coaching topics, and both have a natural progression (starter fund up through one, three, and six months of expenses; smallest-balance-first versus highest-interest-first repayment) that benefits from being grounded in a fixed reference rather than left to the model's general knowledge</li>
