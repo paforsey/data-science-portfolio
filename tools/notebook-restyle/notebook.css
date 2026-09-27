@@ -64,7 +64,9 @@ a { color: var(--accent); }
 .nav-tab.is-current span { color: var(--accent); }
 .nb-section[hidden] { display: none; }
 .toc a[hidden] { display: none; }
-.nav-tab.is-file { flex-direction: row; align-items: center; gap: 0.5rem; }
+/* Icon above the label, like the numbered tabs. */
+.nav-tab.is-file { align-items: flex-start; }
+.nav-tab.is-file .tab-icon { margin-bottom: 0.25rem; }
 .nav-tab .tab-icon { width: 1.05rem; height: 1.05rem; stroke: currentColor; }
 
 /* ---------- source files shown beside the notebook ---------- */
