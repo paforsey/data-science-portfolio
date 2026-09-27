@@ -26,6 +26,9 @@ CRUMBS = [
 BACK = None
 KERNEL = "Python (TTS Research) · 3.11"  # the notebook's kernelspec display name and language version
 
+# The cell after the title (a heading and one paragraph) shows as its own box above the Context notice.
+SUMMARY = {"icon": "bars", "variant": "info"}
+
 # The "Context, for anyone starting here." paragraph becomes the notice.
 NOTICE = {"source": "next-cell-paragraph", "label": "Context", "title": "Context", "icon": "info", "variant": "info"}
 

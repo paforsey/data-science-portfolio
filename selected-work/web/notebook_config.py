@@ -23,6 +23,9 @@ CRUMBS = [
 BACK = None
 KERNEL = "Python (base) · 3.12"  # the notebook's kernelspec display name and language version
 
+# The cell after the title (a heading and one paragraph) shows as its own box above the Abstract.
+SUMMARY = {"icon": "bars", "variant": "info"}
+
 # The Abstract cell's bullets become the summary notice under the header. The Context
 # paragraph and design notes that follow it open the Overview section.
 NOTICE = {"source": "next-cell-list", "title": "Abstract", "icon": "info", "variant": "info"}
