@@ -25,6 +25,9 @@ KERNEL = "Python (base) · 3.12"  # the notebook's kernelspec display name and l
 
 # The Abstract cell's bullets become the summary notice under the header, so the page opens
 # on the finding. Sections then start at Introduction.
+# The cell after the title (a heading and one paragraph) shows as its own box above the Abstract.
+SUMMARY = {"icon": "bars", "variant": "info"}
+
 NOTICE = {"source": "next-cell-list", "title": "Abstract", "icon": "info", "variant": "info"}
 
 TIDY_MARKDOWN = True
