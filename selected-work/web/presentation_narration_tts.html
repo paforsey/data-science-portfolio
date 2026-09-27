@@ -75,7 +75,9 @@ a { color: var(--accent); }
 .nav-tab.is-current span { color: var(--accent); }
 .nb-section[hidden] { display: none; }
 .toc a[hidden] { display: none; }
-.nav-tab.is-file { flex-direction: row; align-items: center; gap: 0.5rem; }
+/* Icon above the label, like the numbered tabs. */
+.nav-tab.is-file { align-items: flex-start; }
+.nav-tab.is-file .tab-icon { margin-bottom: 0.25rem; }
 .nav-tab .tab-icon { width: 1.05rem; height: 1.05rem; stroke: currentColor; }
 
 /* ---------- source files shown beside the notebook ---------- */
@@ -150,7 +152,12 @@ a { color: var(--accent); }
 .disclosure b { display: block; margin-bottom: 0.2rem; }
 .disclosure li b { display: inline; margin: 0; }
 .disclosure ul { margin: 0; padding-left: 1.1rem; }
+/* Disclosure: no icon; bullets hang so each dot lines up with the heading's first letter. */
+.disclosure:not(.info) ul { padding-left: 0; list-style: none; }
+.disclosure:not(.info) li { position: relative; padding-left: 1rem; }
+.disclosure:not(.info) li::before { content: ''; position: absolute; left: 0; top: 0.62em; width: 0.32em; height: 0.32em; border-radius: 50%; background: currentColor; }
 .disclosure p { margin: 0; line-height: 1.55; }
+.disclosure ul + p { margin-top: 0.6rem; }
 .disclosure.info { border-color: var(--accent-line); background: var(--accent-soft); }
 .disclosure.info .icon { stroke: var(--accent); }
 
@@ -264,7 +271,7 @@ h3:hover .anchor-link { opacity: 1; }
   <div class="nb-top-row">
     <a class="brand-mark" href="/" aria-label="Philip Forsey home">PF</a>
     <nav class="crumbs" aria-label="Breadcrumb"><a href="/#selected-work">Selected Work</a><span aria-hidden="true">/</span><span>Presentation Narration</span><span aria-hidden="true">/</span><b>Research Notebook</b></nav>
-
+    
   </div>
   <div class="nb-toolbar">
     <button type="button" class="tool" id="toggleCode" aria-pressed="false">Hide code</button>
@@ -279,7 +286,7 @@ h3:hover .anchor-link { opacity: 1; }
 <div class="layout">
   <aside class="toc" aria-label="Notebook sections">
     <p class="rail-title">Contents</p>
-    <ol><li><a href="#overview" data-toc="1"><span>00</span>Overview</a></li><li><a href="#1-%C2%B7-LLM-Text-Preparation-Layer" data-toc="2"><span>01</span>LLM Text Preparation</a></li><li><a href="#2-%C2%B7-Script-to-Audio-Files" data-toc="3"><span>02</span>Script to Audio Files</a><ol class="toc-sub"><li><a href="#2.1-Configuration">2.1 Configuration</a></li><li><a href="#2.2-Script-Parsing">2.2 Script Parsing</a></li><li><a href="#2.3-Speech-Synthesis">2.3 Speech Synthesis</a></li><li><a href="#2.4-Audio-Export">2.4 Audio Export</a></li><li><a href="#2.5-Generate-Audio-Files">2.5 Generate Audio Files</a></li></ol></li><li><a href="#narration" data-toc="4"><span></span>Narration Script &amp; Audio</a><ol class="toc-sub"><li><a href="#narration-1">Slide 1</a></li><li><a href="#narration-2">Slide 2</a></li><li><a href="#narration-3">Slide 3</a></li><li><a href="#narration-4">Slide 4</a></li><li><a href="#narration-5">Slide 5</a></li><li><a href="#narration-6">Slide 6</a></li><li><a href="#narration-7">Slide 7</a></li><li><a href="#narration-8">Slide 8</a></li><li><a href="#narration-9">Slide 9</a></li></ol></li></ol>
+    <ol><li><a href="#overview" data-toc="1"><span>00</span>Overview</a></li><li><a href="#1-%C2%B7-LLM-Text-Preparation-Layer" data-toc="2"><span>01</span>LLM Text Preparation</a></li><li><a href="#2-%C2%B7-Script-to-Audio-Files" data-toc="3"><span>02</span>Script to Audio Files</a><ol class="toc-sub"><li><a href="#2.1-Configuration">2.1 Configuration</a></li><li><a href="#2.2-Script-Parsing">2.2 Script Parsing</a></li><li><a href="#2.3-Speech-Synthesis">2.3 Speech Synthesis</a></li><li><a href="#2.4-Audio-Export">2.4 Audio Export</a></li><li><a href="#2.5-Generate-Audio-Files">2.5 Generate Audio Files</a></li></ol></li><li><a href="#narration" data-toc="4"><span></span>Narration Script &amp; Audio</a><ol class="toc-sub"><li><a href="#narration-1">Slide 1</a></li><li><a href="#narration-2">Slide 2</a></li><li><a href="#narration-3">Slide 3</a></li><li><a href="#narration-4">Slide 4</a></li><li><a href="#narration-5">Slide 5</a></li><li><a href="#narration-6">Slide 6</a></li><li><a href="#narration-7">Slide 7</a></li><li><a href="#narration-8">Slide 8</a></li></ol></li></ol>
   </aside>
 
   <main class="nb-main">
@@ -287,7 +294,7 @@ h3:hover .anchor-link { opacity: 1; }
       <p class="nb-eyebrow">AI Narration &middot; Text-to-Speech</p>
       <h1>Presentation Narration with Local Text-to-Speech</h1>
       <p class="nb-subtitle">Turns an executive presentation script into one narrated audio file per slide, using a local LLM to prepare the text for speech and Kokoro to synthesize it.</p>
-      <div class="stats"><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><div><b>9</b><span>slides narrated from one script</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><b>10.0</b><span>minutes of narration</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/></svg><div><b>2</b><span>local models: Qwen3 and Kokoro-82M</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><div><b>~85%</b><span>smaller as 64 kbps AAC than WAV</span></div></div></div>
+      <div class="stats"><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><div><b>8</b><span>slides narrated from one script</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><b>8.9</b><span>minutes of narration</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/></svg><div><b>2</b><span>local models: Qwen3 and Kokoro-82M</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><div><b>~85%</b><span>smaller as 64 kbps AAC than WAV</span></div></div></div>
       <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/></svg><div><b>Local AI Presentation Narration Pipeline</b><p>Developed an offline AI pipeline that converts structured executive-presentation scripts into slide-level narrated audio assets using Qwen3, Ollama, and Kokoro-82M neural text-to-speech. Built modular stages for script parsing, LLM-based speech-text preparation, neural voice synthesis, paragraph-level pacing, WAV generation, AAC/M4A compression, and automated duration validation. The baseline generated nine presentation-ready audio clips totaling approximately 10 minutes while maintaining an auditable text artifact for every synthesized slide. Evaluation identified timing discrepancies at the individual-slide level and, importantly, revealed semantic wording drift introduced by LLM preprocessing despite prompts requiring factual preservation. The experiment establishes a reproducible local-TTS baseline while motivating subsequent testing of deterministic text normalization and alternative TTS configurations to reduce transformation risk and evaluate speech quality systematically.</p></div></div><div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Context</b><p>The International Roaming Pricing executive presentation is narrated from a written script, international_roaming_script.txt, with one section per slide. This notebook reads that script and produces a narration audio file for each slide, so the presentation can be played with a consistent recorded voice instead of the browser's built-in speech synthesis. Everything runs locally: a Qwen3 model served by Ollama prepares the text, and the Kokoro-82M text-to-speech model generates the audio from cached Hugging Face files.</p></div></div>
     </header>
 <section class="nb-section" id="overview" data-section="1"><h2 class="section-head"><span class="section-num">00</span>Overview</h2>
@@ -413,7 +420,7 @@ h3:hover .anchor-link { opacity: 1; }
 <li>KEEP_WAV = False deletes each uncompressed .wav once its .m4a has been written successfully; set it to True to keep both</li>
 </ul></li></ol></div>
 <div class="nb-cell code-cell"><div class="prompt in">In [3]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Narration Settings</span>
-<span class="n">SCRIPT_PATH</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"international_roaming_script.txt"</span><span class="p">)</span>
+<span class="n">SCRIPT_PATH</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"../../datafxlab/paforsey/tts/international_roaming_script.txt"</span><span class="p">)</span>
 <span class="n">AUDIO_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">"audio"</span><span class="p">)</span>
 <span class="n">VOICE</span> <span class="o">=</span> <span class="s2">"am_michael"</span>
 <span class="n">SPEED</span> <span class="o">=</span> <span class="mf">1.0</span>
@@ -511,7 +518,7 @@ h3:hover .anchor-link { opacity: 1; }
 <li>On another operating system, this is the one function to replace, for example with an ffmpeg call</li>
 </ul></li>
 <li>A conversion is treated as failed if afconvert returns an error or leaves an empty file, and the WAV is kept in that case regardless of KEEP_WAV</li><li>Durations are read from the .m4a with afinfo, so the reported lengths describe the files that will actually be published</li></ol></div>
-<div class="nb-cell code-cell"><div class="prompt in">In [ ]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Audio Export Functions</span>
+<div class="nb-cell code-cell"><div class="prompt in">In [6]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Audio Export Functions</span>
 <span class="n">AFCONVERT</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"afconvert"</span><span class="p">)</span>
 <span class="n">AFINFO</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="s2">"afinfo"</span><span class="p">)</span>
 
@@ -549,7 +556,7 @@ h3:hover .anchor-link { opacity: 1; }
 <li>The run fails before any LLM or synthesis work if afconvert is unavailable, rather than after the first slide</li>
 <li>The last line prints the measured lengths as an AUDIO_SECONDS list, the format the executive presentation uses for its narration timeline</li>
 </ol></div>
-<div class="nb-cell code-cell"><div class="prompt in">In [ ]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Generate Audio Files</span>
+<div class="nb-cell code-cell"><div class="prompt in">In [7]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Generate Audio Files</span>
 <span class="k">if</span> <span class="n">AFCONVERT</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">AFINFO</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"afconvert and afinfo are required for M4A export (macOS)."</span><span class="p">)</span>
 
@@ -571,7 +578,37 @@ h3:hover .anchor-link { opacity: 1; }
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="se">\n</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">slides</span><span class="p">)</span><span class="si">}</span><span class="s2"> .m4a files and prepared-text files written to </span><span class="si">{</span><span class="n">AUDIO_DIR</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="si">}</span><span class="s2"> · </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">lengths</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">60</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> minutes total"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">"AUDIO_SECONDS = ["</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">s</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">lengths</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"]"</span><span class="p">)</span>
-</pre></div></div>
+</pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>Slide    Estimated   Actual  File
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>1              21s      21s  audio/slide_01.m4a
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>2              40s      40s  audio/slide_02.m4a
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>3              56s      44s  audio/slide_03.m4a
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>4              83s      83s  audio/slide_04.m4a
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>5              99s      99s  audio/slide_05.m4a
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>6             103s     103s  audio/slide_06.m4a
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>7              75s      77s  audio/slide_07.m4a
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>8              63s      66s  audio/slide_08.m4a
+
+8 .m4a files and prepared-text files written to /Users/paforsey/Inbox/Projects/data-science-portfolio/selected-work/audio · 8.9 minutes total
+AUDIO_SECONDS = [20.9, 40.175, 43.925, 82.65, 99.35, 102.75, 76.825, 65.875]
+</pre>
+</div></div>
 <div class="callouts"><div class="callout interp"><span class="callout-mark" aria-hidden="true">i</span><div><p class="callout-title">Observations</p><ol>
 <li>All nine slides were generated, totaling 10.0 minutes, which matches the ten minutes stated in the script's opening</li>
 <li>Slides 2 through 6 and slide 8 land within 10 seconds of their estimates; three slides do not<ul>
@@ -586,7 +623,7 @@ h3:hover .anchor-link { opacity: 1; }
 <div class="section-nav"><button type="button" data-goto="1">&larr; LLM Text Preparation</button><span class="next-label">Next</span><button type="button" class="next" data-goto="3">Narration Script &amp; Audio &rarr;</button></div>
 </section>
 <section class="nb-section" id="narration" data-section="4"><h2 class="section-head">Narration Script &amp; Audio</h2>
-<style>.kb-chunk .audio-body{padding:.8rem 1rem;border-top:1px solid var(--line)}.kb-chunk audio{display:block;width:100%}.kb-chunk details{border-top:1px solid var(--line)}.kb-chunk summary{padding:.55rem 1rem;cursor:pointer;font-size:.8rem;color:var(--muted)}.kb-chunk details pre{border-top:1px solid var(--line)}</style><div class="kb-head"><div><b>Script</b><span>international_roaming_script.txt</span></div><div><b>Voice</b><span>am_michael (Kokoro-82M)</span></div><div><b>Format</b><span>AAC, 64 kbps, .m4a</span></div><div><b>Slides</b><span>9</span></div><div><b>Estimated total</b><span>10:02</span></div><div><b>Audio total</b><span>10:01</span></div></div><p class="kb-summary">The International Roaming Pricing executive presentation script, exactly as the notebook reads it, with the clip the presentation plays for each slide.</p><p class="kb-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><span>Each slide shows the script as written: a <code># SLIDE</code> header and an <code>## ESTIMATED TIME</code> line, which the notebook reads as metadata and never speaks, then the narration. The player beneath plays the clip published with the presentation, and the spoken text under it is the LLM-prepared version, so small wording differences are expected.</span></p><article class="kb-chunk" id="narration-1"><header><span class="chunk-num">Slide 1</span><h3>Estimated 21 seconds &middot; audio 0:21</h3></header><pre># SLIDE 1
+<style>.kb-chunk .audio-body{padding:.8rem 1rem;border-top:1px solid var(--line)}.kb-chunk audio{display:block;width:100%}.kb-chunk details{border-top:1px solid var(--line)}.kb-chunk summary{padding:.55rem 1rem;cursor:pointer;font-size:.8rem;color:var(--muted)}.kb-chunk details pre{border-top:1px solid var(--line)}</style><div class="kb-head"><div><b>Script</b><span>international_roaming_script.txt</span></div><div><b>Voice</b><span>am_michael (Kokoro-82M)</span></div><div><b>Format</b><span>AAC, 64 kbps, .m4a</span></div><div><b>Slides</b><span>8</span></div><div><b>Estimated total</b><span>9:00</span></div><div><b>Audio total</b><span>8:52</span></div></div><p class="kb-summary">The International Roaming Pricing executive presentation script, exactly as the notebook reads it, with the clip the presentation plays for each slide.</p><p class="kb-note"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><span>Each slide shows the script as written: a <code># SLIDE</code> header and an <code>## ESTIMATED TIME</code> line, which the notebook reads as metadata and never speaks, then the narration. The player beneath plays the clip published with the presentation, and the spoken text under it is the LLM-prepared version, so small wording differences are expected.</span></p><article class="kb-chunk" id="narration-1"><header><span class="chunk-num">Slide 1</span><h3>Estimated 21 seconds &middot; audio 0:21</h3></header><pre># SLIDE 1
 ## ESTIMATED TIME: 21 seconds
 
 This presentation provides a pricing recommendation for international roaming. Over the next ten minutes, we will review the business objective, the analysis supporting the recommendation, the trade-off between incremental revenue and lost international roaming purchases, and the controls that accompany implementation.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_01.m4a"><a href="/case-studies/international-roaming/audio/slide_01.m4a">Download slide 1 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>This presentation provides a pricing recommendation for international roaming. Over the next ten minutes, we will review the business objective, the analysis supporting the recommendation, the trade-off between incremental revenue and lost international roaming purchases, and the controls that accompany implementation.</pre></details></article><article class="kb-chunk" id="narration-2"><header><span class="chunk-num">Slide 2</span><h3>Estimated 40 seconds &middot; audio 0:40</h3></header><pre># SLIDE 2
@@ -600,41 +637,18 @@ The analysis that follows explains how we arrived at this recommendation, what i
 
 The price increase applies across the entire portfolio. The retention test focuses on a segment representing eleven percent of accounts because the projected purchasing decline is concentrated within that group.
 
-The analysis that follows explains how we arrived at this recommendation, what it is expected to produce, and the uncertainty and risks that accompany it.</pre></details></article><article class="kb-chunk" id="narration-3"><header><span class="chunk-num">Slide 3</span><h3>Estimated 56 seconds &middot; audio 0:56</h3></header><pre># SLIDE 3
+The analysis that follows explains how we arrived at this recommendation, what it is expected to produce, and the uncertainty and risks that accompany it.</pre></details></article><article class="kb-chunk" id="narration-3"><header><span class="chunk-num">Slide 3</span><h3>Estimated 56 seconds &middot; audio 0:44</h3></header><pre># SLIDE 3
 ## ESTIMATED TIME: 56 seconds
 
 The business objective was to generate one hundred million dollars in incremental international roaming revenue over twelve months, measured against maintaining the current price.
 
-Leadership approved a price range from a ten percent reduction to a twenty percent increase. The twenty percent ceiling was a leadership constraint established before the analysis began.
-
-The study therefore evaluated an approved price range. It did not search every possible price or identify an unconstrained optimum.
+Leadership authorized a price range from a ten percent reduction to a twenty percent increase, and both the objective and the range were set before the analysis began.
 
 One important constraint was never established: there was no preset maximum acceptable decline in international roaming purchasing. Purchasing impact could inform the recommendation and be reported alongside revenue, but it could not independently eliminate a price option.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_03.m4a"><a href="/case-studies/international-roaming/audio/slide_03.m4a">Download slide 3 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>The business objective was to generate one hundred million dollars in incremental international roaming revenue over twelve months, measured against maintaining the current price.
 
-Leadership approved a price range from a ten percent reduction to a twenty percent increase. The twenty percent ceiling was a leadership constraint established before the analysis began.
+Leadership authorized a price range from a ten percent reduction to a twenty percent increase, and both the objective and the range were set before the analysis began.
 
-The study therefore evaluated an approved price range. It did not search every possible price or identify an unconstrained optimum.
-
-One important constraint was never established: there was no preset maximum acceptable decline in international roaming purchasing. Purchasing impact could inform the recommendation and be reported alongside revenue, but it could not independently eliminate a price option.</pre></details></article><article class="kb-chunk" id="narration-4"><header><span class="chunk-num">Slide 4</span><h3>Estimated 56 seconds &middot; audio 0:56</h3></header><pre># SLIDE 4
-## ESTIMATED TIME: 56 seconds
-
-Subscribers do not respond uniformly to a price increase.
-
-Frequent or business travelers place a high value on reliable international roaming and are more likely to maintain their purchasing behavior.
-
-Occasional, comparison-minded travelers are more likely to compare their options and may reduce how much international roaming they purchase.
-
-A third group already has a readily available alternative, such as an eSIM, a local SIM, or hotel Wi-Fi. For these subscribers, a price increase makes substitution more likely.
-
-These profiles illustrate the principal segments and their different responses to price. Using one average measure of price sensitivity would obscure those differences and hide where the greatest purchasing risk is concentrated.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_04.m4a"><a href="/case-studies/international-roaming/audio/slide_04.m4a">Download slide 4 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>Subscribers do not all react the same way to a price increase.
-
-Frequent or business travelers place a high value on reliable international roaming and are more likely to maintain their purchasing behavior.
-
-Occasional travelers who are comparison-minded are more likely to compare their options and may reduce how much international roaming they purchase.
-
-A third group already has a readily available alternative, such as an eSIM, a local SIM, or hotel Wi-Fi. For these subscribers, a price increase makes substitution more likely.
-
-These profiles illustrate the principal segments and their different responses to price. Using one average measure of price sensitivity would obscure those differences and hide where the greatest purchasing risk is concentrated.</pre></details></article><article class="kb-chunk" id="narration-5"><header><span class="chunk-num">Slide 5</span><h3>Estimated 1 minute, 23 seconds &middot; audio 1:23</h3></header><pre># SLIDE 5
+One important constraint was never established: there was no preset maximum acceptable decline in international roaming purchasing. Purchasing impact could inform the recommendation and be reported alongside revenue, but it could not independently eliminate a price option.</pre></details></article><article class="kb-chunk" id="narration-4"><header><span class="chunk-num">Slide 4</span><h3>Estimated 1 minute, 23 seconds &middot; audio 1:23</h3></header><pre># SLIDE 4
 ## ESTIMATED TIME: 1 minute, 23 seconds
 
 The analysis followed four steps.
@@ -647,7 +661,7 @@ Third, for trips with partial coverage, the model estimated how many days and li
 
 Fourth, paired simulations compared each price with the current price. Using the same underlying conditions for both prices allowed the analysis to isolate the incremental change in revenue and purchasing behavior.
 
-The analysis tested every price in the approved range under Baseline, Expansionary, and Contractionary conditions. It was also evaluated on a later test period withheld from training and calibration, and on a regional holdout of the price response.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_05.m4a"><a href="/case-studies/international-roaming/audio/slide_05.m4a">Download slide 5 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>The analysis followed four steps.
+The analysis tested every price in the approved range under Baseline, Expansionary, and Contractionary conditions. It was also evaluated on a later test period withheld from training and calibration, and on a regional holdout of the price response.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_04.m4a"><a href="/case-studies/international-roaming/audio/slide_04.m4a">Download slide 4 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>The analysis followed four steps.
 
 First, the model estimated each subscriber&#x27;s baseline probability of selecting full, partial, or no international roaming coverage. This estimate used customer and trip characteristics, with price deliberately left out.
 
@@ -657,7 +671,7 @@ Third, for trips with partial coverage, the model estimated how many days and li
 
 Fourth, paired simulations compared each price with the current price. Using the same underlying conditions for both prices allowed the analysis to isolate the incremental change in revenue and purchasing behavior.
 
-The analysis tested every price in the approved range under Baseline, Expansionary, and Contractionary conditions. It was also evaluated on a later test period that was withheld from training and calibration, and on a regional holdout of the price response.</pre></details></article><article class="kb-chunk" id="narration-6"><header><span class="chunk-num">Slide 6</span><h3>Estimated 1 minute, 39 seconds &middot; audio 1:39</h3></header><pre># SLIDE 6
+The analysis tested every price in the approved range under Baseline, Expansionary, and Contractionary conditions. It was also evaluated on a later test period that was withheld from training and calibration, and on a regional holdout of the price response.</pre></details></article><article class="kb-chunk" id="narration-5"><header><span class="chunk-num">Slide 5</span><h3>Estimated 1 minute, 39 seconds &middot; audio 1:39</h3></header><pre># SLIDE 5
 ## ESTIMATED TIME: 1 minute, 39 seconds
 
 This chart presents the central result under Baseline conditions.
@@ -672,7 +686,7 @@ At twenty percent, expected incremental revenue is approximately one hundred and
 
 The expected result exceeds the objective, but the lower portion of the range does not. The same price carries a projected purchasing decline of approximately two and a half percent.
 
-Twenty percent is therefore the highest expected result inside the approved range. Prices above it were not evaluated, so this is a boundary result, not an unconstrained optimum discovered by the analysis.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_06.m4a"><a href="/case-studies/international-roaming/audio/slide_06.m4a">Download slide 6 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>This chart presents the central result under baseline conditions.
+Twenty percent is therefore the highest expected result inside the approved range. Prices above it were not evaluated, so this is a boundary result, not an unconstrained optimum discovered by the analysis.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_05.m4a"><a href="/case-studies/international-roaming/audio/slide_05.m4a">Download slide 5 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>This chart presents the central result under baseline conditions.
 
 The horizontal axis shows the approved price range. The vertical axis shows the modeled change in twelve-month international roaming revenue relative to the current price. For that reason, the current price appears at zero incremental revenue.
 
@@ -684,7 +698,7 @@ At twenty percent, expected incremental revenue is approximately one hundred and
 
 The expected result is higher than the objective, but the lower part of the range does not meet that. The same price is associated with a projected decrease in purchasing of about two and a half percent.
 
-Twenty percent is therefore the highest expected result within the approved range. Prices above it were not evaluated, so this is a boundary result, not an unconstrained optimum discovered by the analysis.</pre></details></article><article class="kb-chunk" id="narration-7"><header><span class="chunk-num">Slide 7</span><h3>Estimated 1 minute, 43 seconds &middot; audio 1:43</h3></header><pre># SLIDE 7
+Twenty percent is therefore the highest expected result within the approved range. Prices above it were not evaluated, so this is a boundary result, not an unconstrained optimum discovered by the analysis.</pre></details></article><article class="kb-chunk" id="narration-6"><header><span class="chunk-num">Slide 6</span><h3>Estimated 1 minute, 43 seconds &middot; audio 1:43</h3></header><pre># SLIDE 6
 ## ESTIMATED TIME: 1 minute, 43 seconds
 
 Incremental revenue and purchasing risk concentrate in different segments.
@@ -699,7 +713,7 @@ The Flight Risk segment consists of subscribers with a readily available alterna
 
 The Dormant segment contributes approximately two point four million dollars and one-tenth of a percentage point of the decline.
 
-This concentration supports a targeted retention test focused on a smaller group carrying a substantial share of the purchasing risk. The effectiveness and cost of that intervention still require validation.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_07.m4a"><a href="/case-studies/international-roaming/audio/slide_07.m4a">Download slide 7 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>Incremental revenue and purchasing risk are concentrated in different segments.
+This concentration supports a targeted retention test focused on a smaller group carrying a substantial share of the purchasing risk. The effectiveness and cost of that intervention still require validation.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_06.m4a"><a href="/case-studies/international-roaming/audio/slide_06.m4a">Download slide 6 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>Incremental revenue and purchasing risk are concentrated in different segments.
 
 The right side of the chart shows each segment&#x27;s contribution to the one hundred and four million dollars in expected incremental revenue. The left side shows each segment&#x27;s contribution, in percentage points, to the projected two and a half percent purchasing decline.
 
@@ -711,37 +725,33 @@ The Flight Risk segment consists of subscribers with a readily available alterna
 
 The dormant segment contributes approximately two million four hundred thousand dollars and one-tenth of a percentage point of the decline.
 
-This concentration supports a targeted retention test focused on a smaller group carrying a substantial share of the purchasing risk. The effectiveness and cost of that intervention still require validation.</pre></details></article><article class="kb-chunk" id="narration-8"><header><span class="chunk-num">Slide 8</span><h3>Estimated 1 minute, 21 seconds &middot; audio 1:21</h3></header><pre># SLIDE 8
-## ESTIMATED TIME: 1 minute, 21 seconds
+This concentration supports a targeted retention test focused on a smaller group carrying a substantial share of the purchasing risk. The effectiveness and cost of that intervention still require validation.</pre></details></article><article class="kb-chunk" id="narration-7"><header><span class="chunk-num">Slide 7</span><h3>Estimated 1 minute, 15 seconds &middot; audio 1:17</h3></header><pre># SLIDE 7
+## ESTIMATED TIME: 1 minute, 15 seconds
 
-The decision is approved: a twenty percent increase across the full international roaming portfolio, paired with a targeted retention test for subscribers with a readily available alternative.
+With the recommendation established, four controls manage the decision after launch.
 
-Three implementation controls accompany the decision.
+First, an early performance review: examine realized results soon after launch so the course can be adjusted if needed.
 
-First, review realized results soon after launch so the course can be adjusted if needed.
+Second, outcomes versus forecast: compare realized incremental revenue and subscriber purchasing behavior with the modeled expectations throughout implementation.
 
-Second, compare realized incremental revenue and subscriber purchasing behavior with the forecast throughout implementation.
+Third, independent guardrails: monitor wireless churn and complaint volume separately. These outcomes were not included in the pricing model and should not be treated as modeled forecasts.
 
-Third, monitor wireless churn and complaint volume as independent guardrails. These outcomes were not included in the model and should not be treated as modeled forecasts.
+Fourth, a governance threshold: establish an explicit acceptable purchasing-loss threshold early in implementation, so there is a clear point at which to adjust course if realized results materially diverge from expectations.
 
-Two qualifications are important. The expected one hundred and four million dollars is gross incremental revenue. Retention costs have not been deducted.
+Two qualifications remain important. The expected one hundred and four million dollars is gross incremental revenue, and retention costs have not been deducted. The projected two-and-a-half-percent purchasing decline is a forecast, not an approved limit.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_07.m4a"><a href="/case-studies/international-roaming/audio/slide_07.m4a">Download slide 7 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>With the recommendation established, four controls manage the decision after launch.
 
-In addition, the projected two-and-a-half-percent purchasing decline is a forecast, not an approved limit. No threshold was agreed before approval. Establishing one early in implementation will provide a clear point at which to adjust course if realized results materially diverge from expectations.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_08.m4a"><a href="/case-studies/international-roaming/audio/slide_08.m4a">Download slide 8 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>The decision is approved: a twenty percent increase across the full international roaming portfolio, paired with a targeted retention test for subscribers with a readily available alternative.
+First, an early performance review: examine realized results soon after launch so the course can be adjusted if needed.
 
-Three implementation controls accompany the decision.
+Second, outcomes versus forecast: compare realized incremental revenue and subscriber purchasing behavior with the modeled expectations throughout implementation.
 
-First, review the realized results soon after launch so the course can be adjusted if needed.
+Third, independent guardrails: monitor wireless churn and complaint volume separately. These outcomes were not included in the pricing model and should not be treated as modeled forecasts.
 
-Second, compare realized incremental revenue and subscriber purchasing behavior with the forecast throughout implementation.
+Fourth, a governance threshold: establish an explicit acceptable purchasing loss threshold early in implementation, so there is a clear point at which to adjust course if realized results materially diverge from expectations.
 
-Third, monitor wireless churn and complaint volume as independent guardrails. These outcomes were not included in the model and should not be treated as modeled forecasts.
-
-Two qualifications are important. The expected one hundred and four million dollars is gross incremental revenue. Retention costs have not been deducted.
-
-In addition, the projected two-and-a-half percent purchasing decline is a forecast, not an approved limit. No threshold was agreed upon before approval. Establishing one early in implementation will provide a clear point at which to adjust course if realized results materially diverge from expectations.</pre></details></article><article class="kb-chunk" id="narration-9"><header><span class="chunk-num">Slide 9</span><h3>Estimated 1 minute, 3 seconds &middot; audio 1:03</h3></header><pre># SLIDE 9
+Two qualifications remain important. The expected one hundred and four million dollars is gross incremental revenue, and retention costs have not been deducted. The projected two and a half percent purchasing decline is a forecast, not an approved limit.</pre></details></article><article class="kb-chunk" id="narration-8"><header><span class="chunk-num">Slide 8</span><h3>Estimated 1 minute, 3 seconds &middot; audio 1:06</h3></header><pre># SLIDE 8
 ## ESTIMATED TIME: 1 minute, 3 seconds
 
-The most common questions about the decision are addressed here.
+This final slide summarizes the decision risks and open questions leadership should keep in view.
 
 Twenty percent is the approved testing ceiling, not a price at which the analysis discovered a revenue peak.
 
@@ -753,7 +763,7 @@ Realized revenue and purchasing behavior are compared with the forecast from lau
 
 Finally, the one hundred and four million dollars is an expected result within a modeled range, not a guaranteed outcome.
 
-Additional questions can be submitted through the Ask tab.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_09.m4a"><a href="/case-studies/international-roaming/audio/slide_09.m4a">Download slide 9 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>The most common questions about the decision are addressed here.
+Additional questions can be submitted through the Ask tab.</pre><div class="audio-body"><audio controls preload="none" src="/case-studies/international-roaming/audio/slide_08.m4a"><a href="/case-studies/international-roaming/audio/slide_08.m4a">Download slide 8 audio</a></audio></div><details><summary>Spoken text, as prepared by the LLM</summary><pre>This final slide summarizes the decision risks and open questions that leadership should keep in mind.
 
 Twenty percent is the approved testing ceiling, not a price at which the analysis discovered a revenue peak.
 
@@ -820,10 +830,13 @@ Additional questions can be submitted through the Ask tab.</pre></details></arti
       return (b.getAttribute('data-sections') || b.getAttribute('data-goto') || '0')
         .split(',').map(Number);
     });
+    var header = document.querySelector('.nb-header');
     var seen = [];
     var showTab = function (tab, scrollToTop) {
       var shown = owned[tab] || [tab];
       sections.forEach(function (s, i) { s.hidden = shown.indexOf(i) === -1; });
+      // The summary header belongs to the Overview; other tabs start at their own section.
+      if (header) header.hidden = shown.indexOf(0) === -1;
       shown.forEach(function (i) { if (seen.indexOf(i) === -1) seen.push(i); });
       tabs.forEach(function (b, t) {
         b.classList.toggle('is-current', t === tab);

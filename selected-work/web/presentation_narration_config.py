@@ -46,8 +46,8 @@ SECTION_LABELS = [
 
 # (icon, value, label) quoted from the notebook's design notes and observations.
 STATS = [
-    ("doc", "9", "slides narrated from one script"),
-    ("clock", "10.0", "minutes of narration"),
+    ("doc", "8", "slides narrated from one script"),
+    ("clock", "8.9", "minutes of narration"),
     ("layers", "2", "local models: Qwen3 and Kokoro-82M"),
     ("audio", "~85%", "smaller as 64 kbps AAC than WAV"),
 ]
@@ -76,7 +76,7 @@ EXTRA_VIEWS = [
         "script": "../../../datafxlab/paforsey/tts/international_roaming_script.txt",
         "audio_dir": "../../../datafxlab/paforsey/public/case-studies/international-roaming/audio",
         "audio_url": "/case-studies/international-roaming/audio/slide_{n:02d}.m4a",
-        "expected_slides": 9,
+        "expected_slides": 8,
         "voice": "am_michael (Kokoro-82M)",
         "format": "AAC, 64 kbps, .m4a",
         "summary": (
