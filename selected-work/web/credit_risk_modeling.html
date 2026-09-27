@@ -288,8 +288,8 @@ h3:hover .anchor-link { opacity: 1; }
       <p class="nb-eyebrow">Model Comparison &middot; Credit Risk</p>
       <h1>Credit Risk Modeling</h1>
       <p class="nb-subtitle">An empirical evaluation of logistic regression, random forest, SVM, and XGBoost models</p>
-      <div class="stats"><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/></svg><div><b>150,000</b><span>LendingClub loans, split by date</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/></svg><div><b>3</b><span>complex models against one baseline</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.3 14h9.4"/></svg><div><b>p &gt; 0.45</b><span>no model beats the baseline</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div><b>0.1667</b><span>baseline Brier after recalibration</span></div></div></div>
-      <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/></svg><div><b>Credit Risk Modeling: Predictive Performance vs. Model Complexity</b><p>Developed and evaluated logistic regression, random forest, XGBoost, and SVM models for default prediction using 150,000 LendingClub loans and a temporal out-of-sample validation framework. Evaluated models using ROC AUC, KS, Gini, risk-decile separation, Brier score, calibration curves, and statistical AUC comparisons. Complex ML models produced only marginal discrimination gains over logistic regression (AUC ~0.652–0.654 vs. 0.651), while post-hoc Platt calibration reduced the logistic model's Brier score from 0.2309 to 0.1667. LendingClub's proprietary credit grades achieved substantially stronger discrimination (AUC 0.674), supporting the conclusion that additional high-quality credit information offered greater potential value than increased algorithmic complexity. Selected recalibrated logistic regression for its comparable predictive performance, probability calibration, interpretability, and implementation simplicity.</p></div></div><div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Abstract</b><ul><li>Predicts loan default on 150,000 LendingClub loans, training on loans issued before 2016 and testing on loans from 2016 on</li><li>Benchmarks XGBoost, random forest and SVM against a regularized logistic regression baseline</li><li>Judges the models on discrimination (AUC, KS, decile default rates) and on calibration (Brier score, calibration curves)</li><li>No complex model beat the baseline on discrimination: test AUCs of 0.6521 to 0.6537 against 0.6509, none significant (DeLong test, p &gt; 0.45)</li><li>The baseline first looked worse calibrated (Brier 0.2309 against 0.1664 for XGBoost), an artifact of <code>class_weight='balanced'</code></li><li>Platt scaling closed that gap (Brier 0.1667) without changing AUC</li><li>LendingClub's own grades beat every model (AUC 0.674), the only significant difference, most plausibly because of third-party credit data used in its underwriting</li><li><b><u>Recalibrated logistic regression selected</u></b>: as accurate as the complex models on ranking and calibration, and interpretable</li></ul></div></div>
+      <div class="stats"><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/></svg><div><b>150,000</b><span>LendingClub loans, split by date</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5l9 4.5 9-4.5"/></svg><div><b>3</b><span>complex models against one baseline</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.3 14h9.4"/></svg><div><b>+0.0028</b><span>largest AUC gain over the baseline</span></div></div><div class="stat"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><div><b>0.1667</b><span>baseline Brier after recalibration</span></div></div></div>
+      <div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6M10 20V9M15 20v-9M20 20V5"/></svg><div><b>Credit Risk Modeling: Predictive Performance vs. Model Complexity</b><p>Developed and evaluated logistic regression, random forest, XGBoost, and SVM models for default prediction using 150,000 LendingClub loans and a temporal out-of-sample validation framework. Evaluated models using ROC AUC, KS, Gini, risk-decile separation, Brier score, calibration curves, and statistical AUC comparisons. Complex ML models produced only marginal discrimination gains over logistic regression (AUC ~0.652–0.654 vs. 0.651), while post-hoc Platt calibration reduced the logistic model's Brier score from 0.2309 to 0.1667. LendingClub's proprietary credit grades achieved substantially stronger discrimination (AUC 0.674), supporting the conclusion that additional high-quality credit information offered greater potential value than increased algorithmic complexity. Selected recalibrated logistic regression for its comparable predictive performance, probability calibration, interpretability, and implementation simplicity.</p></div></div><div class="disclosure info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><b>Abstract</b><ul><li>Predicts loan default on 150,000 LendingClub loans, training on loans issued before 2016 and testing on loans from 2016 on</li><li>Benchmarks XGBoost, random forest and SVM against a regularized logistic regression baseline</li><li>Judges the models on discrimination (AUC, KS, decile default rates) and on calibration (Brier score, calibration curves)</li><li>Complex models added at most 0.003 AUC over the baseline (0.6521 to 0.6537 against 0.6509); only SVM's gain was statistically significant (paired DeLong test, p &lt; 0.001), XGBoost's and random forest's were not (p = 0.42, 0.25)</li><li>The baseline first looked worse calibrated (Brier 0.2309 against 0.1664 for XGBoost), an artifact of <code>class_weight='balanced'</code></li><li>Platt scaling closed that gap (Brier 0.1667) without changing AUC</li><li>LendingClub's own grades beat every model by a far wider margin (AUC 0.674, p &lt; 0.001), most plausibly because of third-party credit data used in its underwriting</li><li><b><u>Recalibrated logistic regression selected</u></b>: within 0.003 AUC of the best complex model, as well calibrated, and interpretable</li></ul></div></div>
     </header>
 <section class="nb-section" id="1.0-Introduction" data-section="1"><h2 class="section-head"><span class="section-num">01</span>Introduction</h2>
 <div class="md"><p><strong>Why does this study matter?</strong></p>
@@ -467,13 +467,35 @@ h3:hover .anchor-link { opacity: 1; }
 <span class="c1"># Function: DeLong Test for AUC comparison</span>
 <span class="k">def</span> <span class="nf">delong_roc_test</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">pred1</span><span class="p">,</span> <span class="n">pred2</span><span class="p">):</span>
     
-    <span class="n">auc1</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">pred1</span><span class="p">)</span>
-    <span class="n">auc2</span> <span class="o">=</span> <span class="n">roc_auc_score</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">pred2</span><span class="p">)</span>
+    <span class="c1"># Paired DeLong test (DeLong et al., 1988) using the fast algorithm of Sun &amp; Xu (2014)</span>
+    <span class="n">y_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pred1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pred2</span><span class="p">)])</span>
     
-    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span>
-    <span class="n">var</span> <span class="o">=</span> <span class="p">(</span><span class="n">auc1</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">auc1</span><span class="p">)</span> <span class="o">+</span> <span class="n">auc2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">auc2</span><span class="p">))</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="n">preds</span><span class="p">[:,</span> <span class="n">y_true</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="n">neg</span> <span class="o">=</span> <span class="n">preds</span><span class="p">[:,</span> <span class="n">y_true</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">pos</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">n</span> <span class="o">=</span> <span class="n">neg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">aucs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">v10</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="n">m</span><span class="p">))</span>
+    <span class="n">v01</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+    
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="n">rank_pos</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">rankdata</span><span class="p">(</span><span class="n">pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">rank_neg</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">rankdata</span><span class="p">(</span><span class="n">neg</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">rank_all</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">rankdata</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">pos</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">neg</span><span class="p">[</span><span class="n">k</span><span class="p">]]))</span>
+    
+        <span class="n">aucs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">rank_all</span><span class="p">[:</span><span class="n">m</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">-</span> <span class="n">m</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span>
+        <span class="n">v10</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">rank_all</span><span class="p">[:</span><span class="n">m</span><span class="p">]</span> <span class="o">-</span> <span class="n">rank_pos</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span>
+        <span class="n">v01</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">rank_all</span><span class="p">[</span><span class="n">m</span><span class="p">:]</span> <span class="o">-</span> <span class="n">rank_neg</span><span class="p">)</span> <span class="o">/</span> <span class="n">m</span>
+    
+    <span class="c1"># Covariance of the two AUCs from the structural components</span>
+    <span class="n">cov</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">v10</span><span class="p">)</span> <span class="o">/</span> <span class="n">m</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cov</span><span class="p">(</span><span class="n">v01</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span>
+    <span class="n">var</span> <span class="o">=</span> <span class="n">cov</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">cov</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">cov</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    
+    <span class="n">auc1</span><span class="p">,</span> <span class="n">auc2</span> <span class="o">=</span> <span class="n">aucs</span>
     <span class="n">z</span> <span class="o">=</span> <span class="p">(</span><span class="n">auc1</span> <span class="o">-</span> <span class="n">auc2</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">var</span><span class="p">)</span>
-    <span class="n">p_value</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">cdf</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">z</span><span class="p">)))</span>
+    <span class="n">p_value</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">stats</span><span class="o">.</span><span class="n">norm</span><span class="o">.</span><span class="n">sf</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">z</span><span class="p">))</span>
     
     <span class="k">return</span> <span class="n">auc1</span><span class="p">,</span> <span class="n">auc2</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">p_value</span>
 </pre></div></div>
@@ -757,44 +779,44 @@ h3:hover .anchor-link { opacity: 1; }
 <br/><b>Table 1: Loan Status Distribution</b>
 </div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-html">
 <style type="text/css">
-#T_7566f_row0_col0, #T_7566f_row0_col1, #T_7566f_row2_col0, #T_7566f_row2_col1 {
+#T_ebfb1_row0_col0, #T_ebfb1_row0_col1, #T_ebfb1_row2_col0, #T_ebfb1_row2_col1 {
   background-color: #fff3cd;
   font-weight: bold;
 }
 </style>
-<table id="T_7566f">
+<table id="T_ebfb1">
 <thead>
 <tr>
 <th class="blank level0"> </th>
-<th class="col_heading level0 col0" id="T_7566f_level0_col0">loan_status_group</th>
-<th class="col_heading level0 col1" id="T_7566f_level0_col1">percentage</th>
+<th class="col_heading level0 col0" id="T_ebfb1_level0_col0">loan_status_group</th>
+<th class="col_heading level0 col1" id="T_ebfb1_level0_col1">percentage</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<th class="row_heading level0 row0" id="T_7566f_level0_row0">0</th>
-<td class="data row0 col0" id="T_7566f_row0_col0">Fully Paid</td>
-<td class="data row0 col1" id="T_7566f_row0_col1">47.630000</td>
+<th class="row_heading level0 row0" id="T_ebfb1_level0_row0">0</th>
+<td class="data row0 col0" id="T_ebfb1_row0_col0">Fully Paid</td>
+<td class="data row0 col1" id="T_ebfb1_row0_col1">47.630000</td>
 </tr>
 <tr>
-<th class="row_heading level0 row1" id="T_7566f_level0_row1">1</th>
-<td class="data row1 col0" id="T_7566f_row1_col0">Current</td>
-<td class="data row1 col1" id="T_7566f_row1_col1">38.850000</td>
+<th class="row_heading level0 row1" id="T_ebfb1_level0_row1">1</th>
+<td class="data row1 col0" id="T_ebfb1_row1_col0">Current</td>
+<td class="data row1 col1" id="T_ebfb1_row1_col1">38.850000</td>
 </tr>
 <tr>
-<th class="row_heading level0 row2" id="T_7566f_level0_row2">2</th>
-<td class="data row2 col0" id="T_7566f_row2_col0">Charged Off | Default</td>
-<td class="data row2 col1" id="T_7566f_row2_col1">11.880000</td>
+<th class="row_heading level0 row2" id="T_ebfb1_level0_row2">2</th>
+<td class="data row2 col0" id="T_ebfb1_row2_col0">Charged Off | Default</td>
+<td class="data row2 col1" id="T_ebfb1_row2_col1">11.880000</td>
 </tr>
 <tr>
-<th class="row_heading level0 row3" id="T_7566f_level0_row3">3</th>
-<td class="data row3 col0" id="T_7566f_row3_col0">Late | Grace Period</td>
-<td class="data row3 col1" id="T_7566f_row3_col1">1.520000</td>
+<th class="row_heading level0 row3" id="T_ebfb1_level0_row3">3</th>
+<td class="data row3 col0" id="T_ebfb1_row3_col0">Late | Grace Period</td>
+<td class="data row3 col1" id="T_ebfb1_row3_col1">1.520000</td>
 </tr>
 <tr>
-<th class="row_heading level0 row4" id="T_7566f_level0_row4">4</th>
-<td class="data row4 col0" id="T_7566f_row4_col0">Other | Missing</td>
-<td class="data row4 col1" id="T_7566f_row4_col1">0.120000</td>
+<th class="row_heading level0 row4" id="T_ebfb1_level0_row4">4</th>
+<td class="data row4 col0" id="T_ebfb1_row4_col0">Other | Missing</td>
+<td class="data row4 col1" id="T_ebfb1_row4_col1">0.120000</td>
 </tr>
 </tbody>
 </table>
@@ -849,21 +871,21 @@ h3:hover .anchor-link { opacity: 1; }
 </div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-html">
 <style type="text/css">
 </style>
-<table id="T_26932">
+<table id="T_a17d9">
 <thead>
 <tr>
-<th class="col_heading level0 col0" id="T_26932_level0_col0">default</th>
-<th class="col_heading level0 col1" id="T_26932_level0_col1">%</th>
+<th class="col_heading level0 col0" id="T_a17d9_level0_col0">default</th>
+<th class="col_heading level0 col1" id="T_a17d9_level0_col1">%</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="data row0 col0" id="T_26932_row0_col0">0</td>
-<td class="data row0 col1" id="T_26932_row0_col1">80.04%</td>
+<td class="data row0 col0" id="T_a17d9_row0_col0">0</td>
+<td class="data row0 col1" id="T_a17d9_row0_col1">80.04%</td>
 </tr>
 <tr>
-<td class="data row1 col0" id="T_26932_row1_col0">1</td>
-<td class="data row1 col1" id="T_26932_row1_col1">19.96%</td>
+<td class="data row1 col0" id="T_a17d9_row1_col0">1</td>
+<td class="data row1 col1" id="T_a17d9_row1_col1">19.96%</td>
 </tr>
 </tbody>
 </table>
@@ -1004,39 +1026,39 @@ h3:hover .anchor-link { opacity: 1; }
 </div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-html">
 <style type="text/css">
 </style>
-<table id="T_315d3">
+<table id="T_3bfa2">
 <thead>
 <tr>
-<th class="col_heading level0 col0" id="T_315d3_level0_col0">verification_status</th>
-<th class="col_heading level0 col1" id="T_315d3_level0_col1">num_loans</th>
-<th class="col_heading level0 col2" id="T_315d3_level0_col2">pct_loans</th>
-<th class="col_heading level0 col3" id="T_315d3_level0_col3">default_rate</th>
+<th class="col_heading level0 col0" id="T_3bfa2_level0_col0">verification_status</th>
+<th class="col_heading level0 col1" id="T_3bfa2_level0_col1">num_loans</th>
+<th class="col_heading level0 col2" id="T_3bfa2_level0_col2">pct_loans</th>
+<th class="col_heading level0 col3" id="T_3bfa2_level0_col3">default_rate</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="data row0 col0" id="T_315d3_row0_col0">Verified</td>
-<td class="data row0 col1" id="T_315d3_row0_col1">418,352</td>
-<td class="data row0 col2" id="T_315d3_row0_col2">31.10%</td>
-<td class="data row0 col3" id="T_315d3_row0_col3">23.86%</td>
+<td class="data row0 col0" id="T_3bfa2_row0_col0">Verified</td>
+<td class="data row0 col1" id="T_3bfa2_row0_col1">418,352</td>
+<td class="data row0 col2" id="T_3bfa2_row0_col2">31.10%</td>
+<td class="data row0 col3" id="T_3bfa2_row0_col3">23.86%</td>
 </tr>
 <tr>
-<td class="data row1 col0" id="T_315d3_row1_col0">Source + Not Verified</td>
-<td class="data row1 col1" id="T_315d3_row1_col1">926,998</td>
-<td class="data row1 col2" id="T_315d3_row1_col2">68.90%</td>
-<td class="data row1 col3" id="T_315d3_row1_col3">18.21%</td>
+<td class="data row1 col0" id="T_3bfa2_row1_col0">Source + Not Verified</td>
+<td class="data row1 col1" id="T_3bfa2_row1_col1">926,998</td>
+<td class="data row1 col2" id="T_3bfa2_row1_col2">68.90%</td>
+<td class="data row1 col3" id="T_3bfa2_row1_col3">18.21%</td>
 </tr>
 <tr>
-<td class="data row2 col0" id="T_315d3_row2_col0">Source Verified</td>
-<td class="data row2 col1" id="T_315d3_row2_col1">521,289</td>
-<td class="data row2 col2" id="T_315d3_row2_col2">38.75%</td>
-<td class="data row2 col3" id="T_315d3_row2_col3">20.96%</td>
+<td class="data row2 col0" id="T_3bfa2_row2_col0">Source Verified</td>
+<td class="data row2 col1" id="T_3bfa2_row2_col1">521,289</td>
+<td class="data row2 col2" id="T_3bfa2_row2_col2">38.75%</td>
+<td class="data row2 col3" id="T_3bfa2_row2_col3">20.96%</td>
 </tr>
 <tr>
-<td class="data row3 col0" id="T_315d3_row3_col0">Not Verified</td>
-<td class="data row3 col1" id="T_315d3_row3_col1">405,709</td>
-<td class="data row3 col2" id="T_315d3_row3_col2">30.16%</td>
-<td class="data row3 col3" id="T_315d3_row3_col3">14.68%</td>
+<td class="data row3 col0" id="T_3bfa2_row3_col0">Not Verified</td>
+<td class="data row3 col1" id="T_3bfa2_row3_col1">405,709</td>
+<td class="data row3 col2" id="T_3bfa2_row3_col2">30.16%</td>
+<td class="data row3 col3" id="T_3bfa2_row3_col3">14.68%</td>
 </tr>
 </tbody>
 </table>
@@ -1178,34 +1200,34 @@ h3:hover .anchor-link { opacity: 1; }
 </div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-html">
 <style type="text/css">
 </style>
-<table id="T_bfb71">
+<table id="T_4aa13">
 <thead>
 <tr>
-<th class="col_heading level0 col0" id="T_bfb71_level0_col0">Action</th>
-<th class="col_heading level0 col1" id="T_bfb71_level0_col1">Number of Variables</th>
-<th class="col_heading level0 col2" id="T_bfb71_level0_col2">Percent of Total</th>
+<th class="col_heading level0 col0" id="T_4aa13_level0_col0">Action</th>
+<th class="col_heading level0 col1" id="T_4aa13_level0_col1">Number of Variables</th>
+<th class="col_heading level0 col2" id="T_4aa13_level0_col2">Percent of Total</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="data row0 col0" id="T_bfb71_row0_col0">DROP</td>
-<td class="data row0 col1" id="T_bfb71_row0_col1">56</td>
-<td class="data row0 col2" id="T_bfb71_row0_col2">71.794872</td>
+<td class="data row0 col0" id="T_4aa13_row0_col0">DROP</td>
+<td class="data row0 col1" id="T_4aa13_row0_col1">56</td>
+<td class="data row0 col2" id="T_4aa13_row0_col2">71.794872</td>
 </tr>
 <tr>
-<td class="data row1 col0" id="T_bfb71_row1_col0">KEEP</td>
-<td class="data row1 col1" id="T_bfb71_row1_col1">14</td>
-<td class="data row1 col2" id="T_bfb71_row1_col2">17.948718</td>
+<td class="data row1 col0" id="T_4aa13_row1_col0">KEEP</td>
+<td class="data row1 col1" id="T_4aa13_row1_col1">14</td>
+<td class="data row1 col2" id="T_4aa13_row1_col2">17.948718</td>
 </tr>
 <tr>
-<td class="data row2 col0" id="T_bfb71_row2_col0">IMPUTE</td>
-<td class="data row2 col1" id="T_bfb71_row2_col1">5</td>
-<td class="data row2 col2" id="T_bfb71_row2_col2">6.410256</td>
+<td class="data row2 col0" id="T_4aa13_row2_col0">IMPUTE</td>
+<td class="data row2 col1" id="T_4aa13_row2_col1">5</td>
+<td class="data row2 col2" id="T_4aa13_row2_col2">6.410256</td>
 </tr>
 <tr>
-<td class="data row3 col0" id="T_bfb71_row3_col0">DROP ROWS</td>
-<td class="data row3 col1" id="T_bfb71_row3_col1">3</td>
-<td class="data row3 col2" id="T_bfb71_row3_col2">3.846154</td>
+<td class="data row3 col0" id="T_4aa13_row3_col0">DROP ROWS</td>
+<td class="data row3 col1" id="T_4aa13_row3_col1">3</td>
+<td class="data row3 col2" id="T_4aa13_row3_col2">3.846154</td>
 </tr>
 </tbody>
 </table>
@@ -6865,7 +6887,9 @@ Top Decile Default Rate:
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Best CV AUC: </span><span class="si">{</span><span class="n">grid_xgb</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
 <pre>Fitting 7 folds for each of 12 candidates, totalling 84 fits
-Best Params: {'clf__learning_rate': 0.03, 'clf__max_depth': 4, 'clf__n_estimators': 400}
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>Best Params: {'clf__learning_rate': 0.03, 'clf__max_depth': 4, 'clf__n_estimators': 400}
 Best CV AUC: 0.6569
 </pre>
 </div></div>
@@ -7172,7 +7196,9 @@ Best CV AUC: 0.6569
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Best CV AUC: </span><span class="si">{</span><span class="n">grid_rf</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
 <pre>Fitting 7 folds for each of 24 candidates, totalling 168 fits
-Best Params: {'clf__max_depth': 10, 'clf__max_features': 'sqrt', 'clf__min_samples_leaf': 20, 'clf__n_estimators': 300}
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>Best Params: {'clf__max_depth': 10, 'clf__max_features': 'sqrt', 'clf__min_samples_leaf': 20, 'clf__n_estimators': 300}
 Best CV AUC: 0.6524
 </pre>
 </div></div>
@@ -7401,10 +7427,6 @@ Best CV AUC: 0.6524
     <span style="background-color:#fff3b0; font-weight:bold; padding:2px 4px;">
         0.4111
     </span>
-</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
-<pre>/opt/anaconda3/lib/python3.12/site-packages/joblib/externals/loky/process_executor.py:752: UserWarning: A worker stopped while some jobs were given to the executor. This can be caused by a too short worker timeout or by a memory leak.
-  warnings.warn(
-</pre>
 </div></div>
 <div class="md"><p><strong>Table 21</strong></p>
 <ul>
@@ -7476,7 +7498,9 @@ Best CV AUC: 0.6524
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Best CV AUC: </span><span class="si">{</span><span class="n">svm_grid</span><span class="o">.</span><span class="n">best_score_</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
 <pre>Fitting 7 folds for each of 18 candidates, totalling 126 fits
-Best Params: {'clf__alpha': 0.0001, 'nystroem__gamma': 0.01, 'nystroem__n_components': 500}
+</pre>
+</div></div><div class="nb-cell out-cell"><div class="prompt out"></div><div class="out-text">
+<pre>Best Params: {'clf__alpha': 0.0001, 'nystroem__gamma': 0.01, 'nystroem__n_components': 500}
 Best CV AUC: 0.6542
 </pre>
 </div></div>
@@ -8146,15 +8170,16 @@ Best CV AUC: 0.6542
 </div></div>
 <div class="md"><p><strong>Table 24</strong></p>
 <ul>
-<li>Performance differences across models are incremental (AUC, KS, Gini) and, per Section 7.6.1, not statistically distinguishable from the baseline</li>
+<li>Performance differences across models are incremental (AUC, KS, Gini); per Section 7.6.1, only SVM's is statistically distinguishable from the baseline, and it is under 0.003 AUC</li>
 <li>SVM posts the highest Test AUC of the three alternatives (0.6537), narrowly ahead of Random Forest (0.6522) and XGBoost (0.6521); differences this small are not a basis for model choice</li>
 <li>Brier Score initially favors XGBoost and Random Forest (0.1664/0.1672 vs 0.2309); the Brier Score (After) column shows the baseline's gap closes entirely with post-hoc recalibration (0.1667, see Section 7.5.3) without any change to AUC</li>
 <li>Logistic baseline, once recalibrated, captures most observable risk and produces trustworthy probabilities within a stable, linear framework</li>
 </ul></div>
 <div class="md"><h4 id="7.6.1-Statistical-Significance-Testing">7.6.1 Statistical Significance Testing<a class="anchor-link" href="#7.6.1-Statistical-Significance-Testing">¶</a></h4><ul>
-<li>DeLong used for statistical significance testig to compare differences in AUC</li>
-<li>None of Random Forest, XGBoost, or SVM are statistically significant improvements over baseline (p = 0.64, 0.66, 0.46 respectively)</li>
-<li>LendingClub Grades is the only statistically significant comparison (p &lt; 0.001), and demonstrates superior discriminatory power</li>
+<li>Paired DeLong test used for statistical significance testing to compare differences in AUC, accounting for the correlation between models scored on the same test loans</li>
+<li>Random Forest and XGBoost are not statistically significant improvements over baseline (p = 0.25, 0.42 respectively)</li>
+<li>SVM's improvement is statistically significant (p &lt; 0.001) but small (+0.0028 AUC); with this many test loans, differences too small to matter in practice are still detectable</li>
+<li>LendingClub Grades shows by far the largest significant improvement (+0.0231 AUC, p &lt; 0.001), and demonstrates superior discriminatory power</li>
 </ul></div>
 <div class="nb-cell code-cell"><div class="prompt in">In [82]:</div><div class="code-card"><button type="button" class="copy" aria-label="Copy code">Copy</button><pre><span></span><span class="c1"># Statistical Significance Testing</span>
 <span class="n">y_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y_test</span><span class="p">)</span>
@@ -8246,7 +8271,7 @@ Best CV AUC: 0.6542
 <td>0.6509</td>
 <td>0.6521</td>
 <td>0.0012</td>
-<td>0.66486</td>
+<td>0.42202</td>
 </tr>
 <tr>
 <th>1</th>
@@ -8254,7 +8279,7 @@ Best CV AUC: 0.6542
 <td>0.6509</td>
 <td>0.6522</td>
 <td>0.0013</td>
-<td>0.63561</td>
+<td>0.24992</td>
 </tr>
 <tr>
 <th>2</th>
@@ -8262,7 +8287,7 @@ Best CV AUC: 0.6542
 <td>0.6509</td>
 <td>0.6537</td>
 <td>0.0028</td>
-<td>0.31578</td>
+<td>0.00035</td>
 </tr>
 <tr>
 <th>3</th>
@@ -8317,7 +8342,7 @@ Best CV AUC: 0.6542
 <ul>
 <li>Increasing model complexity produced only incremental improvements over baseline logistic regression</li>
 <li>Random Forest and SVM performed similarly to the baseline model</li>
-<li>None of Random Forest, XGBoost, or SVM showed a statistically significant AUC increase over the baseline</li>
+<li>Only SVM showed a statistically significant AUC increase over the baseline, and at +0.0028 it is too small to matter in practice; Random Forest and XGBoost showed none</li>
 <li>LendingClub grade system outperformed all models in discriminatory power</li>
 <li>The grade advantage is more plausibly explained by data access (third-party/non-traditional credit data used in proprietary underwriting) than by modeling sophistication, reinforcing the feature-quality-over-complexity theme</li>
 <li>On calibration, XGBoost and Random Forest initially appear more trustworthy than the baseline (Brier 0.1664/0.1672 vs 0.2309), but this gap is fully closed by a simple post-hoc recalibration step (Brier 0.1667), confirming it was a modeling-choice artifact (balanced class weighting), not a genuine limitation of the linear model</li>
@@ -8326,7 +8351,7 @@ Best CV AUC: 0.6542
 <ul>
 <li>Evidence of diminishing returns from more complex models</li>
 <li>Limited improvement in KS statistic and ranking performance</li>
-<li>Reinforces that added model complexity needs a statistically demonstrated benefit, not just a numerically higher point estimate, to justify its cost</li>
+<li>Reinforces that added model complexity needs a material benefit, not just a numerically higher or statistically significant point estimate, to justify its cost</li>
 <li>More complexity did not meaningfully improve risk separation</li>
 <li>Post-hoc recalibration (Platt scaling) is a cheap, effective fix for calibration issues and does not require abandoning an interpretable model</li>
 </ul>
@@ -8348,7 +8373,7 @@ Best CV AUC: 0.6542
   <aside class="rail" aria-label="Notebook summary">
     <section>
       <p class="rail-title">Key decisions</p>
-      <ol class="decisions"><li><a href="#2.0-Data-Description-&amp;-Preprocessing"><span class="decision-num">1</span><span><b>Split training and test loans by date</b><small>Data · before 2016, then 2016 onward</small></span></a></li><li><a href="#7.0-Comparative-Analysis"><span class="decision-num">2</span><span><b>Test every model against the baseline</b><small>Comparative Analysis · DeLong, none significant</small></span></a></li><li><a href="#7.0-Comparative-Analysis"><span class="decision-num">3</span><span><b>Recalibrate before judging calibration</b><small>Comparative Analysis · Brier 0.2309 to 0.1667</small></span></a></li><li><a href="#10.0-Conclusions"><span class="decision-num">4</span><span><b>Keep the recalibrated logistic baseline</b><small>Conclusions · as accurate, still interpretable</small></span></a></li></ol>
+      <ol class="decisions"><li><a href="#2.0-Data-Description-&amp;-Preprocessing"><span class="decision-num">1</span><span><b>Split training and test loans by date</b><small>Data · before 2016, then 2016 onward</small></span></a></li><li><a href="#7.0-Comparative-Analysis"><span class="decision-num">2</span><span><b>Test every model against the baseline</b><small>Comparative Analysis · paired DeLong, gains under 0.003</small></span></a></li><li><a href="#7.0-Comparative-Analysis"><span class="decision-num">3</span><span><b>Recalibrate before judging calibration</b><small>Comparative Analysis · Brier 0.2309 to 0.1667</small></span></a></li><li><a href="#10.0-Conclusions"><span class="decision-num">4</span><span><b>Keep the recalibrated logistic baseline</b><small>Conclusions · within 0.003 AUC, still interpretable</small></span></a></li></ol>
     </section>
     <section>
       <p class="rail-title">Sections read</p>

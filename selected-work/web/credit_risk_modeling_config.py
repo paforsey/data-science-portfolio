@@ -53,7 +53,7 @@ SECTION_LABELS = [
 STATS = [
     ("bars", "150,000", "LendingClub loans, split by date"),
     ("layers", "3", "complex models against one baseline"),
-    ("flask", "p > 0.45", "no model beats the baseline"),
+    ("flask", "+0.0028", "largest AUC gain over the baseline"),
     ("check", "0.1667", "baseline Brier after recalibration"),
 ]
 
@@ -61,9 +61,9 @@ STATS = [
 # 9 Conclusions.
 DECISIONS = [
     ("Split training and test loans by date", "Data · before 2016, then 2016 onward", 1),
-    ("Test every model against the baseline", "Comparative Analysis · DeLong, none significant", 6),
+    ("Test every model against the baseline", "Comparative Analysis · paired DeLong, gains under 0.003", 6),
     ("Recalibrate before judging calibration", "Comparative Analysis · Brier 0.2309 to 0.1667", 6),
-    ("Keep the recalibrated logistic baseline", "Conclusions · as accurate, still interpretable", 9),
+    ("Keep the recalibrated logistic baseline", "Conclusions · within 0.003 AUC, still interpretable", 9),
 ]
 
 RELATED = [
