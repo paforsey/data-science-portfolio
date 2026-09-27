@@ -1,10 +1,10 @@
 """Research-notebook page settings for the presentation narration TTS notebook.
 
-The notebook lives in the site repo, beside the scripts it processes
-(datafxlab/paforsey/tts/tts_research_01_baseline.ipynb). Build from selected-work after
-re-exporting it:
+The notebook lives in selected-work (tts_research_01_baseline.ipynb); the script it narrates
+stays in the site repo (datafxlab/paforsey/tts/international_roaming_script.txt). Build from
+selected-work after re-exporting it:
 
-    jupyter nbconvert --to html ../../datafxlab/paforsey/tts/tts_research_01_baseline.ipynb \
+    jupyter nbconvert --to html tts_research_01_baseline.ipynb \
         --output-dir . --output presentation_narration_tts
     python3 ../tools/notebook-restyle/restyle_notebook.py web/presentation_narration_config.py \
         presentation_narration_tts.html web/presentation_narration_tts.html
