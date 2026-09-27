@@ -10,7 +10,8 @@ with `jupyter nbconvert --to html`:
 The notebook's cells are kept as they are; only their presentation changes:
 
   - a section sidebar built from the notebook's h2 headings (and, optionally, its h3s)
-  - a summary header with four headline figures and a notice (a disclosure or context note)
+  - a summary header with four headline figures and a notice (a disclosure or context note);
+    with SUMMARY, the cell after the title (a heading and a paragraph) shows above the notice
   - code cells as cards with a copy button, and outputs beneath them
   - markdown "Recommendation" bullets split into Interpretation and Decision callouts
   - with TIDY_MARKDOWN, "Purpose:" and "Design Notes:" labels styled as a lead line and a
@@ -438,6 +439,23 @@ def build(src_html, config):
         subtitle_p.find("strong").decompose()
     subtitle = subtitle_p.get_text(strip=True)
 
+    # Optional summary cell between the title and the notice: its heading becomes the box
+    # title, its paragraphs the body. Dropping it leaves the cell indices below unchanged.
+    summary = getattr(config, "SUMMARY", None)
+    summary_html = ""
+    if summary:
+        summary_cell = cells[1].select_one(".jp-RenderedMarkdown")
+        summary_head = summary_cell.find(["h1", "h2", "h3"])
+        assert summary_head is not None, "expected the summary heading in the second cell"
+        summary_title = heading_text(summary_head)
+        summary_body = "".join(f"<p>{inner(p).strip()}</p>" for p in summary_cell.find_all("p"))
+        summary_class = "disclosure" + (f' {summary["variant"]}' if summary.get("variant") else "")
+        summary_html = (
+            f'<div class="{summary_class}">{icon(summary["icon"])}'
+            f"<div><b>{html.escape(summary_title)}</b>{summary_body}</div></div>"
+        )
+        cells = [cells[0]] + cells[2:]
+
     notice = config.NOTICE
     notice_class = "disclosure" + (f' {notice["variant"]}' if notice.get("variant") else "")
     leftover = None
@@ -477,6 +495,7 @@ def build(src_html, config):
     else:
         raise SystemExit(f"unknown NOTICE source {notice['source']!r}")
     notice_html = f'<div class="{notice_class}">{icon(notice["icon"])}<div><b>{html.escape(notice["title"])}</b>{notice_body}</div></div>'
+    notice_html = summary_html + notice_html
 
     body, sections, pending = [], [], []
     # Some exports carry no heading ids; anchors are generated and kept unique.
