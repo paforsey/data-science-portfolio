@@ -139,6 +139,10 @@ a { color: var(--accent); }
 .disclosure b { display: block; margin-bottom: 0.2rem; }
 .disclosure li b { display: inline; margin: 0; }
 .disclosure ul { margin: 0; padding-left: 1.1rem; }
+/* Disclosure: no icon; bullets hang so each dot lines up with the heading's first letter. */
+.disclosure:not(.info) ul { padding-left: 0; list-style: none; }
+.disclosure:not(.info) li { position: relative; padding-left: 1rem; }
+.disclosure:not(.info) li::before { content: ''; position: absolute; left: 0; top: 0.62em; width: 0.32em; height: 0.32em; border-radius: 50%; background: currentColor; }
 .disclosure p { margin: 0; line-height: 1.55; }
 .disclosure ul + p { margin-top: 0.6rem; }
 .disclosure.info { border-color: var(--accent-line); background: var(--accent-soft); }

@@ -97,10 +97,13 @@
       return (b.getAttribute('data-sections') || b.getAttribute('data-goto') || '0')
         .split(',').map(Number);
     });
+    var header = document.querySelector('.nb-header');
     var seen = [];
     var showTab = function (tab, scrollToTop) {
       var shown = owned[tab] || [tab];
       sections.forEach(function (s, i) { s.hidden = shown.indexOf(i) === -1; });
+      // The summary header belongs to the Overview; other tabs start at their own section.
+      if (header) header.hidden = shown.indexOf(0) === -1;
       shown.forEach(function (i) { if (seen.indexOf(i) === -1) seen.push(i); });
       tabs.forEach(function (b, t) {
         b.classList.toggle('is-current', t === tab);

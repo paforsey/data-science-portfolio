@@ -494,7 +494,9 @@ def build(src_html, config):
             first_body_cell = 2
     else:
         raise SystemExit(f"unknown NOTICE source {notice['source']!r}")
-    notice_html = f'<div class="{notice_class}">{icon(notice["icon"])}<div><b>{html.escape(notice["title"])}</b>{notice_body}</div></div>'
+    # A plain notice (a disclosure) carries no icon; a variant such as "info" keeps its icon.
+    notice_icon = icon(notice["icon"]) if notice.get("variant") else ""
+    notice_html = f'<div class="{notice_class}">{notice_icon}<div><b>{html.escape(notice["title"])}</b>{notice_body}</div></div>'
     notice_html = summary_html + notice_html
 
     body, sections, pending = [], [], []
