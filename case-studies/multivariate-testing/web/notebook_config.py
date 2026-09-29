@@ -18,7 +18,7 @@ DESCRIPTION = (
 EYEBROW = "Experimental Design &middot; Direct Mail Testing"
 CRUMBS = [
     ("Case Studies", "/#case-studies"),
-    ("Direct Mail Acquisition", "data-science-lifecycle.html"),
+    ("Direct Mail Acquisition", "project-hub.html"),
     ("Research Notebook", None),
 ]
 BACK = None

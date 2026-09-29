@@ -24,7 +24,7 @@ DESCRIPTION = (
 EYEBROW = "ML Research &middot; Customer Retention"
 CRUMBS = [
     ("Case Studies", "/#case-studies"),
-    ("Retention Agent", "data-science-lifecycle.html"),
+    ("Retention Agent", "project-hub.html"),
     ("Research Notebook", None),
 ]
 BACK = None

@@ -21,7 +21,7 @@ DESCRIPTION = (
 EYEBROW = "ML Research &middot; Rate Plan Design"
 CRUMBS = [
     ("Case Studies", "/#case-studies"),
-    ("Wireless Plan Launch", "data-science-lifecycle.html"),
+    ("Wireless Plan Launch", "project-hub.html"),
     ("Research Notebook", None),
 ]
 BACK = None
