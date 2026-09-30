@@ -21,7 +21,7 @@ DESCRIPTION = (
     "Research notebook for an AI retention agent: churn timing, causal uplift, topic modeling of "
     "care notes, a budget-limited optimizer, a LangGraph agent, and nightly automation with monitoring."
 )
-EYEBROW = "ML Research &middot; Customer Retention"
+EYEBROW = "ML Research &middot; Subscriber Retention"
 CRUMBS = [
     ("Case Studies", "/#case-studies"),
     ("Retention Agent", "project-hub.html"),
@@ -52,10 +52,10 @@ SECTION_LABELS = [
 
 # (icon, value, label) quoted from the study.
 STATS = [
-    ("route", "7×", "more customers kept, uplift vs risk-first targeting"),
-    ("layers", "5", "uplift learners compared against a withheld answer key"),
-    ("chat", "97%", "agent drafts passing every check on the first try"),
-    ("banknote", "$6,042", "net value from a $40,000 nightly budget"),
+    ("route", "7.3×", "as many modeled additional subscribers retained as risk-first targeting (19.8 vs. 2.7)"),
+    ("layers", "5", "uplift learners evaluated"),
+    ("chat", "97%", "of first message drafts passed validation"),
+    ("banknote", "+$6,042", "modeled nightly net value under a $40,000 maximum offer exposure"),
 ]
 
 # (title, detail, section index) — index into the page's sections, in notebook order.
