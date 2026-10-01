@@ -51,9 +51,9 @@ SECTION_LABELS = [
 
 # (icon, value, label) quoted from the study.
 STATS = [
-    ("dollar", "$100M", "revenue objective"),
+    ("banknote", "$100M", "revenue objective"),
     ("bars", "+20%", "best evaluated price"),
-    ("dollar", "+$104M", "modeled annual revenue"),
+    ("banknote", "+$104M", "modeled annual revenue"),
     ("layers", "4", "models behind one price"),
 ]
 

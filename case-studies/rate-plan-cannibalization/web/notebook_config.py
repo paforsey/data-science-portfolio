@@ -55,7 +55,7 @@ SECTION_LABELS = [
 STATS = [
     ("bars", "+20 pts", "cannibalization overstated by a flat logit"),
     ("layers", "3", "taste segments behind plan choice"),
-    ("dollar", "$52.50", "recommended price per line"),
+    ("banknote", "$52.50", "recommended price per line"),
     ("flask", "108", "launch configurations scored"),
 ]
 
