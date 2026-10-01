@@ -16,25 +16,19 @@ Data contract, in brief (see web/README.md for the full version):
   portfolio   full 13-point price grid, "as fitted" and "joint sensitivity"
               cases, unconditioned on macro scenario (macro_shift = 0). This
               is what the tool calls the "Base" economic condition.
-  scenarios   Expansion / Contraction only, each at exactly the three prices
-              the macro simulation was run at (1.00x / 1.15x / 1.20x), always
-              under the "joint sensitivity" case — that's the only case the
-              macro simulation covers, so there is no "as fitted" curve to
-              show once a non-Base scenario is selected. The 1.15x point is
-              a fixed stress-test price (the joint-sensitivity case's
-              revenue-maximizing price, STRESS_TEST_PRICE below) — it is NOT
-              tied to meta.recommended_price, which is read from the
-              as-fitted case and currently sits at the 1.20x cap. The two
-              happen to coincide when the recommendation is 1.15x, but must
-              not be assumed equal: fact_macro_scenario only has rows at
-              1.00/1.15/1.20, so if recommended_price is ever something else
-              (as it is now, at 1.20x), scenario_prices would otherwise
-              collide or miss a grid point. fact_macro_scenario also
-              contains a "Base" row at those same three prices, from a
-              separate (300-iteration) run of the same unconditioned case;
-              it is deliberately NOT surfaced in the UI as a second "Base"
-              source — see README — but is checked below for consistency
-              with `portfolio` so a large divergence fails the build.
+  scenarios   Expansion / Contraction, full 13-point grid, re-simulated here
+              at the as-fitted settings (response and depth 1.0) with the same
+              seed and iteration count as the as-fitted Baseline sweep, so all
+              three outlooks share one basis and one set of draws and differ
+              only in macro_shift. revenue and purchasers p5/median/p95 per
+              price. The notebook's own macro runs (fact_macro_scenario) cover
+              only the joint-sensitivity settings at 1.00/1.15/1.20x, a stress
+              test that isn't comparable with the as-fitted Baseline; they are
+              no longer published, only replayed as a check that
+              replay_forward_year still reproduces the notebook's simulation
+              (revenue p5/median/p95 and the paired 1.15x change). Their
+              "Base" row is still checked against portfolio["joint
+              sensitivity"] so a large divergence fails the build.
   segments    every segment (Dormant included), full 13-point grid, revenue
               and purchasers from the as-fitted replay (Base economy, both
               sensitivity scales 1.0), the same run as the headline figures.
@@ -53,13 +47,6 @@ Data contract, in brief (see web/README.md for the full version):
               than a second independent simulation. eligible_accounts is
               the forward-panel population those counts are drawn from
               (N_ACCOUNTS_PANEL), constant across every row.
-              Expansion/Contraction additionally carry a genuinely paired
-              revenue/purchaser difference (1.15x vs 1.00x, same iterations)
-              under `paired_at_stress_price` — preferred over subtracting
-              marginal medians per the tool's spec (§12), and used by the
-              page whenever the scenario and selected price make it valid.
-              Named for the fixed 1.15x stress-test price, not for whichever
-              price is currently recommended (see `scenarios` above).
               Segment-level purchasers remain the Track-A deterministic
               figure above; no plan to simulate intervals at that grain
               (see the scoping note in README's git history).
@@ -73,10 +60,8 @@ Data contract, in brief (see web/README.md for the full version):
               Independent response_scale x depth_scale controls, replacing
               the old bundled "Behavior Case" toggle. 3 points each
               (a Lower case mirrored below 1.0, 1.0 as fitted, and the diagnostic-derived ceiling; index 1 is as fitted), full price
-              grid, Base economy only — Expansion/Contraction stay fixed at
-              the ceiling point (RESPONSE_SCALE_GRID[-1] /
-              DEPTH_SCALE_GRID[-1] in the notebook), unchanged from before
-              this grid existed. `cells["<ri>_<di>"]` indexes into
+              grid, Base economy only — Expansion/Contraction are simulated
+              at the as-fitted point (index 1) only. `cells["<ri>_<di>"]` indexes into
               `responseScale[ri]` x `depthScale[di]`. Purely additive at the
               notebook/export layer — the original two-case sweep
               (`portfolio`, `dim_model_case`, `fact_portfolio_simulation`)
@@ -98,7 +83,7 @@ Data contract, in brief (see web/README.md for the full version):
               panel), from the same replay. One cell per control position the
               purchaser chart already reflects: base[responseIdx][priceIdx]
               over the full grid, expansion/contraction[priceIdx] over the
-              three scenario prices. Depth scale never changes purchasers, so
+              full grid (as-fitted settings). Depth scale never changes purchasers, so
               it has no axis here. Segments carry per-iteration means, which
               add up to the total mean; the total also carries p5/p95.
               subscribers_mean counts traveling subscribers on those
@@ -106,22 +91,16 @@ Data contract, in brief (see web/README.md for the full version):
               cell's replay is asserted to reproduce its published annual
               purchaser median.
   outlookAsFitted
-              Expansion / Contraction replayed at the as-fitted settings
-              (response and depth 1.0) over the full price grid: median annual
-              revenue and purchasers by price. The published macro runs cover
-              only the joint-sensitivity settings at three prices; these give
-              the page's input ranking one consistent as-fitted basis. Same
-              seed and iteration count as the as-fitted sweep, whose
-              macro_shift = 0 replay is asserted against the notebook.
+              The medians of `scenarios` (revenue and purchasers by price),
+              kept under this name for the page's input ranking.
   incremental Change in annual revenue from 1.00x, one cell per control
               position the revenue chart reflects: base["<ri>_<di>"] over the
-              full grid, expansion/contraction over the three scenario prices.
+              full grid, expansion/contraction over the full grid.
               p5/p95 are percentiles of each run's own change (the same draws
               priced both ways), not differences of marginal percentiles;
               median is the change in the median, the figure the page quotes.
-              Every replay is asserted to reproduce its published revenue
-              p5/median/p95, and each outlook's 1.15x change its published
-              paired percentiles.
+              Every Base replay is asserted to reproduce its published revenue
+              p5/median/p95.
   meta.scale_factor
               National addressable trips (I-92 x MARKET_SHARE) / forecast
               panel trips: the factor market_sizing.parquet effectively
@@ -374,7 +353,9 @@ def main():
         "stress-test price missing from price grid"
     )
     scenario_prices = [1.0, STRESS_TEST_PRICE, 1.2]
-    scenarios = {}
+    # The published macro runs are only used to check the replay engine below; the
+    # page's Expansion/Contraction figures are re-simulated at the as-fitted settings.
+    stress_paired = {}
     for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
         d = fact_macro[fact_macro["scenario"] == parquet_scenario].sort_values("price")
         prices = d["price"].round(4).tolist()
@@ -408,16 +389,7 @@ def main():
             "purchasers_paired_p95": round(float(stress_row["purchasers_paired_p95"]), 1),
         }
 
-        scenarios[key] = {
-            "price": prices,
-            "revenue_p5": d["p5"].round(2).tolist(),
-            "revenue_median": d["median"].round(2).tolist(),
-            "revenue_p95": d["p95"].round(2).tolist(),
-            "purchasers_p5": d["purchasers_p5"].round(2).tolist(),
-            "purchasers_median": d["purchasers_median"].round(2).tolist(),
-            "purchasers_p95": d["purchasers_p95"].round(2).tolist(),
-            "paired_at_stress_price": paired_at_stress_price,
-        }
+        stress_paired[key] = paired_at_stress_price
 
     # Base-row consistency check: fact_macro_scenario's own "Base" row (separate,
     # 300-iteration run) should roughly agree with `portfolio["joint sensitivity"]`
@@ -488,8 +460,8 @@ def main():
         }
 
     # ---- sensitivity grid: independent response-scale x depth-scale controls ----
-    # Base economy only (Expansion/Contraction stay fixed at the ceiling point,
-    # unchanged — see build note in the notebook's "Sweep Sensitivity Grid" cell).
+    # Base economy only (Expansion/Contraction are simulated at the as-fitted
+    # point further down — see the `scenarios` entry in the module docstring).
     response_scale_grid = sorted(fact_sensitivity["response_scale"].unique().tolist())
     depth_scale_grid = sorted(fact_sensitivity["depth_scale"].unique().tolist())
     assert len(response_scale_grid) == 3, "expected a 3-point response_scale grid"
@@ -713,33 +685,49 @@ def main():
     }
     assert stack_segment_ids == seg_order, "segment curve order differs from segOrder"
 
+    # ---- Expansion / Contraction, re-simulated at the as-fitted settings ----
+    # The notebook's macro cell ran both outlooks only at the joint-sensitivity
+    # settings (both scales at their ceiling) and three prices, which made them
+    # incomparable with the as-fitted Baseline the page leads with. They are
+    # re-simulated here at the as-fitted settings (response and depth 1.0) over
+    # the full grid, with the same seed and iteration count as the as-fitted
+    # Baseline sweep, so the three outlooks share one basis and one set of draws.
+    # replay_forward_year is asserted above to reproduce the as-fitted sweep at
+    # macro_shift = 0, and below to reproduce the published macro runs.
+    scenarios, outlook_revenue_runs, outlook_as_fitted = {}, {}, {}
     for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
+        shift = float(macro_shifts[parquet_scenario])
+        runs = {
+            round(price, 4): replay_forward_year(
+                panel, sweep_iter, shift, crn_seed, state_prob("base", price), segment_onehot,
+                state_revenue=state_revenue_as_fitted(price),
+            )
+            for price in grid
+        }
+        stats = {name: [] for name in [
+            "revenue_p5", "revenue_median", "revenue_p95", "purchasers_p5", "purchasers_median", "purchasers_p95",
+        ]}
         cells = []
-        for price in scenario_prices:
-            published = fact_macro.loc[
-                (fact_macro["scenario"] == parquet_scenario) & np.isclose(fact_macro["price"], price),
-                "purchasers_median",
-            ].iloc[0]
-            result = replay_checked(
-                f"{key} {price}x", macro_iter, float(macro_shifts[parquet_scenario]), "stronger", price, published
-            )
-            if abs(price - current_price) < 1e-9:
-                current_price_runs[key] = result
-            cells.append(summarize_monthly_purchasers(result))
-        purchasers_by_month[key] = cells
-
-    # ---- economic outlook at the as-fitted settings (input ranking) ----
-    outlook_as_fitted = {}
-    for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
-        revenue_median, purchasers_median = [], []
         for price in grid:
-            result = replay_forward_year(
-                panel, sweep_iter, float(macro_shifts[parquet_scenario]), crn_seed,
-                state_prob("base", price), segment_onehot, state_revenue=state_revenue_as_fitted(price),
-            )
-            revenue_median.append(round(float(np.median(result["annual_revenue"])), 2))
-            purchasers_median.append(round(float(np.median(result["annual_purchasers"])), 2))
-        outlook_as_fitted[key] = {"revenue_median": revenue_median, "purchasers_median": purchasers_median}
+            result = runs[round(price, 4)]
+            for metric, values in [("revenue", result["annual_revenue"]), ("purchasers", result["annual_purchasers"])]:
+                p5, median, p95 = np.percentile(values, 5), np.median(values), np.percentile(values, 95)
+                assert p5 <= median <= p95, f"{key} {price}x: {metric} p5<=median<=p95 violated"
+                stats[f"{metric}_p5"].append(round(float(p5), 2))
+                stats[f"{metric}_median"].append(round(float(median), 2))
+                stats[f"{metric}_p95"].append(round(float(p95), 2))
+            assert stats["purchasers_p95"][-1] <= eligible_accounts + 1e-6, f"{key} {price}x: purchasers above eligible"
+            total = result["monthly_purchasers_by_segment"].sum(axis=1)
+            assert (total <= result["monthly_travelers"]).all(), f"{key} {price}x: monthly purchasers exceed travelers"
+            assert (result["monthly_subscribers"] >= total).all(), f"{key} {price}x: fewer subscribers than accounts"
+            cells.append(summarize_monthly_purchasers(result))
+        scenarios[key] = {"price": [round(g, 4) for g in grid], **stats}
+        purchasers_by_month[key] = cells
+        current_price_runs[key] = runs[round(current_price, 4)]
+        outlook_revenue_runs[key] = {p: r["annual_revenue"] for p, r in runs.items()}
+        outlook_as_fitted[key] = {
+            "revenue_median": stats["revenue_median"], "purchasers_median": stats["purchasers_median"],
+        }
 
     # ---- incremental revenue: each run's change from 1.00x (revenue chart) ----
     # Percentiles of each run's own change, so the band shows how much the gain
@@ -798,7 +786,12 @@ def main():
             runs = revenue_runs(label, grid, sweep_iter, 0.0, response_scenario, depth_scenario, published)
             incremental["base"][f"{ri}_{di}"] = summarize_increments(label, runs, grid)
 
-    # Expansion/Contraction run at the joint-sensitivity settings (stronger response and depth).
+    for key, runs in outlook_revenue_runs.items():
+        incremental[key] = summarize_increments(f"incremental {key}", runs, grid)
+
+    # Replay check only: the published macro runs (joint-sensitivity settings, three
+    # prices) must still come out draw for draw, so the as-fitted outlook runs above
+    # use the notebook's own simulation. Nothing from these runs is published.
     for key, parquet_scenario in [("expansion", "Expansion"), ("contraction", "Contraction")]:
         published = (
             fact_macro[fact_macro["scenario"] == parquet_scenario]
@@ -806,18 +799,17 @@ def main():
             .set_index("p")
         )
         runs = revenue_runs(
-            f"incremental {key}", scenario_prices, macro_iter, float(macro_shifts[parquet_scenario]),
+            f"macro replay check {key}", scenario_prices, macro_iter, float(macro_shifts[parquet_scenario]),
             "stronger", "stronger", published,
         )
-        incremental[key] = summarize_increments(f"incremental {key}", runs, scenario_prices)
         stress_change = runs[round(STRESS_TEST_PRICE, 4)] - runs[round(current_price, 4)]
-        paired = scenarios[key]["paired_at_stress_price"]
+        paired = stress_paired[key]
         for stat, value in [
             ("p5", np.percentile(stress_change, 5)), ("median", np.median(stress_change)),
             ("p95", np.percentile(stress_change, 95)),
         ]:
             assert abs(value - paired[f"revenue_paired_{stat}"]) < 0.05, (
-                f"incremental {key}: replayed 1.15x change {stat} {value} != published {paired[f'revenue_paired_{stat}']}"
+                f"macro replay check {key}: 1.15x change {stat} {value} != published {paired[f'revenue_paired_{stat}']}"
             )
 
     # ---- travelers: national forecast from published I-92 actuals ----

@@ -74,17 +74,14 @@ does, unless the data contract below changes shape.
   for Base; `portfolio`/`dim_model_case` still exist in the parquet layer
   but nothing in the UI consumes them any more.
 - `scenarios.expansion` / `scenarios.contraction` — revenue and purchasers
-  p5/median/p95 at exactly the three prices the macro simulation was run at
-  (1.00x, 1.15x, 1.20x), always at both sliders' ceiling — that combination
-  is the only point the macro simulation covers. The 1.15x point is a fixed
-  stress-test price (the joint-sensitivity case's peak, `STRESS_TEST_PRICE`
-  in `build_data.py`) — it is **not** tied to `meta.recommended_price`, which
-  is read from the as-fitted case and currently sits at the 1.20x cap; the
-  two happen to coincide only when the recommendation is 1.15x. Each scenario
-  also carries `paired_at_stress_price`: a genuinely paired revenue/purchaser
-  difference (1.15x vs. 1.00x, same iterations) — the tool prefers this over
-  subtracting two marginal medians whenever the scenario and selected price
-  make it valid, per the spec's preference for paired simulation differences.
+  p5/median/p95 across the full 13-point grid, re-simulated by `build_data.py`
+  at the as-fitted settings (both sliders at Modeled) with the same seed and
+  iteration count as the as-fitted Baseline sweep, so the three outlooks share
+  one basis and differ only in the macro shift. The notebook's own macro runs
+  (`fact_macro_scenario`) cover only both sliders' ceiling at 1.00x / 1.15x /
+  1.20x, a stress test whose gains aren't comparable with the as-fitted
+  Baseline; they are no longer published, only replayed as a check that the
+  build still reproduces the notebook's simulation draw for draw.
 - `segOrder` / `segMeta` / `segCurve` — the four pricing-eligible segments'
   revenue **and expected purchasers** across the full grid, both deterministic
   expected-value decompositions (not simulated — no interval, unlike the
@@ -141,7 +138,7 @@ one to start; revisit `RESPONSE_SCALE_GRID`/`DEPTH_SCALE_GRID` in "Configure
 Simulation" if more resolution is wanted later.
 
 Deliberately **not** done: crossing this grid with Economic Scenario.
-Expansion/Contraction stay fixed at both ceilings, exactly as before — a
+Expansion/Contraction are simulated at the as-fitted point only — a
 full 3 (economy) x 3 (response) x 3 (depth) simulation matrix wasn't worth
 building for a control combination nobody asked for. See "Sweep Sensitivity
 Grid" in the notebook for the reasoning.
