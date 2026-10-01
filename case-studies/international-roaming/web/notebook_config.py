@@ -67,7 +67,7 @@ DECISIONS = [
 
 RELATED = [
     ("Analytical plan", "analytical-plan.html"),
-    ("Case study", "case-study.html"),
+    ("Case study", "research-results.html"),
     ("Scenario tool", "scenario-analysis/scenario-analysis.html"),
     ("Executive presentation", "executive-presentation.html"),
 ]
