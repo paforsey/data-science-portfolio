@@ -54,7 +54,7 @@ DECISIONS = [
 ]
 
 RELATED = [
-    ("Case study", "case-study.html"),
+    ("Research results", "research-results.html"),
     ("Executive presentation", "executive-presentation.html"),
     ("Analytical plan", "analytical-plan.html"),
 ]
