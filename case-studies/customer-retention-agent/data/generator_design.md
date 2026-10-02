@@ -179,8 +179,9 @@ are also checked in code by the agent's compliance step.
   - Device: phone ≥ 18 months old, paid off or within 3 months of payoff, no late payment in the past
     3 months.
   - Data: 15 GB plan only.
-- **Contact rules (hard):** at most one retention offer per account per 90 days; never contact
-  do-not-contact accounts (about 3%); one offer per message; SMS up to 320 characters, ending with
+- **Contact rules (hard):** at most one retention offer per account per 90 days, and no new offer for 6
+  months after an accepted one, while its effect lasts (the 12-month limit on the loyalty discount still
+  applies); never contact do-not-contact accounts (about 3%); one offer per message; SMS up to 320 characters, ending with
   "Reply STOP to opt out."
 - **Message standards:** state the offer terms exactly; no deadlines or pressure; never mention
   churn, risk scores, or predictions; no competitor names; nothing the customer didn't share.

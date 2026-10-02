@@ -23,6 +23,7 @@ Describe an offer only with these terms. Never add, round, or combine offers.
 
 ## Contact rules (hard)
 - At most one retention offer per account in any 90 days.
+- No new offer for 6 months after a customer accepts one, while the accepted offer is still affecting their decision to stay. The 12-month limit on the loyalty discount still applies.
 - Never contact an account marked do-not-contact.
 - One offer per message.
 - SMS messages are at most 320 characters and end with "Reply STOP to opt out."

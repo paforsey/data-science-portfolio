@@ -109,15 +109,24 @@ def select_exact(candidates, budget, score = 'net_value', budget_on = 'exposure'
     return pool[picked].reset_index(drop = True)
 
 
+def holdout_flags(account_ids, share, seed):
+    """True for about `share` of the accounts. Each account's draw depends only on its id and the seed,
+    so changing who else is chosen never moves anyone in or out of the holdout."""
+
+    keys = np.array([f'{seed}:{account}' for account in account_ids], dtype = object)
+
+    return pd.util.hash_array(keys).astype(float) / 2.0 ** 64 < share
+
+
 def plan_tonight(candidates, budget, holdout_share = 0.1, seed = 0):
     """The agent's tool: tonight's offers, with the numbers behind each, and a summary.
 
-    A random `holdout_share` of the chosen customers is held back and not contacted, so the realized
-    effect of the plan can be measured against them (section 06).
+    About `holdout_share` of the chosen customers, picked by a hash of the account id and the seed, are
+    held back and not contacted, so the realized effect of the plan can be measured against them (section 06).
     """
 
     chosen = select_greedy(candidates, budget)
-    chosen['holdout'] = np.random.default_rng(seed).random(len(chosen)) < holdout_share
+    chosen['holdout'] = holdout_flags(chosen['account_id'], holdout_share, seed)
     contacted = chosen[~chosen['holdout']]
     summary = {
         'customers': len(contacted),

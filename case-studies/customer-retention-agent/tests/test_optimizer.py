@@ -34,6 +34,16 @@ def test_greedy_close_to_exact():
     assert greedy >= 0.9 * exact
 
 
+def test_holdout_does_not_move_when_other_customers_change():
+    pool = candidates(n = 200)
+    full, _ = O.plan_tonight(pool, 5_000, holdout_share = 0.2, seed = 1)
+    fewer, _ = O.plan_tonight(pool[~pool['account_id'].isin(full['account_id'].head(5))], 5_000, holdout_share = 0.2, seed = 1)
+    shared = full.merge(fewer, on = 'account_id')
+    assert len(shared) > 20
+    assert (shared['holdout_x'] == shared['holdout_y']).all()
+    assert abs(O.holdout_flags(range(5_000), 0.1, 7).mean() - 0.1) < 0.02
+
+
 def test_holdout_is_never_contacted():
     plan, summary = O.plan_tonight(candidates(n = 200), 5_000, holdout_share = 0.2, seed = 1)
     assert summary['customers'] == int((~plan['holdout']).sum())

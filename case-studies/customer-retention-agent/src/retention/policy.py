@@ -7,6 +7,8 @@ compliance step can verify every draft. Each check takes `scoring_snapshot`-styl
 
 import pandas as pd
 
+from .features import OFFER_EFFECT_MONTHS
+
 OFFERS = ['discount', 'device', 'data']
 OFFER_COST = {'discount': 60.0, 'device': 200.0, 'data': 30.0}
 OFFER_TERMS = {
@@ -15,16 +17,23 @@ OFFER_TERMS = {
     'data': 'a free upgrade to unlimited data for 6 months',
 }
 CONTACT_GAP_MONTHS = 3
+ACCEPTED_OFFER_GAP_MONTHS = OFFER_EFFECT_MONTHS
 SMS_MAX_CHARACTERS = 320
 OPT_OUT = 'Reply STOP to opt out.'
 
 
 def can_contact(rows, month):
-    """Not do-not-contact, and no retention offer in the past 90 days."""
+    """Not do-not-contact, no retention offer in the past 90 days, and no accepted offer still in effect.
 
-    recent = rows['last_offer_month'].fillna(-99).astype(int) > month - CONTACT_GAP_MONTHS
+    An accepted offer changes churn for the 6 months after it is made, so the account is not a fresh
+    opportunity until that effect has run out.
+    """
 
-    return ~rows['do_not_contact'].astype(bool) & ~recent
+    last_month = rows['last_offer_month'].fillna(-99).astype(int)
+    recent = last_month > month - CONTACT_GAP_MONTHS
+    in_effect = rows['last_offer_accepted'].fillna(False).astype(bool) & (last_month > month - ACCEPTED_OFFER_GAP_MONTHS)
+
+    return ~rows['do_not_contact'].astype(bool) & ~recent & ~in_effect
 
 
 def eligible(rows, month):

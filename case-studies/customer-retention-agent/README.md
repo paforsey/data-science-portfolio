@@ -73,7 +73,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 - Time-varying Cox model (lifelines), then a gradient-boosted discrete-time hazard (LightGBM on account-months, rolled forward three months). scikit-survival was dropped: it would have forced numpy 2 into the shared base environment.
 - **Output:** probability of leaving within 30, 60, and 90 days, saved to `outputs/churn_scores.parquet` for tonight's batch and `outputs/campaign_1_churn_scores.parquet` for Phase 3.
 - **Metrics:** C-index, AUC, Brier score, and calibration by decile on a month-21 backtest, then against the answer key for tonight's batch.
-- **Result:** the gradient-boosted model reaches a C-index of 0.61 (true probabilities: 0.75; tenure alone: 0.53) and is well calibrated on tonight's batch, but over-predicted by about 15% after the competitor surge in the backtest.
+- **Result:** the gradient-boosted model reaches a C-index of 0.61 (true probabilities: 0.75; tenure alone: 0.53) and is well calibrated on tonight's batch (evaluated on the 70,608 accounts with no accepted offer still in effect), but over-predicted by about 15% after the competitor surge in the backtest.
 - Features live in `src/retention/features.py`, shared with every later phase and the nightly run.
 
 ### Phase 3: Offer effect model (`02`) · done
@@ -92,9 +92,9 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 ### Phase 5: Offer optimizer (`04`) · done
 - **Formula:** expected value = uplift × 24-month customer value − acceptance × offer cost, one offer per customer, greedy by value per budget dollar (checked against an exact integer program in PuLP; identical here).
 - **Guardrails:** a plan built straight from the estimates forecast +$65K and really lost $6.5K (the winner's curse: the best of many noisy estimates are the overestimated ones). Three rules grounded in pre-launch evidence fix it: only offers whose test showed an effect (drops the data upgrade), the test's average acceptance for costs, and a budget on exposure rather than expected cost. Each night holds back 10% of the chosen customers to measure the real effect.
-- **Result:** for $40,000, the uplift plan keeps 19.8 customers and earns $6,042; risk-first targeting keeps 2.7 and loses $9,486; the oracle keeps 44.7. Net value peaks at $20–40K of budget.
+- **Result:** for $40,000, the uplift plan keeps 19.8 customers and earns $5,907; risk-first targeting keeps 2.6 and loses $9,240; the oracle keeps 44.3. Net value peaks at $20–40K of budget.
 - **Code:** `src/retention/policy.py` (the policy's hard rules) and `src/retention/optimizer.py` (`build_candidates`, `select_greedy`, `select_exact`, `plan_tonight`, the agent's tool).
-- **Output:** `outputs/tonight_plan.parquet`: 666 customers, 614 contacted and 52 held out.
+- **Output:** `outputs/tonight_plan.parquet`: 666 customers, 606 contacted and 60 held out.
 
 ### Phase 6: LangGraph retention agent (`05`) · done
 **Graph flow:**
@@ -121,17 +121,17 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 
 **As built** (`src/retention/agent.py`, `05_retention_agent.ipynb`):
 - Routing moved to code: an open support ticket goes to care follow-up (`route_customer` tool); the model only writes the message and the rationale. The first version let the model route from the notes and it withheld offers from 13 price-sensitive customers of 16 it escalated.
-- The opt-out line is appended in code: first-draft pass rate went from 46% to 97%.
+- The opt-out line is appended in code: first-draft pass rate went from 46% to 100%.
 - Drafter and judge share one reading of the policy; the judge scores terms, tone, pressure, and privacy.
-- Result on a 40-customer batch: 37 offers, all passing (36 on the first draft), 3 routed to care; every planted violation caught; the careless edit held back at dispatch. $0.27 per 1,000 customers, about 4 minutes for a full night.
+- Result on a 40-customer batch: 37 offers, all passing on the first draft, 3 routed to care; every planted violation caught; the careless edit held back at dispatch. $0.27 per 1,000 customers, about 4 minutes for a full night.
 - LLM responses are cached in `cache/llm_cache.sqlite` (thread-safe wrapper for the parallel branches), so reruns are free and reproducible; `cache/agent_run_log.json` keeps the live run's cost and time.
 
 ### Phase 7: Automation and monitoring (`06`) · done
 - **Nightly job:** `PYTHONPATH=src python -m retention.run_nightly --month 24` checks drift and calibration, retrains if needed, plans the night (`src/retention/pipeline.py`, sections 01–04 as functions), and runs the agent to human approval; `--resume decisions.json` finishes it. Output in `outputs/nightly/month-<N>/`.
 - **Schedule:** `ops/com.datafxlab.retention-nightly.plist` (launchd, 2:00 a.m.) and a cron line in the notebook; provided, not installed.
 - **Drift checks:** PSI on the churn model's inputs (`src/retention/monitoring.py`). Against the training window it alarms every month (the window held a price increase and a promotion); month over month it caught only the real change, the month-27 promotion (PSI 6.6), and retrained once. Retraining added little: the model had already seen a promotion surge.
-- **Holdout:** one night's 10% holdout measures the plan's effect as +2.2 points (−2.8 to +7.3) against a true +3.0 and a forecast +3.9; 8 nights give 80% power.
-- **Regression tests:** `tests/`, 16 offline tests with stub language models (`python -m pytest tests`).
+- **Holdout:** one night's 10% holdout measures the plan's effect as +2.0 points (−3.6 to +7.7) against a true +2.9 and a forecast +3.9; 9 nights give 80% power.
+- **Regression tests:** `tests/`, 20 offline tests with stub language models (`python -m pytest tests`).
 - **Not done:** LangSmith tracing (optional).
 
 ### Phase 8: Write-up and publishing · in progress

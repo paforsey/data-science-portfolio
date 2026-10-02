@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from retention import policy as P
+from retention import features as F, policy as P
 
 COMPLIANT = f"Hi there! You can get {P.OFFER_TERMS['discount']}. Reply YES to add it. {P.OPT_OUT}"
 
@@ -38,3 +38,25 @@ def test_eligibility_rules():
     assert not P.eligible(account(last_offer_month = 19, last_offer = 'discount', last_offer_accepted = True), 24).at[0, 'discount']
     assert not P.eligible(account(months_to_payoff = 8), 24).at[0, 'device']
     assert P.eligible(account(plan = '15gb'), 24).at[0, 'data']
+
+
+def test_accepted_offer_blocks_new_offers_for_six_months():
+    accepted = dict(last_offer_month = 19, last_offer = 'device', last_offer_accepted = True)
+    assert not P.eligible(account(**accepted), 24).iloc[0].any()
+    assert P.eligible(account(**accepted), 25).at[0, 'discount']
+    declined = dict(last_offer_month = 19, last_offer = 'device', last_offer_accepted = False)
+    assert P.eligible(account(**declined), 24).at[0, 'discount']
+    assert not P.eligible(account(last_offer_month = 22, last_offer = 'device', last_offer_accepted = False), 24).iloc[0].any()
+
+
+def test_accepted_discount_still_blocks_the_discount_for_twelve_months():
+    accepted = dict(last_offer_month = 19, last_offer = 'discount', last_offer_accepted = True)
+    assert not P.eligible(account(**accepted), 30).at[0, 'discount']
+    assert P.eligible(account(**accepted), 30).at[0, 'device']
+    assert P.eligible(account(**accepted), 31).at[0, 'discount']
+
+
+def test_accepted_offer_window_matches_the_policy_gap():
+    campaigns = pd.DataFrame({'account_id': [1, 2], 'month': [19, 19], 'arm': ['device', 'device'], 'accepted': [True, False]})
+    rows = pd.DataFrame({'account_id': [1, 1, 2], 'month': [24, 25, 24]})
+    assert F.in_accepted_offer_window(rows, campaigns).tolist() == [True, False, False]

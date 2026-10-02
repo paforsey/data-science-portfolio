@@ -52,16 +52,16 @@ SECTION_LABELS = [
 
 # (icon, value, label) quoted from the study.
 STATS = [
-    ("route", "7.3×", "as many modeled additional subscribers retained as risk-first targeting (19.8 vs. 2.7)"),
+    ("route", "7.5×", "as many modeled additional subscribers retained as risk-first targeting (19.8 vs. 2.6)"),
     ("layers", "5", "uplift learners evaluated"),
-    ("chat", "97%", "of first message drafts passed validation"),
-    ("banknote", "+$6,042", "modeled nightly net value under a $40,000 maximum offer exposure"),
+    ("chat", "100%", "of first message drafts passed validation"),
+    ("banknote", "+$5,907", "modeled nightly net value under a $40,000 maximum offer exposure"),
 ]
 
 # (title, detail, section index) — index into the page's sections, in notebook order.
 DECISIONS = [
-    ("Rank by uplift, not churn risk", "§04 · Keeps 19.8 customers for $40K vs 2.7 for risk-first", 4),
-    ("Gate offers on the randomized test, not the estimate", "§04 · A plan taken at face value forecast +$65K and lost $6.5K", 4),
+    ("Rank by uplift, not churn risk", "§04 · Keeps 19.8 customers for $40K vs 2.6 for risk-first", 4),
+    ("Gate offers on the randomized test, not the estimate", "§04 · A plan taken at face value forecast +$64K and lost $6.3K", 4),
     ("Use the risk-scaled logit, not a gradient-boosted uplift model", "§02 · 4% base rate; flexible learners fit noise", 2),
     ("Move routing and the opt-out line into code", "§05 · The model withheld offers from 13 of 16 price-sensitive customers it escalated", 5),
     ("Monitor drift against last month, not the training window", "§06 · The training window itself held a price increase and a promotion", 6),

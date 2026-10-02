@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 DEVICE_TERM = 24
+OFFER_EFFECT_MONTHS = 6
 CODES = ['billing', 'network', 'device', 'service', 'account']
 
 PANEL_FIELDS = [
@@ -68,7 +69,7 @@ def build_features(panel, accounts, contacts):
     return df[['account_id', 'month'] + FEATURES + ['left_next_month']].reset_index(drop = True)
 
 
-def offer_windows(campaigns, months = 6):
+def offer_windows(campaigns, months = OFFER_EFFECT_MONTHS):
     """(account, month) pairs whose next-month churn an offer could have changed.
 
     An offer made in month m affects months m+1 … m+`months`, so the features of months
@@ -79,6 +80,18 @@ def offer_windows(campaigns, months = 6):
     windows = [offered.assign(month = offered['month'] + k) for k in range(months)]
 
     return pd.concat(windows, ignore_index = True).drop_duplicates()
+
+
+def in_accepted_offer_window(rows, campaigns):
+    """True for account-months whose next-month churn an accepted offer is still changing.
+
+    Declined offers change nothing, so only accepted ones count. Evaluation and monitoring leave these
+    rows out, because the models estimate churn without an offer.
+    """
+
+    windows = offer_windows(campaigns[campaigns['accepted']])
+
+    return pd.MultiIndex.from_frame(rows[['account_id', 'month']]).isin(pd.MultiIndex.from_frame(windows[['account_id', 'month']]))
 
 
 def age(features, months):

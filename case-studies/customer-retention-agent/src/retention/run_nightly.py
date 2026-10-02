@@ -25,7 +25,7 @@ MODELS = FOLDER / 'outputs' / 'models'
 def load_or_train(rows, month, log):
     """The churn and uplift models, retrained when monitoring says the churn model has gone stale."""
 
-    from . import monitoring as M, pipeline as PL
+    from . import data, features as F, monitoring as M, pipeline as PL
 
     MODELS.mkdir(parents = True, exist_ok = True)
     churn_path, uplift_path = MODELS / 'churn.joblib', MODELS / 'uplift.joblib'
@@ -45,7 +45,8 @@ def load_or_train(rows, month, log):
         current, last = rows[rows['month'] == month], rows[rows['month'] == month - 1]
         drift = M.drift_report(last, current)
         against_training = M.drift_report(rows[rows['month'].between(trained - PL.TRAINING_WINDOW, trained - 1)], current)
-        calibration = M.calibration_gap(churn.probabilities(last)['p_churn_30'], last['left_next_month']) if len(last) else None
+        settled = last[~F.in_accepted_offer_window(last, data.load('campaigns'))]
+        calibration = M.calibration_gap(churn.probabilities(settled)['p_churn_30'], settled['left_next_month']) if len(settled) else None
         retrain, reasons = M.should_retrain(drift, calibration)
         log['drift_since_last_month'] = drift.round(3).reset_index(names = 'input').to_dict('records')
         log['drift_against_training'] = against_training.round(3).reset_index(names = 'input').to_dict('records')
