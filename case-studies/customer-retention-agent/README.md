@@ -121,7 +121,7 @@ As in the rate-plan study, modeling notebooks load data through `load()`, which 
 
 **As built** (`src/retention/agent.py`, `05_retention_agent.ipynb`):
 - Routing moved to code: an open support ticket goes to care follow-up (`route_customer` tool); the model only writes the message and the rationale. The first version let the model route from the notes and it withheld offers from 13 price-sensitive customers of 16 it escalated.
-- The opt-out line is appended in code: first-draft pass rate went from 46% to 100%.
+- The opt-out line is appended in code: first-draft pass rate was 46% in the first version's run and 100% (37 of 37) in the latest run.
 - Drafter and judge share one reading of the policy; the judge scores terms, tone, pressure, and privacy.
 - Result on a 40-customer batch: 37 offers, all passing on the first draft, 3 routed to care; every planted violation caught; the careless edit held back at dispatch. $0.27 per 1,000 customers, about 4 minutes for a full night.
 - LLM responses are cached in `cache/llm_cache.sqlite` (thread-safe wrapper for the parallel branches), so reruns are free and reproducible; `cache/agent_run_log.json` keeps the live run's cost and time.
